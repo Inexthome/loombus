@@ -74,7 +74,7 @@ export function LibraryKnowledgeGraphV7Surface() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-screen bg-[var(--loombus-page-bg)] pb-[env(safe-area-inset-bottom)]">
       <a href="#library-knowledge-graph" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-[var(--loombus-gold)] focus:px-4 focus:py-2 focus:font-black focus:text-black">Skip to Knowledge Graph</a>
       <div className="mx-auto max-w-7xl px-4 pt-4 text-[var(--loombus-text)] sm:px-6">
         <div className="flex flex-col gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Knowledge Graph status">
@@ -109,6 +109,6 @@ export function LibraryKnowledgeGraphV7Surface() {
           </button>
         </div>
       ) : null}
-    </main>
+    </div>
   );
 }
