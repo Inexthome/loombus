@@ -1,0 +1,28 @@
+name: Library published author state
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/app/library/publish/page.tsx"
+      - "scripts/verification/verify-library-published-author-state.mjs"
+      - ".github/workflows/library-published-author-state.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify Library published author state
+        run: node scripts/verification/verify-library-published-author-state.mjs
