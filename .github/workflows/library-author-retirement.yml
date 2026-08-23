@@ -1,0 +1,23 @@
+name: Library author retirement
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823070000_add_library_author_retirement.sql"
+      - "src/app/library/publish/page.tsx"
+      - "src/components/admin-library-review-client.tsx"
+      - "scripts/verification/verify-library-author-retirement.mjs"
+      - ".github/workflows/library-author-retirement.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author retirement
+        run: node scripts/verification/verify-library-author-retirement.mjs
