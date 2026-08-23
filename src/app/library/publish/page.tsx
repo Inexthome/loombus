@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, Loader2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2, Send, Sparkles, Trash2 } from "lucide-react";
 import { LibraryAuthorEpubUpload } from "@/components/library/library-author-epub-upload";
 import { supabase } from "@/lib/supabase/client";
 
@@ -14,6 +14,7 @@ type AuthorPublicationRow = {
   submitted_at: string | null;
   reviewed_at: string | null;
   review_note: string | null;
+  published_at: string | null;
   updated_at: string;
 };
 
@@ -27,7 +28,7 @@ type PublicationRow = {
   publisher_name: string | null;
   language_code: string;
   isbn: string | null;
-  status: string;
+  status: "draft" | "published" | "archived";
 };
 
 type AuthorPublication = AuthorPublicationRow & { publication: PublicationRow };
@@ -87,7 +88,9 @@ function statusLabel(status: SubmissionStatus) {
 }
 
 function authorStatusLabel(row: AuthorPublication) {
-  return row.publication.status === "published" ? "published" : statusLabel(row.submission_status);
+  if (row.publication.status === "published") return "published";
+  if (row.publication.status === "archived") return "unpublished";
+  return statusLabel(row.submission_status);
 }
 
 export default function LibraryPublishPage() {
@@ -106,6 +109,12 @@ export default function LibraryPublishPage() {
   );
 
   const editable = !selected || selected.submission_status === "draft" || selected.submission_status === "changes_requested";
+  const deletable = Boolean(
+    selected
+      && selected.publication.status === "draft"
+      && !selected.published_at
+      && ["draft", "changes_requested", "rejected"].includes(selected.submission_status)
+  );
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
@@ -121,7 +130,7 @@ export default function LibraryPublishPage() {
 
     const ownershipResult = await supabase
       .from("library_author_publications")
-      .select("publication_id, submission_status, submitted_at, reviewed_at, review_note, updated_at")
+      .select("publication_id, submission_status, submitted_at, reviewed_at, review_note, published_at, updated_at")
       .order("updated_at", { ascending: false });
 
     if (ownershipResult.error) {
@@ -268,6 +277,50 @@ export default function LibraryPublishPage() {
     setSaving(false);
   }
 
+  async function deletePublication() {
+    if (!selected || !deletable || saving) return;
+    const confirmed = window.confirm(
+      `Delete “${selected.publication.title}”? This permanently removes this never-published publication, its processed sections, and its private EPUB. This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const sourceResult = await supabase
+        .from("library_publication_sources")
+        .select("storage_bucket,storage_path")
+        .eq("publication_id", selected.publication_id)
+        .maybeSingle();
+      if (sourceResult.error) throw sourceResult.error;
+
+      if (sourceResult.data?.storage_bucket && sourceResult.data?.storage_path) {
+        const storageResult = await supabase.storage
+          .from(sourceResult.data.storage_bucket)
+          .remove([sourceResult.data.storage_path]);
+        if (storageResult.error) throw storageResult.error;
+      }
+
+      const deleteResult = await supabase.rpc("delete_library_author_unpublished_publication", {
+        p_publication_id: selected.publication_id,
+      });
+      if (deleteResult.error) throw deleteResult.error;
+
+      setSelectedId(null);
+      setForm(emptyForm);
+      setContentReady(false);
+      await loadWorkspace();
+      setMessage("Never-published publication deleted permanently.");
+    } catch (deleteError) {
+      console.error("Unable to delete Library publication.", deleteError);
+      setError("Unable to delete this publication. Published history and review-state safeguards remain in force.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-28 pt-6 text-[var(--loombus-text)] sm:px-6 md:pt-24 lg:px-8">
       <div className="mx-auto w-full max-w-6xl">
@@ -316,6 +369,8 @@ export default function LibraryPublishPage() {
               <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">{selected ? authorStatusLabel(selected) : "New draft"}</p><h2 className="mt-2 text-xl font-semibold">Publication details</h2></div>
               {selected?.publication.status === "published" ? (
                 <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Published to Library</span>
+              ) : selected?.publication.status === "archived" ? (
+                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Unpublished · history preserved</span>
               ) : selected?.submission_status === "approved" ? (
                 <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Approved for controlled publishing</span>
               ) : null}
@@ -341,6 +396,7 @@ export default function LibraryPublishPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               {editable ? <button type="button" disabled={saving} onClick={() => void saveDraft()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" aria-hidden="true" />}Save draft</button> : null}
               {selected && editable ? <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
+              {selected && deletable ? <button type="button" disabled={saving} onClick={() => void deletePublication()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-500/40 px-4 text-sm font-semibold text-rose-500 transition hover:bg-rose-500/10 disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Delete publication</button> : null}
             </div>
 
             <LibraryAuthorEpubUpload
@@ -354,7 +410,9 @@ export default function LibraryPublishPage() {
               <p className="mt-5 text-sm leading-6 text-[var(--loombus-text-muted)]">
                 {selected.publication.status === "published"
                   ? "This publication is published in the Loombus Library and is locked from author-side draft editing."
-                  : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
+                  : selected.publication.status === "archived"
+                    ? "This publication is currently unpublished. Its publication history and Library data are preserved; an admin may republish it."
+                    : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
               </p>
             ) : null}
           </section>
