@@ -6,7 +6,8 @@ if (!fs.existsSync(pagePath)) throw new Error(`Missing required file: ${pagePath
 const page = fs.readFileSync(pagePath, "utf8");
 
 for (const fragment of [
-  'row.publication.status === "published" ? "published"',
+  'if (row.publication.status === "published") return "published";',
+  'if (row.publication.status === "archived") return "unpublished";',
   'Published to Library',
   'This publication is published in the Loombus Library and is locked from author-side draft editing.',
 ]) {

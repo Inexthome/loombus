@@ -1,0 +1,24 @@
+name: Library publication lifecycle controls
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823064000_add_library_publication_lifecycle_controls.sql"
+      - "src/app/library/publish/page.tsx"
+      - "src/components/admin-library-review-client.tsx"
+      - "scripts/verification/verify-library-publication-lifecycle-controls.mjs"
+      - ".github/workflows/library-publication-lifecycle-controls.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library publication lifecycle controls
+        run: node scripts/verification/verify-library-publication-lifecycle-controls.mjs

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, Send, ShieldAlert, Undo2, XCircle } from "lucide-react";
+import { CheckCircle2, EyeOff, Loader2, Send, ShieldAlert, Undo2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -153,7 +153,7 @@ export default function AdminLibraryReviewClient() {
     }
   }
 
-  async function publish(publicationId: string) {
+  async function publish(publicationId: string, republishing: boolean) {
     if (workingId) return;
     setWorkingId(publicationId);
     setMessage("");
@@ -163,11 +163,37 @@ export default function AdminLibraryReviewClient() {
         p_publication_id: publicationId,
       });
       if (error) throw error;
-      setMessage("Approved publication published to the Loombus Library.");
+      setMessage(republishing ? "Publication republished to the Loombus Library." : "Approved publication published to the Loombus Library.");
       await loadRows();
     } catch (error) {
       console.error("Unable to publish Library publication.", error);
       setMessage("Unable to publish the approved Library publication.");
+      setMessageIsError(true);
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
+  async function unpublish(publicationId: string, title: string) {
+    if (workingId) return;
+    const confirmed = window.confirm(
+      `Unpublish “${title}” from the Loombus Library? The public listing and Reader access will be removed, but publication history, content, annotations, and provenance will be preserved for possible republishing.`
+    );
+    if (!confirmed) return;
+
+    setWorkingId(publicationId);
+    setMessage("");
+    setMessageIsError(false);
+    try {
+      const { error } = await supabase.rpc("unpublish_library_author_publication", {
+        p_publication_id: publicationId,
+      });
+      if (error) throw error;
+      setMessage("Publication unpublished. Its history and Library data remain preserved.");
+      await loadRows();
+    } catch (error) {
+      console.error("Unable to unpublish Library publication.", error);
+      setMessage("Unable to unpublish this Library publication.");
       setMessageIsError(true);
     } finally {
       setWorkingId(null);
@@ -207,7 +233,7 @@ export default function AdminLibraryReviewClient() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight">Author publication review</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Review submitted publication metadata, request changes, approve or reject work, and publish only after approval.
+                Review submitted publication metadata, request changes, approve or reject work, publish approved work, and unpublish while preserving history.
               </p>
             </div>
             <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] px-4 py-2 text-sm font-semibold text-[var(--loombus-gold)]">
@@ -233,7 +259,9 @@ export default function AdminLibraryReviewClient() {
               if (!publication) return null;
               const busy = workingId === row.publication_id;
               const isSubmitted = row.submission_status === "submitted";
-              const canPublish = row.submission_status === "approved" && publication.status === "draft" && !row.published_at;
+              const canPublish = row.submission_status === "approved" && (publication.status === "draft" || publication.status === "archived");
+              const canUnpublish = row.submission_status === "approved" && publication.status === "published" && Boolean(row.published_at);
+              const republishing = publication.status === "archived" && Boolean(row.published_at);
 
               return (
                 <article key={row.publication_id} className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
@@ -245,6 +273,7 @@ export default function AdminLibraryReviewClient() {
                         </span>
                         <span className="text-xs text-[var(--loombus-text-subtle)]">{publication.publication_type}</span>
                         {publication.status === "published" ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Published</span> : null}
+                        {publication.status === "archived" ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Unpublished</span> : null}
                       </div>
                       <h2 className="mt-3 text-xl font-semibold">{publication.title}</h2>
                       {publication.subtitle ? <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
@@ -290,15 +319,21 @@ export default function AdminLibraryReviewClient() {
                         </button>
                       </>
                     ) : null}
+                    {canUnpublish ? (
+                      <button type="button" disabled={busy} onClick={() => void unpublish(row.publication_id, publication.title)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-xs font-semibold hover:border-[var(--loombus-gold)] disabled:opacity-50">
+                        {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <EyeOff className="size-4" aria-hidden="true" />}
+                        Unpublish from Library
+                      </button>
+                    ) : null}
                     {canPublish ? (
-                      <button type="button" disabled={busy} onClick={() => void publish(row.publication_id)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 text-xs font-semibold text-black disabled:opacity-50">
+                      <button type="button" disabled={busy} onClick={() => void publish(row.publication_id, republishing)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 text-xs font-semibold text-black disabled:opacity-50">
                         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Send className="size-4" aria-hidden="true" />}
-                        Publish to Library
+                        {republishing ? "Republish to Library" : "Publish to Library"}
                       </button>
                     ) : null}
                   </div>
 
-                  {row.reviewed_at ? <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">Reviewed {new Date(row.reviewed_at).toLocaleString()}{row.published_at ? ` · Published ${new Date(row.published_at).toLocaleString()}` : ""}</p> : null}
+                  {row.reviewed_at ? <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">Reviewed {new Date(row.reviewed_at).toLocaleString()}{row.published_at ? ` · First published ${new Date(row.published_at).toLocaleString()}` : ""}</p> : null}
                 </article>
               );
             })}
