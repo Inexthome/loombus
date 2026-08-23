@@ -15,6 +15,7 @@ type AuthorPublicationRow = {
   reviewed_at: string | null;
   review_note: string | null;
   published_at: string | null;
+  retired_at: string | null;
   updated_at: string;
 };
 
@@ -115,6 +116,12 @@ export default function LibraryPublishPage() {
       && !selected.published_at
       && ["draft", "changes_requested", "rejected"].includes(selected.submission_status)
   );
+  const retirable = Boolean(
+    selected
+      && selected.publication.status === "archived"
+      && selected.published_at
+      && !selected.retired_at
+  );
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
@@ -130,7 +137,8 @@ export default function LibraryPublishPage() {
 
     const ownershipResult = await supabase
       .from("library_author_publications")
-      .select("publication_id, submission_status, submitted_at, reviewed_at, review_note, published_at, updated_at")
+      .select("publication_id, submission_status, submitted_at, reviewed_at, review_note, published_at, retired_at, updated_at")
+      .is("retired_at", null)
       .order("updated_at", { ascending: false });
 
     if (ownershipResult.error) {
@@ -321,6 +329,36 @@ export default function LibraryPublishPage() {
     }
   }
 
+  async function retirePublication() {
+    if (!selected || !retirable || saving) return;
+    const confirmed = window.confirm(
+      `Delete “${selected.publication.title}” from your publishing workspace? It will remain unpublished and cannot be republished. Loombus will preserve historical references internally so existing Library activity does not break.`
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const result = await supabase.rpc("retire_library_author_unpublished_publication", {
+        p_publication_id: selected.publication_id,
+      });
+      if (result.error) throw result.error;
+
+      setSelectedId(null);
+      setForm(emptyForm);
+      setContentReady(false);
+      await loadWorkspace();
+      setMessage("Unpublished publication removed from your publishing workspace. Historical Library references remain preserved.");
+    } catch (retireError) {
+      console.error("Unable to retire Library publication.", retireError);
+      setError("Unable to remove this unpublished publication from your workspace.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-28 pt-6 text-[var(--loombus-text)] sm:px-6 md:pt-24 lg:px-8">
       <div className="mx-auto w-full max-w-6xl">
@@ -397,6 +435,7 @@ export default function LibraryPublishPage() {
               {editable ? <button type="button" disabled={saving} onClick={() => void saveDraft()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" aria-hidden="true" />}Save draft</button> : null}
               {selected && editable ? <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
               {selected && deletable ? <button type="button" disabled={saving} onClick={() => void deletePublication()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-500/40 px-4 text-sm font-semibold text-rose-500 transition hover:bg-rose-500/10 disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Delete publication</button> : null}
+              {selected && retirable ? <button type="button" disabled={saving} onClick={() => void retirePublication()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-500/40 px-4 text-sm font-semibold text-rose-500 transition hover:bg-rose-500/10 disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Delete publication</button> : null}
             </div>
 
             <LibraryAuthorEpubUpload
@@ -411,7 +450,7 @@ export default function LibraryPublishPage() {
                 {selected.publication.status === "published"
                   ? "This publication is published in the Loombus Library and is locked from author-side draft editing."
                   : selected.publication.status === "archived"
-                    ? "This publication is currently unpublished. Its publication history and Library data are preserved; an admin may republish it."
+                    ? "This publication is currently unpublished. You may remove it from your publishing workspace; Loombus will preserve historical references so prior Library activity does not break."
                     : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
               </p>
             ) : null}
