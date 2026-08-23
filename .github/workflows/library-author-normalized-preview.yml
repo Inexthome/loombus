@@ -1,0 +1,23 @@
+name: Library author normalized preview
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823080000_add_library_author_normalized_preview.sql"
+      - "src/components/library/library-author-normalized-preview.tsx"
+      - "src/components/library/library-author-epub-upload.tsx"
+      - "scripts/verification/verify-library-author-normalized-preview.mjs"
+      - ".github/workflows/library-author-normalized-preview.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author normalized preview
+        run: node scripts/verification/verify-library-author-normalized-preview.mjs

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FileUp, Loader2, RefreshCw } from "lucide-react";
+import { LibraryAuthorNormalizedPreview } from "@/components/library/library-author-normalized-preview";
 import { supabase } from "@/lib/supabase/client";
 
 const MAX_EPUB_BYTES = 50 * 1024 * 1024;
@@ -186,6 +187,12 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
         </div>
         {source?.ingestion_error ? <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{source.ingestion_error}</p> : null}
       </div>
+
+      <LibraryAuthorNormalizedPreview
+        publicationId={publicationId}
+        ready={source?.ingestion_status === "ready"}
+        published={published}
+      />
 
       {error ? <div role="alert" className="mt-3 rounded-xl border border-[var(--loombus-border)] p-3 text-xs text-[var(--loombus-text-muted)]">{error}</div> : null}
       {message ? <div role="status" className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-3 text-xs">{message}</div> : null}
