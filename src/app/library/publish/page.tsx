@@ -85,6 +85,10 @@ function statusLabel(status: SubmissionStatus) {
   return status.replace("_", " ");
 }
 
+function authorStatusLabel(row: AuthorPublication) {
+  return row.publication.status === "published" ? "published" : statusLabel(row.submission_status);
+}
+
 export default function LibraryPublishPage() {
   const [rows, setRows] = useState<AuthorPublication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -291,7 +295,7 @@ export default function LibraryPublishPage() {
                 <button key={row.publication_id} type="button" onClick={() => choosePublication(row)} className={`w-full rounded-2xl border p-4 text-left transition ${selectedId === row.publication_id ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)]" : "border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] hover:border-[var(--loombus-gold)]"}`}>
                   <p className="font-semibold">{row.publication.title}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--loombus-text-muted)]">
-                    <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 capitalize">{statusLabel(row.submission_status)}</span>
+                    <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 capitalize">{authorStatusLabel(row)}</span>
                     <span className="capitalize">{row.publication.publication_type}</span>
                   </div>
                 </button>
@@ -301,8 +305,12 @@ export default function LibraryPublishPage() {
 
           <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">{selected ? statusLabel(selected.submission_status) : "New draft"}</p><h2 className="mt-2 text-xl font-semibold">Publication details</h2></div>
-              {selected?.submission_status === "approved" ? <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Approved for controlled publishing</span> : null}
+              <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">{selected ? authorStatusLabel(selected) : "New draft"}</p><h2 className="mt-2 text-xl font-semibold">Publication details</h2></div>
+              {selected?.publication.status === "published" ? (
+                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Published to Library</span>
+              ) : selected?.submission_status === "approved" ? (
+                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Approved for controlled publishing</span>
+              ) : null}
             </div>
 
             {selected?.review_note ? <div className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4"><p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Review note</p><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{selected.review_note}</p></div> : null}
@@ -327,7 +335,13 @@ export default function LibraryPublishPage() {
               {selected && editable ? <button type="button" disabled={saving} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
             </div>
 
-            {selected && !editable ? <p className="mt-5 text-sm leading-6 text-[var(--loombus-text-muted)]">This publication is locked while it is in its current review state. Loombus review controls approval and publishing.</p> : null}
+            {selected && !editable ? (
+              <p className="mt-5 text-sm leading-6 text-[var(--loombus-text-muted)]">
+                {selected.publication.status === "published"
+                  ? "This publication is published in the Loombus Library and is locked from author-side draft editing."
+                  : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
+              </p>
+            ) : null}
             <p className="mt-6 border-t border-[var(--loombus-border)] pt-5 text-xs leading-5 text-[var(--loombus-text-subtle)]">EPUB upload is intentionally not enabled in this slice. Original publication files remain behind the existing private ingestion boundary until the member upload path can be implemented without a service role.</p>
           </section>
         </div>
