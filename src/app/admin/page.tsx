@@ -21,6 +21,12 @@ export default function AdminDashboardPage() {
         aria-label="Admin operations shortcuts"
       >
         <Link
+          href="/admin/library-review"
+          className="inline-flex items-center justify-center rounded-full bg-[#CBAB5B] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105"
+        >
+          Open Library Review
+        </Link>
+        <Link
           href="/admin/legal-operations"
           className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10"
           style={{ color: "var(--loombus-text-strong, #18181b)" }}
