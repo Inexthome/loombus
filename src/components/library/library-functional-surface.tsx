@@ -13,6 +13,7 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
+import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { supabase } from "@/lib/supabase/client";
 
 type LibraryTab = "Discover" | "My Library" | "Continue Reading" | "Highlights" | "Authors";
@@ -111,7 +112,9 @@ export function LibraryFunctionalSurface() {
     return (
       <article className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5">
         <div className="flex items-start justify-between gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]"><BookOpen className="h-5 w-5" aria-hidden="true" /></span>
+          <span className="grid aspect-[2/3] w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
+            <LibraryCoverImage storagePath={publication.cover_url} alt={`${publication.title} cover`} fallbackClassName="h-5 w-5" />
+          </span>
           <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--loombus-text-muted)]">{publication.publication_type}</span>
         </div>
         <h3 className="mt-4 text-base font-semibold">{publication.title}</h3>

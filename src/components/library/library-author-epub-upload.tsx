@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FileUp, Loader2, RefreshCw } from "lucide-react";
+import { LibraryAuthorCoverUpload } from "@/components/library/library-author-cover-upload";
 import { LibraryAuthorNormalizedPreview } from "@/components/library/library-author-normalized-preview";
 import { supabase } from "@/lib/supabase/client";
 
@@ -160,72 +161,76 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
   }
 
   return (
-    <section className="mt-6 border-t border-[var(--loombus-border)] pt-5" aria-labelledby="library-epub-heading">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p id="library-epub-heading" className="text-sm font-semibold">EPUB content</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">
-            Originals stay private. Loombus reads only normalized sections after validation and processing.
-          </p>
-        </div>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin text-[var(--loombus-gold)]" aria-label="Loading EPUB status" /> : null}
-      </div>
+    <>
+      <LibraryAuthorCoverUpload publicationId={publicationId} editable={editable} published={published} />
 
-      <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="mt-6 border-t border-[var(--loombus-border)] pt-5" aria-labelledby="library-epub-heading">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium">{statusCopy(source)}</p>
-            {source ? (
-              <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">
-                {formatBytes(Number(source.byte_size))} · <span className="capitalize">{source.ingestion_status}</span>
-              </p>
+            <p id="library-epub-heading" className="text-sm font-semibold">EPUB content</p>
+            <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">
+              Originals stay private. Loombus reads only normalized sections after validation and processing.
+            </p>
+          </div>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin text-[var(--loombus-gold)]" aria-label="Loading EPUB status" /> : null}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">{statusCopy(source)}</p>
+              {source ? (
+                <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">
+                  {formatBytes(Number(source.byte_size))} · <span className="capitalize">{source.ingestion_status}</span>
+                </p>
+              ) : null}
+            </div>
+            {source?.ingestion_status === "ready" ? (
+              <span className="rounded-full border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-3 py-1.5 text-xs font-semibold">Ready for review</span>
             ) : null}
           </div>
-          {source?.ingestion_status === "ready" ? (
-            <span className="rounded-full border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-3 py-1.5 text-xs font-semibold">Ready for review</span>
-          ) : null}
+          {source?.ingestion_error ? <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{source.ingestion_error}</p> : null}
         </div>
-        {source?.ingestion_error ? <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{source.ingestion_error}</p> : null}
-      </div>
 
-      <LibraryAuthorNormalizedPreview
-        publicationId={publicationId}
-        ready={source?.ingestion_status === "ready"}
-        published={published}
-      />
+        <LibraryAuthorNormalizedPreview
+          publicationId={publicationId}
+          ready={source?.ingestion_status === "ready"}
+          published={published}
+        />
 
-      {error ? <div role="alert" className="mt-3 rounded-xl border border-[var(--loombus-border)] p-3 text-xs text-[var(--loombus-text-muted)]">{error}</div> : null}
-      {message ? <div role="status" className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-3 text-xs">{message}</div> : null}
+        {error ? <div role="alert" className="mt-3 rounded-xl border border-[var(--loombus-border)] p-3 text-xs text-[var(--loombus-text-muted)]">{error}</div> : null}
+        {message ? <div role="status" className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-3 text-xs">{message}</div> : null}
 
-      {!publicationId ? (
-        <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">Save the publication draft before uploading its EPUB.</p>
-      ) : published ? (
-        <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">Published originals remain locked from author-side replacement.</p>
-      ) : editable ? (
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="grid min-w-[240px] flex-1 gap-2 text-xs font-semibold text-[var(--loombus-text-muted)]">
-            Choose EPUB
-            <input
-              type="file"
-              accept=".epub,application/epub+zip"
-              disabled={uploading}
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              className="block min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--loombus-gold-surface)] file:px-3 file:py-1.5 file:font-semibold file:text-[var(--loombus-text)]"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={!file || uploading}
-            onClick={() => void uploadAndProcess()}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : source ? <RefreshCw className="h-4 w-4" aria-hidden="true" /> : <FileUp className="h-4 w-4" aria-hidden="true" />}
-            {source ? "Replace & process EPUB" : "Upload & process EPUB"}
-          </button>
-        </div>
-      ) : (
-        <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">EPUB replacement is locked while this publication is under review.</p>
-      )}
-    </section>
+        {!publicationId ? (
+          <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">Save the publication draft before uploading its EPUB.</p>
+        ) : published ? (
+          <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">Published originals remain locked from author-side replacement.</p>
+        ) : editable ? (
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="grid min-w-[240px] flex-1 gap-2 text-xs font-semibold text-[var(--loombus-text-muted)]">
+              Choose EPUB
+              <input
+                type="file"
+                accept=".epub,application/epub+zip"
+                disabled={uploading}
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                className="block min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--loombus-gold-surface)] file:px-3 file:py-1.5 file:font-semibold file:text-[var(--loombus-text)]"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={!file || uploading}
+              onClick={() => void uploadAndProcess()}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : source ? <RefreshCw className="h-4 w-4" aria-hidden="true" /> : <FileUp className="h-4 w-4" aria-hidden="true" />}
+              {source ? "Replace & process EPUB" : "Upload & process EPUB"}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">EPUB replacement is locked while this publication is under review.</p>
+        )}
+      </section>
+    </>
   );
 }

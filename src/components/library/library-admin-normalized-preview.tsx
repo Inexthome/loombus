@@ -2,6 +2,7 @@
 
 import { BookOpen, ChevronLeft, ChevronRight, Eye, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { supabase } from "@/lib/supabase/client";
 
 type SectionRow = {
@@ -23,6 +24,7 @@ export function LibraryAdminNormalizedPreview({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<SectionRow[]>([]);
+  const [coverPath, setCoverPath] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,32 +39,41 @@ export function LibraryAdminNormalizedPreview({
     if (!open) return;
     let cancelled = false;
 
-    async function loadSections() {
+    async function loadPreview() {
       setLoading(true);
       setError(null);
       setSections([]);
+      setCoverPath(null);
       setActiveIndex(0);
 
-      const { data, error: sectionError } = await supabase
-        .from("library_publication_sections")
-        .select("section_key,ordinal,title,content_text")
-        .eq("publication_id", publicationId)
-        .order("ordinal", { ascending: true });
+      const [sectionResult, publicationResult] = await Promise.all([
+        supabase
+          .from("library_publication_sections")
+          .select("section_key,ordinal,title,content_text")
+          .eq("publication_id", publicationId)
+          .order("ordinal", { ascending: true }),
+        supabase
+          .from("library_publications")
+          .select("cover_url")
+          .eq("id", publicationId)
+          .maybeSingle(),
+      ]);
 
       if (cancelled) return;
-      if (sectionError) {
+      if (sectionResult.error || publicationResult.error) {
         setError("Unable to load normalized publication content for review.");
         setLoading(false);
         return;
       }
 
-      const nextSections = (data ?? []) as SectionRow[];
+      const nextSections = (sectionResult.data ?? []) as SectionRow[];
       setSections(nextSections);
+      setCoverPath(publicationResult.data?.cover_url ?? null);
       if (!nextSections.length) setError("No normalized sections are available for this publication.");
       setLoading(false);
     }
 
-    void loadSections();
+    void loadPreview();
     return () => {
       cancelled = true;
     };
@@ -84,10 +95,15 @@ export function LibraryAdminNormalizedPreview({
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label={`Preview ${publicationTitle}`}>
           <section className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] text-[var(--loombus-text)] shadow-2xl">
             <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--loombus-border)] px-5 py-4 sm:px-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Editorial preview · normalized content</p>
-                <h2 className="mt-1 text-lg font-semibold">{publicationTitle}</h2>
-                <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">This is the processed text Loombus will serve to the Reader, not the original EPUB.</p>
+              <div className="flex items-center gap-4">
+                <div className="grid aspect-[2/3] w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
+                  <LibraryCoverImage storagePath={coverPath} alt={`${publicationTitle} cover`} fallbackClassName="size-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Editorial preview · normalized content</p>
+                  <h2 className="mt-1 text-lg font-semibold">{publicationTitle}</h2>
+                  <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">This is the processed text Loombus will serve to the Reader, not the original EPUB.</p>
+                </div>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="grid size-11 place-items-center rounded-full border border-[var(--loombus-border)] hover:border-[var(--loombus-gold)]" aria-label="Close normalized publication preview">
                 <X className="size-4" aria-hidden="true" />
