@@ -115,6 +115,7 @@ function parsePackage(rootfilePath: string, xml: string): EpubPackage {
     id: String(item?.["@_id"] ?? ""),
     href: String(item?.["@_href"] ?? ""),
     mediaType: String(item?.["@_media-type"] ?? ""),
+    properties: String(item?.["@_properties"] ?? "").split(/\s+/).filter(Boolean),
   })).filter((item) => item.id && item.href && item.mediaType);
   const spine: EpubSpineItem[] = spineItems.map((item: any) => ({
     idref: String(item?.["@_idref"] ?? ""),
@@ -188,7 +189,96 @@ function escapeHtmlText(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function htmlToSafeTextResource(path: string, source: string): EpubTextResource {
+function normalizeLabel(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function isMachineDocumentTitle(value: string | null): boolean {
+  if (!value) return false;
+  return /(?:^|\/)ch\d+\.(?:x?html?)$/i.test(value) || /\.(?:x?html?)$/i.test(value);
+}
+
+function textFromMarkup(markup: string): string {
+  try {
+    const parsed = xhtmlParser.parse(`<root>${markup}</root>`);
+    return normalizeLabel(collectNodeText(parsed));
+  } catch {
+    return "";
+  }
+}
+
+function extractHeadingLabels(source: string): Array<{ level: number; label: string }> {
+  const labels: Array<{ level: number; label: string }> = [];
+  const pattern = /<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1\s*>/gi;
+  for (const match of source.matchAll(pattern)) {
+    const label = textFromMarkup(match[2]);
+    if (label) labels.push({ level: Number(match[1]), label });
+  }
+  return labels;
+}
+
+function isLogicalChapterLabel(label: string): boolean {
+  return /^(?:chapter\b|prologue\b|epilogue\b|introduction\b|preface\b|foreword\b|afterword\b|part\s+(?:[\divxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)\b)/i.test(label);
+}
+
+function dedupeLabels(labels: string[]): string[] {
+  const output: string[] = [];
+  for (const label of labels.map(normalizeLabel).filter(Boolean)) {
+    if (!output.some((existing) => existing.toLocaleLowerCase() === label.toLocaleLowerCase())) output.push(label);
+  }
+  return output;
+}
+
+function extractNavigationLabels(navPath: string, source: string): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  const tocMatch = source.match(/<nav\b[^>]*(?:epub:type|type)\s*=\s*["'][^"']*\btoc\b[^"']*["'][^>]*>([\s\S]*?)<\/nav\s*>/i);
+  const scope = tocMatch?.[1] ?? source;
+  const anchorPattern = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a\s*>/gi;
+  for (const match of scope.matchAll(anchorPattern)) {
+    const href = match[1].trim();
+    if (!href || /^[a-z][a-z0-9+.-]*:/i.test(href)) continue;
+    const label = textFromMarkup(match[2]);
+    if (!label) continue;
+    let path: string;
+    try {
+      path = normalizePath(navPath, href);
+    } catch {
+      continue;
+    }
+    const existing = result.get(path) ?? [];
+    existing.push(label);
+    result.set(path, existing);
+  }
+  for (const [path, labels] of result) result.set(path, dedupeLabels(labels));
+  return result;
+}
+
+function findSequentialLabels(text: string, labels: string[]): Array<{ label: string; start: number; end: number }> {
+  const lowerText = text.toLocaleLowerCase();
+  const found: Array<{ label: string; start: number; end: number }> = [];
+  let cursor = 0;
+  for (const label of labels) {
+    const needle = label.toLocaleLowerCase();
+    const start = lowerText.indexOf(needle, cursor);
+    if (start < 0) continue;
+    found.push({ label, start, end: start + label.length });
+    cursor = start + label.length;
+  }
+  return found;
+}
+
+function safeTextResource(path: string, title: string | null, text: string, logicalKey?: string): EpubTextResource {
+  const normalizedText = normalizeLabel(text);
+  return {
+    path,
+    title: title ? normalizeLabel(title) : null,
+    html: normalizedText ? `<p>${escapeHtmlText(normalizedText)}</p>` : "",
+    text: normalizedText,
+    logicalKey,
+  };
+}
+
+function splitLogicalTextResources(path: string, source: string, navigationLabels: string[]): EpubTextResource[] {
   let parsed: unknown;
   try {
     parsed = xhtmlParser.parse(source);
@@ -196,10 +286,42 @@ function htmlToSafeTextResource(path: string, source: string): EpubTextResource 
     throw new Error("library_epub_xhtml_invalid");
   }
 
-  const text = collectNodeText(parsed).replace(/\s+/g, " ").trim();
-  const title = findFirstTagText(parsed, "title");
-  const contentHtml = text ? `<p>${escapeHtmlText(text)}</p>` : "";
-  return { path, title, html: contentHtml, text };
+  const text = normalizeLabel(collectNodeText(parsed));
+  const rawDocumentTitle = findFirstTagText(parsed, "title");
+  const documentTitle = isMachineDocumentTitle(rawDocumentTitle) ? null : rawDocumentTitle;
+  if (!text) return [];
+
+  const headings = extractHeadingLabels(source);
+  const chapterHeadings = dedupeLabels(headings.filter((heading) => isLogicalChapterLabel(heading.label)).map((heading) => heading.label));
+  const h1Labels = dedupeLabels(headings.filter((heading) => heading.level === 1).map((heading) => heading.label));
+  const navLabels = dedupeLabels(navigationLabels);
+
+  let candidates: string[] = [];
+  if (navLabels.length >= 2) candidates = navLabels;
+  else if (chapterHeadings.length) candidates = chapterHeadings;
+  else if (h1Labels.length >= 2) candidates = h1Labels;
+
+  if (candidates.length >= 2) {
+    const found = findSequentialLabels(text, candidates);
+    if (found.length >= 2) {
+      const sections: EpubTextResource[] = [];
+      const prefix = text.slice(0, found[0].start).trim();
+      if (prefix.length >= 80) sections.push(safeTextResource(path, documentTitle, prefix, "frontmatter"));
+      for (const [index, marker] of found.entries()) {
+        const next = found[index + 1];
+        const body = text.slice(marker.end, next?.start ?? text.length).trim();
+        if (!body) continue;
+        sections.push(safeTextResource(path, marker.label, body, `logical-${index}-${marker.start}`));
+      }
+      if (sections.length >= 2) return sections;
+    }
+  }
+
+  const preferredTitle = navLabels[0]
+    ?? chapterHeadings[0]
+    ?? h1Labels[0]
+    ?? documentTitle;
+  return [safeTextResource(path, preferredTitle, text, "document")];
 }
 
 export async function parseEpubBuffer(buffer: Buffer): Promise<NormalizedEpubSection[]> {
@@ -217,7 +339,17 @@ export async function parseEpubBuffer(buffer: Buffer): Promise<NormalizedEpubSec
     if (!rootfileEntry) throw new Error("library_epub_rootfile_not_found");
     const pkg = parsePackage(rootfilePath, (await readEntry(zipFile, rootfileEntry)).toString("utf8"));
 
-    const resources = new Map<string, EpubTextResource>();
+    let navigationLabels = new Map<string, string[]>();
+    const navItem = pkg.manifest.find((item) => item.properties?.includes("nav"));
+    if (navItem && ["application/xhtml+xml", "text/html"].includes(navItem.mediaType)) {
+      const navPath = normalizePath(pkg.rootfilePath, navItem.href);
+      const navEntry = entries.get(navPath);
+      if (navEntry) {
+        navigationLabels = extractNavigationLabels(navPath, (await readEntry(zipFile, navEntry)).toString("utf8"));
+      }
+    }
+
+    const resources = new Map<string, EpubTextResource[]>();
     const manifest = new Map(pkg.manifest.map((item) => [item.id, item]));
     for (const spine of pkg.spine) {
       const item = manifest.get(spine.idref);
@@ -225,7 +357,8 @@ export async function parseEpubBuffer(buffer: Buffer): Promise<NormalizedEpubSec
       const path = normalizePath(pkg.rootfilePath, item.href);
       const entry = entries.get(path);
       if (!entry) continue;
-      resources.set(path, htmlToSafeTextResource(path, (await readEntry(zipFile, entry)).toString("utf8")));
+      const source = (await readEntry(zipFile, entry)).toString("utf8");
+      resources.set(path, splitLogicalTextResources(path, source, navigationLabels.get(path) ?? []));
     }
 
     return buildNormalizedSections(pkg, resources);
