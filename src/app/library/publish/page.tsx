@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BookOpen, Loader2, Send, Sparkles } from "lucide-react";
+import { LibraryAuthorEpubUpload } from "@/components/library/library-author-epub-upload";
 import { supabase } from "@/lib/supabase/client";
 
 type SubmissionStatus = "draft" | "submitted" | "changes_requested" | "approved" | "rejected";
@@ -95,6 +96,7 @@ export default function LibraryPublishPage() {
   const [form, setForm] = useState<DraftForm>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [contentReady, setContentReady] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -178,6 +180,7 @@ export default function LibraryPublishPage() {
   function choosePublication(row: AuthorPublication) {
     setSelectedId(row.publication_id);
     setForm(formFromPublication(row.publication));
+    setContentReady(false);
     setMessage(null);
     setError(null);
   }
@@ -185,6 +188,7 @@ export default function LibraryPublishPage() {
   function startNewDraft() {
     setSelectedId(null);
     setForm(emptyForm);
+    setContentReady(false);
     setMessage(null);
     setError(null);
   }
@@ -231,6 +235,10 @@ export default function LibraryPublishPage() {
 
   async function submitForReview() {
     if (!selected || !editable) return;
+    if (!contentReady) {
+      setError("Upload and process an EPUB before submitting this publication for review.");
+      return;
+    }
 
     setSaving(true);
     setMessage(null);
@@ -250,7 +258,7 @@ export default function LibraryPublishPage() {
       p_publication_id: selected.publication_id,
     });
     if (submitResult.error) {
-      setError("Unable to submit this publication for review.");
+      setError("Unable to submit this publication for review. Confirm its EPUB is processed and ready.");
       setSaving(false);
       return;
     }
@@ -276,7 +284,7 @@ export default function LibraryPublishPage() {
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]">Author Publishing</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Prepare work for the Loombus Library.</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">
-            Create and refine publication metadata, then submit it for review. Drafts remain private; authors cannot directly publish or approve their own work.
+            Create and refine publication metadata, upload its EPUB, then submit the processed work for review. Drafts remain private; authors cannot directly publish or approve their own work.
           </p>
         </section>
 
@@ -332,8 +340,15 @@ export default function LibraryPublishPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               {editable ? <button type="button" disabled={saving} onClick={() => void saveDraft()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" aria-hidden="true" />}Save draft</button> : null}
-              {selected && editable ? <button type="button" disabled={saving} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
+              {selected && editable ? <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
             </div>
+
+            <LibraryAuthorEpubUpload
+              publicationId={selected?.publication_id ?? null}
+              editable={Boolean(selected && editable)}
+              published={selected?.publication.status === "published"}
+              onReadyChange={setContentReady}
+            />
 
             {selected && !editable ? (
               <p className="mt-5 text-sm leading-6 text-[var(--loombus-text-muted)]">
@@ -342,7 +357,6 @@ export default function LibraryPublishPage() {
                   : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
               </p>
             ) : null}
-            <p className="mt-6 border-t border-[var(--loombus-border)] pt-5 text-xs leading-5 text-[var(--loombus-text-subtle)]">EPUB upload is intentionally not enabled in this slice. Original publication files remain behind the existing private ingestion boundary until the member upload path can be implemented without a service role.</p>
           </section>
         </div>
       </div>
