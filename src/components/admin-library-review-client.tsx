@@ -28,6 +28,7 @@ type ReviewRow = {
   reviewed_by: string | null;
   published_at: string | null;
   published_by: string | null;
+  retired_at: string | null;
   library_publications: Publication | Publication[] | null;
 };
 
@@ -86,7 +87,7 @@ export default function AdminLibraryReviewClient() {
     const { data, error } = await supabase
       .from("library_author_publications")
       .select(
-        "publication_id,user_id,submission_status,submitted_at,reviewed_at,review_note,reviewed_by,published_at,published_by,library_publications!inner(id,title,subtitle,description,publication_type,author_name,publisher_name,language_code,isbn,status,publication_date)"
+        "publication_id,user_id,submission_status,submitted_at,reviewed_at,review_note,reviewed_by,published_at,published_by,retired_at,library_publications!inner(id,title,subtitle,description,publication_type,author_name,publisher_name,language_code,isbn,status,publication_date)"
       )
       .in("submission_status", ["submitted", "changes_requested", "approved", "rejected"])
       .order("submitted_at", { ascending: true, nullsFirst: false });
@@ -259,9 +260,9 @@ export default function AdminLibraryReviewClient() {
               if (!publication) return null;
               const busy = workingId === row.publication_id;
               const isSubmitted = row.submission_status === "submitted";
-              const canPublish = row.submission_status === "approved" && (publication.status === "draft" || publication.status === "archived");
-              const canUnpublish = row.submission_status === "approved" && publication.status === "published" && Boolean(row.published_at);
-              const republishing = publication.status === "archived" && Boolean(row.published_at);
+              const canPublish = !row.retired_at && row.submission_status === "approved" && (publication.status === "draft" || publication.status === "archived");
+              const canUnpublish = !row.retired_at && row.submission_status === "approved" && publication.status === "published" && Boolean(row.published_at);
+              const republishing = !row.retired_at && publication.status === "archived" && Boolean(row.published_at);
 
               return (
                 <article key={row.publication_id} className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
@@ -273,7 +274,8 @@ export default function AdminLibraryReviewClient() {
                         </span>
                         <span className="text-xs text-[var(--loombus-text-subtle)]">{publication.publication_type}</span>
                         {publication.status === "published" ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Published</span> : null}
-                        {publication.status === "archived" ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Unpublished</span> : null}
+                        {publication.status === "archived" && !row.retired_at ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Unpublished</span> : null}
+                        {row.retired_at ? <span className="text-xs font-semibold text-[var(--loombus-text-muted)]">Retired by author</span> : null}
                       </div>
                       <h2 className="mt-3 text-xl font-semibold">{publication.title}</h2>
                       {publication.subtitle ? <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
@@ -333,7 +335,7 @@ export default function AdminLibraryReviewClient() {
                     ) : null}
                   </div>
 
-                  {row.reviewed_at ? <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">Reviewed {new Date(row.reviewed_at).toLocaleString()}{row.published_at ? ` · First published ${new Date(row.published_at).toLocaleString()}` : ""}</p> : null}
+                  {row.reviewed_at ? <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">Reviewed {new Date(row.reviewed_at).toLocaleString()}{row.published_at ? ` · First published ${new Date(row.published_at).toLocaleString()}` : ""}{row.retired_at ? ` · Retired ${new Date(row.retired_at).toLocaleString()}` : ""}</p> : null}
                 </article>
               );
             })}
