@@ -1,0 +1,28 @@
+name: Library author EPUB upload runtime
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823024500_add_library_author_epub_ingestion_runtime.sql"
+      - "src/app/api/library/author/ingest-epub/route.ts"
+      - "src/components/library/library-author-epub-upload.tsx"
+      - "src/app/library/publish/page.tsx"
+      - ".env.example"
+      - "scripts/verification/verify-library-author-epub-upload-runtime.mjs"
+      - ".github/workflows/library-author-epub-upload-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author EPUB upload runtime
+        run: node scripts/verification/verify-library-author-epub-upload-runtime.mjs

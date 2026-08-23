@@ -34,9 +34,10 @@ const requiredPageFragments = [
   'supabase.rpc("submit_library_author_publication"',
   'from("library_author_publications")',
   'from("library_publications")',
+  "LibraryAuthorEpubUpload",
+  "contentReady",
   "Submit for review",
   "does not publish the work automatically",
-  "EPUB upload is intentionally not enabled",
 ];
 
 for (const fragment of requiredPageFragments) {
@@ -49,8 +50,6 @@ const forbidden = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "SUPABASE_SECRET_KEY",
   "createLibraryIngestionClient",
-  "library-publication-originals",
-  ".storage.from(",
   "dangerouslySetInnerHTML",
 ];
 
@@ -64,4 +63,4 @@ if (/p_status|p_submission_status|status\s*=\s*'published'/.test(migration)) {
   throw new Error("Author RPC must not accept or set published/review status directly.");
 }
 
-console.log("PASS: Library author publishing runtime is authenticated, owner-scoped, review-gated, and independent of service-role/Storage ingestion.");
+console.log("PASS: Library author publishing runtime is authenticated, owner-scoped, review-gated, EPUB-ready aware, and independent of privileged Supabase credentials.");
