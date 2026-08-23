@@ -59,7 +59,7 @@ export function LibraryFunctionalSurface() {
 
   const loadLibrary = useCallback(async () => {
     setLoading(true); setErrorMessage(null);
-    const publicationResult = await supabase.from("library_publications").select("id, slug, title, subtitle, description, publication_type, author_name, publisher_name, cover_url, publication_date").order("publication_date", { ascending: false, nullsFirst: false }).order("title", { ascending: true });
+    const publicationResult = await supabase.from("library_publications").select("id, slug, title, subtitle, description, publication_type, author_name, publisher_name, cover_url, publication_date").eq("status", "published").order("publication_date", { ascending: false, nullsFirst: false }).order("title", { ascending: true });
     if (publicationResult.error) { setErrorMessage("Unable to load Library publications."); setLoading(false); return; }
     setPublications((publicationResult.data ?? []) as Publication[]);
     const { data: userResult, error: userError } = await supabase.auth.getUser();
