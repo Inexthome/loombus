@@ -202,7 +202,7 @@ export function LibraryPublicationDetail({ publicationId }: { publicationId: str
             {publication.description ? <p className="mt-6 max-w-3xl whitespace-pre-line text-sm leading-7 text-[var(--loombus-text-muted)] sm:text-base">{publication.description}</p> : null}
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href={`/library/read/${publication.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 text-sm font-semibold text-black transition hover:opacity-90">
+              <Link href={`/library/read/${publication.id}?open=1`} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 text-sm font-semibold text-black transition hover:opacity-90">
                 <BookOpen className="h-4 w-4" aria-hidden="true" />{hasProgress ? "Continue reading" : "Read publication"}
               </Link>
               <button type="button" disabled={saving} onClick={() => void toggleSaved()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:opacity-60">
