@@ -1,0 +1,23 @@
+name: Library unpublished access hardening
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823073000_harden_library_unpublished_member_state.sql"
+      - "src/components/library/library-reader-access-boundary.tsx"
+      - "src/app/library/read/[publicationId]/page.tsx"
+      - "scripts/verification/verify-library-unpublished-access-hardening.mjs"
+      - ".github/workflows/library-unpublished-access-hardening.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library unpublished access hardening
+        run: node scripts/verification/verify-library-unpublished-access-hardening.mjs
