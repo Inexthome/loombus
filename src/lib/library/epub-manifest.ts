@@ -1,9 +1,20 @@
 import { sha256Hex } from "@/lib/library/epub-validation";
 
-export type EpubManifestItem = { id: string; href: string; mediaType: string };
+export type EpubManifestItem = {
+  id: string;
+  href: string;
+  mediaType: string;
+  properties?: string[];
+};
 export type EpubSpineItem = { idref: string };
 export type EpubPackage = { rootfilePath: string; manifest: EpubManifestItem[]; spine: EpubSpineItem[] };
-export type EpubTextResource = { path: string; title: string | null; html: string; text: string };
+export type EpubTextResource = {
+  path: string;
+  title: string | null;
+  html: string;
+  text: string;
+  logicalKey?: string;
+};
 
 export type NormalizedEpubSection = {
   sectionKey: string;
@@ -28,25 +39,36 @@ function normalizePath(baseFile: string, href: string): string {
   return output.join("/");
 }
 
-export function buildNormalizedSections(pkg: EpubPackage, resources: Map<string, EpubTextResource>): NormalizedEpubSection[] {
+function asResourceList(value: EpubTextResource | EpubTextResource[] | undefined): EpubTextResource[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+export function buildNormalizedSections(
+  pkg: EpubPackage,
+  resources: Map<string, EpubTextResource | EpubTextResource[]>,
+): NormalizedEpubSection[] {
   const manifest = new Map(pkg.manifest.map((item) => [item.id, item]));
   const sections: NormalizedEpubSection[] = [];
-  for (const [ordinal, spine] of pkg.spine.entries()) {
+  for (const spine of pkg.spine) {
     const item = manifest.get(spine.idref);
     if (!item || !["application/xhtml+xml", "text/html"].includes(item.mediaType)) continue;
     const path = normalizePath(pkg.rootfilePath, item.href);
-    const resource = resources.get(path);
-    if (!resource || !resource.text.trim()) continue;
-    const contentText = resource.text.trim();
-    const contentHtml = resource.html.trim();
-    sections.push({
-      sectionKey: `v1:${ordinal}:${sha256Hex(Buffer.from(path)).slice(0, 16)}`,
-      ordinal: sections.length,
-      title: resource.title,
-      contentHtml,
-      contentText,
-      contentSha256: sha256Hex(Buffer.from(`${contentHtml}\n${contentText}`)),
-    });
+    for (const [resourceIndex, resource] of asResourceList(resources.get(path)).entries()) {
+      if (!resource.text.trim()) continue;
+      const contentText = resource.text.trim();
+      const contentHtml = resource.html.trim();
+      const title = resource.title?.trim() || `Section ${sections.length + 1}`;
+      const identity = `${path}#${resource.logicalKey ?? resourceIndex}`;
+      sections.push({
+        sectionKey: `v1:${sections.length}:${sha256Hex(Buffer.from(identity)).slice(0, 16)}`,
+        ordinal: sections.length,
+        title,
+        contentHtml,
+        contentText,
+        contentSha256: sha256Hex(Buffer.from(`${contentHtml}\n${contentText}`)),
+      });
+    }
   }
   if (!sections.length) throw new Error("library_epub_no_readable_sections");
   return sections;
