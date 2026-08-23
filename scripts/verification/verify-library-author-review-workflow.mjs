@@ -25,7 +25,7 @@ const requiredMigrationFragments = [
   "published_at",
   "published_by",
   "reviewed_by",
-  "submission_status <> 'submitted'",
+  "v_status <> 'submitted'",
   "v_status <> 'approved'",
 ];
 
