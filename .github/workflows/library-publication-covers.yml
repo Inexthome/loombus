@@ -1,0 +1,23 @@
+name: Library publication covers
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823083000_add_library_publication_covers.sql"
+      - "src/components/library/library-cover-image.tsx"
+      - "src/components/library/library-author-cover-upload.tsx"
+      - "src/components/library/library-author-epub-upload.tsx"
+      - "src/components/library/library-admin-normalized-preview.tsx"
+      - "src/components/library/library-functional-surface.tsx"
+      - "scripts/verification/verify-library-publication-covers.mjs"
+      - ".github/workflows/library-publication-covers.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/verification/verify-library-publication-covers.mjs
