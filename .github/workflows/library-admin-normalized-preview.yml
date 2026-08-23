@@ -1,0 +1,23 @@
+name: Library admin normalized preview
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260823081500_add_library_admin_normalized_preview.sql"
+      - "src/components/library/library-admin-normalized-preview.tsx"
+      - "src/components/admin-library-review-client.tsx"
+      - "scripts/verification/verify-library-admin-normalized-preview.mjs"
+      - ".github/workflows/library-admin-normalized-preview.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library admin normalized preview
+        run: node scripts/verification/verify-library-admin-normalized-preview.mjs
