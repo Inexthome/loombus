@@ -2,6 +2,7 @@
 
 import { CheckCircle2, EyeOff, Loader2, Send, ShieldAlert, Undo2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LibraryAdminNormalizedPreview } from "@/components/library/library-admin-normalized-preview";
 import { supabase } from "@/lib/supabase/client";
 
 type Publication = {
@@ -234,7 +235,7 @@ export default function AdminLibraryReviewClient() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight">Author publication review</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Review submitted publication metadata, request changes, approve or reject work, publish approved work, and unpublish while preserving history.
+                Inspect normalized publication content, review metadata, request changes, approve or reject work, publish approved work, and unpublish while preserving history.
               </p>
             </div>
             <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] px-4 py-2 text-sm font-semibold text-[var(--loombus-gold)]">
@@ -293,6 +294,14 @@ export default function AdminLibraryReviewClient() {
                     <div><dt className="font-bold text-[var(--loombus-text-subtle)]">ISBN</dt><dd className="mt-1">{publication.isbn ?? "—"}</dd></div>
                     <div><dt className="font-bold text-[var(--loombus-text-subtle)]">Submitted</dt><dd className="mt-1">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "—"}</dd></div>
                   </dl>
+
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
+                    <div>
+                      <p className="text-sm font-semibold">Publication content</p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">Review the normalized section order and text before making an editorial decision.</p>
+                    </div>
+                    <LibraryAdminNormalizedPreview publicationId={row.publication_id} publicationTitle={publication.title} disabled={busy} />
+                  </div>
 
                   <label className="mt-5 block">
                     <span className="mb-2 block text-xs font-bold text-[var(--loombus-text-muted)]">Review note</span>
