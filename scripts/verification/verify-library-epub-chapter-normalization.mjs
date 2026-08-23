@@ -12,11 +12,17 @@ const requiredParserFragments = [
   "extractNavigationLabels",
   "extractHeadingLabels",
   "isLogicalChapterLabel",
+  "isLogicalBoundaryLabel",
+  "extractStrongParagraphBoundaryLabels",
+  "strongBoundaryLabels",
   "findSequentialLabels",
   "splitLogicalTextResources",
   "chapterHeadings",
   "navigationLabels.get(path)",
   "isMachineDocumentTitle",
+  'if (item.properties?.includes("nav")) continue;',
+  "a note before we begin",
+  "about the author",
 ];
 
 for (const fragment of requiredParserFragments) {
@@ -52,4 +58,4 @@ for (const fragment of forbidden) {
   }
 }
 
-console.log("PASS: Library EPUB normalization uses EPUB navigation/headings to create ordered logical sections with human-readable titles.");
+console.log("PASS: Library EPUB normalization uses EPUB navigation, semantic headings, and conservative bold-paragraph boundaries to create ordered logical sections with human-readable titles.");
