@@ -60,7 +60,6 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
   const [message, setMessage] = useState<string | null>(null);
 
   const loadSource = useCallback(async () => {
-    setError(null);
     onReadyChange(false);
     if (!publicationId) {
       setSource(null);
@@ -89,6 +88,7 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
 
   useEffect(() => {
     setFile(null);
+    setError(null);
     setMessage(null);
     void loadSource();
   }, [loadSource]);
@@ -150,8 +150,9 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
       setFile(null);
       await loadSource();
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Unable to upload this EPUB.");
+      const uploadMessage = uploadError instanceof Error ? uploadError.message : "Unable to upload this EPUB.";
       await loadSource();
+      setError(uploadMessage);
     } finally {
       setUploading(false);
     }
