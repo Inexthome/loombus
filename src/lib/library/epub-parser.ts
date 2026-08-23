@@ -221,6 +221,21 @@ function isLogicalChapterLabel(label: string): boolean {
   return /^(?:chapter\b|prologue\b|epilogue\b|introduction\b|preface\b|foreword\b|afterword\b|part\s+(?:[\divxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)\b)/i.test(label);
 }
 
+function isLogicalBoundaryLabel(label: string): boolean {
+  if (isLogicalChapterLabel(label)) return true;
+  return /^(?:a note before we begin|acknowledg(?:e)?ments|about the author)$/i.test(normalizeLabel(label));
+}
+
+function extractStrongParagraphBoundaryLabels(source: string): string[] {
+  const labels: string[] = [];
+  const pattern = /<p\b[^>]*>\s*<(?:strong|b)\b[^>]*>([\s\S]*?)<\/(?:strong|b)\s*>\s*<\/p\s*>/gi;
+  for (const match of source.matchAll(pattern)) {
+    const label = textFromMarkup(match[1]);
+    if (label && isLogicalBoundaryLabel(label)) labels.push(label);
+  }
+  return dedupeLabels(labels);
+}
+
 function dedupeLabels(labels: string[]): string[] {
   const output: string[] = [];
   for (const label of labels.map(normalizeLabel).filter(Boolean)) {
@@ -295,10 +310,12 @@ function splitLogicalTextResources(path: string, source: string, navigationLabel
   const chapterHeadings = dedupeLabels(headings.filter((heading) => isLogicalChapterLabel(heading.label)).map((heading) => heading.label));
   const h1Labels = dedupeLabels(headings.filter((heading) => heading.level === 1).map((heading) => heading.label));
   const navLabels = dedupeLabels(navigationLabels);
+  const strongBoundaryLabels = extractStrongParagraphBoundaryLabels(source);
 
   let candidates: string[] = [];
   if (navLabels.length >= 2) candidates = navLabels;
   else if (chapterHeadings.length) candidates = chapterHeadings;
+  else if (strongBoundaryLabels.length >= 2) candidates = strongBoundaryLabels;
   else if (h1Labels.length >= 2) candidates = h1Labels;
 
   if (candidates.length >= 2) {
@@ -319,6 +336,7 @@ function splitLogicalTextResources(path: string, source: string, navigationLabel
 
   const preferredTitle = navLabels[0]
     ?? chapterHeadings[0]
+    ?? strongBoundaryLabels[0]
     ?? h1Labels[0]
     ?? documentTitle;
   return [safeTextResource(path, preferredTitle, text, "document")];
@@ -354,6 +372,7 @@ export async function parseEpubBuffer(buffer: Buffer): Promise<NormalizedEpubSec
     for (const spine of pkg.spine) {
       const item = manifest.get(spine.idref);
       if (!item || !["application/xhtml+xml", "text/html"].includes(item.mediaType)) continue;
+      if (item.properties?.includes("nav")) continue;
       const path = normalizePath(pkg.rootfilePath, item.href);
       const entry = entries.get(path);
       if (!entry) continue;
