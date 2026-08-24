@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brain } from "lucide-react";
+import { LibraryResearchPassageHandoff } from "@/components/library/library-research-passage-handoff";
 import { LibraryResearchSurface } from "@/components/library/library-research-surface";
 
 export default function LibraryResearchPage() {
@@ -12,6 +13,7 @@ export default function LibraryResearchPage() {
         <Brain className="size-4" />
         Evidence & Knowledge
       </Link>
+      <LibraryResearchPassageHandoff />
       <LibraryResearchSurface />
     </div>
   );

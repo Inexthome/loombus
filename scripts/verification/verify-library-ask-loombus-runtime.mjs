@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const files = {
   launcher: "src/components/library/library-discuss-passage-launcher.tsx",
+  passageContext: "src/lib/library/passage-context.ts",
   panel: "src/components/library/library-ask-loombus-panel.tsx",
   page: "src/app/library/ask-loombus/page.tsx",
   api: "src/app/api/library/ask-loombus/route.ts",
@@ -12,17 +13,24 @@ for (const path of Object.values(files)) {
 }
 
 const launcher = fs.readFileSync(files.launcher, "utf8");
+const passageContext = fs.readFileSync(files.passageContext, "utf8");
 const panel = fs.readFileSync(files.panel, "utf8");
 const page = fs.readFileSync(files.page, "utf8");
 const api = fs.readFileSync(files.api, "utf8");
 
 for (const contract of [
-  'ASK_LOOMBUS_STORAGE_KEY = "loombus:library:ask-loombus:v1"',
-  'openTool(ASK_LOOMBUS_STORAGE_KEY, "/library/ask-loombus")',
+  'openTool("ask", "/library/ask-loombus")',
   "Ask Loombus",
   "Discuss passage",
 ]) {
   if (!launcher.includes(contract)) throw new Error(`Ask Loombus launcher contract missing: ${contract}`);
+}
+
+for (const contract of [
+  'ask: "loombus:library:ask-loombus:v1"',
+  'window.sessionStorage.setItem(LIBRARY_PASSAGE_CONTEXT_KEYS[destination], JSON.stringify(passage))',
+]) {
+  if (!passageContext.includes(contract)) throw new Error(`Ask Loombus shared passage-context contract missing: ${contract}`);
 }
 
 for (const contract of [
@@ -59,21 +67,13 @@ if (validationIndex < 0 || creditIndex < 0 || creditIndex < validationIndex) {
   throw new Error("Ask Loombus must verify the canonical passage before consuming any extra AI credit.");
 }
 
-const forbiddenClientTokens = [
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "SUPABASE_SECRET_KEY",
-  "OPENAI_API_KEY",
-  "library-publication-originals",
-  "dangerouslySetInnerHTML",
-];
+const forbiddenClientTokens = ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "OPENAI_API_KEY", "library-publication-originals", "dangerouslySetInnerHTML"];
 for (const token of forbiddenClientTokens) {
-  if (launcher.includes(token) || panel.includes(token) || page.includes(token)) {
-    throw new Error(`Forbidden Ask Loombus client token found: ${token}`);
-  }
+  if (launcher.includes(token) || panel.includes(token) || page.includes(token)) throw new Error(`Forbidden Ask Loombus client token found: ${token}`);
 }
 
 for (const token of ["library-publication-originals", "storage.from", "dangerouslySetInnerHTML", "web_search"]) {
   if (api.includes(token)) throw new Error(`Forbidden Ask Loombus API capability found: ${token}`);
 }
 
-console.log("PASS: Library Ask Loombus runtime contracts verified.");
+console.log("PASS: Library Ask Loombus runtime contracts verified with shared passage context.");
