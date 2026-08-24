@@ -82,6 +82,12 @@ with check (
     where collection.id = collection_id
       and collection.user_id = auth.uid()
   )
+  and exists (
+    select 1
+    from public.library_member_items item
+    where item.user_id = auth.uid()
+      and item.publication_id = publication_id
+  )
 );
 
 drop policy if exists "members delete own library collection items" on public.library_collection_items;
