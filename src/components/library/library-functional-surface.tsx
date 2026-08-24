@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  BookCheck,
   BookOpen,
   Bookmark,
+  Clock3,
   Compass,
   Highlighter,
   Home,
@@ -21,7 +23,17 @@ import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { LibraryDiscoverCatalog } from "@/components/library/library-discover-catalog";
 import { supabase } from "@/lib/supabase/client";
 
-type LibraryView = "Home" | "Discover" | "My Library" | "Continue Reading" | "Highlights" | "Authors";
+type LibraryView =
+  | "Home"
+  | "Discover"
+  | "My Library"
+  | "Want to Read"
+  | "Continue Reading"
+  | "Finished"
+  | "Highlights"
+  | "Authors";
+
+type LifecycleState = "want_to_read" | "reading" | "finished";
 
 type Publication = {
   id: string;
@@ -38,16 +50,23 @@ type Publication = {
 
 type MemberItem = { publication_id: string; added_at: string };
 type ReadingProgress = { publication_id: string; locator: string | null; progress_percent: number; last_read_at: string };
+type ReadingLifecycle = { publication_id: string; state: LifecycleState; finished_at: string | null; updated_at: string };
 type Highlight = { id: string; publication_id: string; locator: string; selected_text: string; created_at: string };
 type Note = { id: string; publication_id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
 
 const publicationSelect = "id, slug, title, subtitle, description, publication_type, author_name, publisher_name, cover_url, publication_date";
 
-function normalizeSearch(value: string) { return value.trim().toLowerCase(); }
+function normalizeSearch(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function publicationMatches(publication: Publication, query: string) {
   if (!query) return true;
   return [publication.title, publication.subtitle, publication.description, publication.author_name, publication.publisher_name, publication.publication_type]
-    .filter(Boolean).join(" ").toLowerCase().includes(query);
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
 }
 
 function SidebarButton({ active, icon: Icon, label, onClick }: { active: boolean; icon: typeof Home; label: string; onClick: () => void }) {
@@ -79,6 +98,7 @@ export function LibraryFunctionalSurface() {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [memberItems, setMemberItems] = useState<MemberItem[]>([]);
   const [progressRows, setProgressRows] = useState<ReadingProgress[]>([]);
+  const [lifecycleRows, setLifecycleRows] = useState<ReadingLifecycle[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +116,7 @@ export function LibraryFunctionalSurface() {
       setPublications([]);
       setMemberItems([]);
       setProgressRows([]);
+      setLifecycleRows([]);
       setHighlights([]);
       setNotes([]);
       setLoading(false);
@@ -103,14 +124,15 @@ export function LibraryFunctionalSurface() {
     }
 
     setUserId(currentUser.id);
-    const [memberItemsResult, progressResult, highlightsResult, notesResult] = await Promise.all([
+    const [memberItemsResult, progressResult, lifecycleResult, highlightsResult, notesResult] = await Promise.all([
       supabase.from("library_member_items").select("publication_id, added_at").order("added_at", { ascending: false }),
       supabase.from("library_reading_progress").select("publication_id, locator, progress_percent, last_read_at").order("last_read_at", { ascending: false }),
+      supabase.from("library_reading_lifecycle").select("publication_id, state, finished_at, updated_at").order("updated_at", { ascending: false }),
       supabase.from("library_highlights").select("id, publication_id, locator, selected_text, created_at").order("created_at", { ascending: false }),
       supabase.from("library_notes").select("id, publication_id, highlight_id, locator, body, created_at").order("created_at", { ascending: false }),
     ]);
 
-    const firstError = memberItemsResult.error ?? progressResult.error ?? highlightsResult.error ?? notesResult.error;
+    const firstError = memberItemsResult.error ?? progressResult.error ?? lifecycleResult.error ?? highlightsResult.error ?? notesResult.error;
     if (firstError) {
       setErrorMessage("Unable to load your private Library state.");
       setLoading(false);
@@ -119,16 +141,19 @@ export function LibraryFunctionalSurface() {
 
     const nextMemberItems = (memberItemsResult.data ?? []) as MemberItem[];
     const nextProgressRows = (progressResult.data ?? []) as ReadingProgress[];
+    const nextLifecycleRows = (lifecycleResult.data ?? []) as ReadingLifecycle[];
     const nextHighlights = (highlightsResult.data ?? []) as Highlight[];
     const nextNotes = (notesResult.data ?? []) as Note[];
     setMemberItems(nextMemberItems);
     setProgressRows(nextProgressRows);
+    setLifecycleRows(nextLifecycleRows);
     setHighlights(nextHighlights);
     setNotes(nextNotes);
 
     const publicationIds = [...new Set([
       ...nextMemberItems.map((row) => row.publication_id),
       ...nextProgressRows.map((row) => row.publication_id),
+      ...nextLifecycleRows.map((row) => row.publication_id),
       ...nextHighlights.map((row) => row.publication_id),
       ...nextNotes.map((row) => row.publication_id),
     ])];
@@ -156,41 +181,152 @@ export function LibraryFunctionalSurface() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { void loadLibrary(); }, [loadLibrary]);
+  useEffect(() => {
+    void loadLibrary();
+  }, [loadLibrary]);
 
   const publicationById = useMemo(() => new Map(publications.map((publication) => [publication.id, publication])), [publications]);
   const savedIds = useMemo(() => new Set(memberItems.map((item) => item.publication_id)), [memberItems]);
+  const lifecycleByPublicationId = useMemo(() => new Map(lifecycleRows.map((row) => [row.publication_id, row])), [lifecycleRows]);
   const normalizedQuery = normalizeSearch(searchQuery);
-  const myLibraryPublications = useMemo(() => memberItems
-    .map((item) => publicationById.get(item.publication_id))
-    .filter((publication): publication is Publication => Boolean(publication))
-    .filter((publication) => publicationMatches(publication, normalizedQuery)), [memberItems, publicationById, normalizedQuery]);
-  const continueReadingRows = useMemo(() => progressRows.filter((row) => row.progress_percent > 0 && row.progress_percent < 100 && publicationById.has(row.publication_id)), [progressRows, publicationById]);
+
+  const myLibraryPublications = useMemo(
+    () => memberItems
+      .map((item) => publicationById.get(item.publication_id))
+      .filter((publication): publication is Publication => Boolean(publication))
+      .filter((publication) => publicationMatches(publication, normalizedQuery)),
+    [memberItems, publicationById, normalizedQuery],
+  );
+
+  const continueReadingRows = useMemo(
+    () => progressRows.filter((row) => row.progress_percent > 0 && row.progress_percent < 100 && publicationById.has(row.publication_id)),
+    [progressRows, publicationById],
+  );
+
+  const publicationsForLifecycle = useCallback(
+    (state: LifecycleState) => lifecycleRows
+      .filter((row) => row.state === state)
+      .map((row) => publicationById.get(row.publication_id))
+      .filter((publication): publication is Publication => Boolean(publication))
+      .filter((publication) => publicationMatches(publication, normalizedQuery)),
+    [lifecycleRows, normalizedQuery, publicationById],
+  );
+
+  const wantToReadPublications = useMemo(() => publicationsForLifecycle("want_to_read"), [publicationsForLifecycle]);
+  const finishedPublications = useMemo(() => publicationsForLifecycle("finished"), [publicationsForLifecycle]);
+
+  async function ensurePublicationMetadata(publicationId: string) {
+    if (publicationById.has(publicationId)) return;
+    const publicationResult = await supabase
+      .from("library_publications")
+      .select(publicationSelect)
+      .eq("id", publicationId)
+      .eq("status", "published")
+      .maybeSingle();
+    if (!publicationResult.error && publicationResult.data) {
+      setPublications((current) => [publicationResult.data as Publication, ...current.filter((row) => row.id !== publicationId)]);
+    }
+  }
+
+  async function setReadingLifecycle(publicationId: string, state: LifecycleState) {
+    if (!userId) {
+      setErrorMessage("Sign in to manage your reading status.");
+      return;
+    }
+
+    setMutationId(publicationId);
+    setErrorMessage(null);
+
+    if (state === "want_to_read" && !savedIds.has(publicationId)) {
+      const { data: savedData, error: savedError } = await supabase
+        .from("library_member_items")
+        .insert({ user_id: userId, publication_id: publicationId })
+        .select("publication_id, added_at")
+        .single();
+      if (savedError || !savedData) {
+        setErrorMessage("Unable to add this publication to Want to Read.");
+        setMutationId(null);
+        return;
+      }
+      setMemberItems((current) => [savedData as MemberItem, ...current.filter((item) => item.publication_id !== publicationId)]);
+    }
+
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("library_reading_lifecycle")
+      .upsert(
+        {
+          user_id: userId,
+          publication_id: publicationId,
+          state,
+          finished_at: state === "finished" ? now : null,
+          updated_at: now,
+        },
+        { onConflict: "user_id,publication_id" },
+      )
+      .select("publication_id, state, finished_at, updated_at")
+      .single();
+
+    if (error || !data) {
+      setErrorMessage("Unable to update this publication's reading status.");
+    } else {
+      setLifecycleRows((current) => [data as ReadingLifecycle, ...current.filter((row) => row.publication_id !== publicationId)]);
+      await ensurePublicationMetadata(publicationId);
+    }
+    setMutationId(null);
+  }
 
   async function toggleMyLibrary(publicationId: string) {
-    if (!userId) { setErrorMessage("Sign in to manage My Library."); return; }
+    if (!userId) {
+      setErrorMessage("Sign in to manage My Library.");
+      return;
+    }
     setMutationId(publicationId);
     setErrorMessage(null);
 
     if (savedIds.has(publicationId)) {
       const { error } = await supabase.from("library_member_items").delete().eq("user_id", userId).eq("publication_id", publicationId);
-      if (error) setErrorMessage("Unable to remove this publication from My Library.");
-      else setMemberItems((current) => current.filter((item) => item.publication_id !== publicationId));
+      if (error) {
+        setErrorMessage("Unable to remove this publication from My Library.");
+      } else {
+        setMemberItems((current) => current.filter((item) => item.publication_id !== publicationId));
+        if (lifecycleByPublicationId.get(publicationId)?.state === "want_to_read") {
+          const { error: lifecycleDeleteError } = await supabase
+            .from("library_reading_lifecycle")
+            .delete()
+            .eq("user_id", userId)
+            .eq("publication_id", publicationId)
+            .eq("state", "want_to_read");
+          if (!lifecycleDeleteError) setLifecycleRows((current) => current.filter((row) => row.publication_id !== publicationId));
+        }
+      }
     } else {
-      const { data, error } = await supabase.from("library_member_items").insert({ user_id: userId, publication_id: publicationId }).select("publication_id, added_at").single();
-      if (error || !data) setErrorMessage("Unable to add this publication to My Library.");
-      else {
+      const { data, error } = await supabase
+        .from("library_member_items")
+        .insert({ user_id: userId, publication_id: publicationId })
+        .select("publication_id, added_at")
+        .single();
+      if (error || !data) {
+        setErrorMessage("Unable to add this publication to My Library.");
+      } else {
         setMemberItems((current) => [data as MemberItem, ...current.filter((item) => item.publication_id !== publicationId)]);
-        if (!publicationById.has(publicationId)) {
-          const publicationResult = await supabase.from("library_publications").select(publicationSelect).eq("id", publicationId).eq("status", "published").maybeSingle();
-          if (!publicationResult.error && publicationResult.data) setPublications((current) => [publicationResult.data as Publication, ...current.filter((row) => row.id !== publicationId)]);
+        await ensurePublicationMetadata(publicationId);
+        if (!lifecycleByPublicationId.has(publicationId)) {
+          const now = new Date().toISOString();
+          const { data: lifecycleData, error: lifecycleError } = await supabase
+            .from("library_reading_lifecycle")
+            .insert({ user_id: userId, publication_id: publicationId, state: "want_to_read", finished_at: null, updated_at: now })
+            .select("publication_id, state, finished_at, updated_at")
+            .single();
+          if (!lifecycleError && lifecycleData) setLifecycleRows((current) => [lifecycleData as ReadingLifecycle, ...current]);
         }
       }
     }
     setMutationId(null);
   }
 
-  function BookTile({ publication }: { publication: Publication }) {
+  function BookTile({ publication, statusLabel }: { publication: Publication; statusLabel?: string }) {
+    const lifecycle = lifecycleByPublicationId.get(publication.id);
     return (
       <article className="group relative min-w-0">
         <Link href={`/library/publication/${publication.id}`} className="block">
@@ -199,14 +335,18 @@ export function LibraryFunctionalSurface() {
           </span>
           <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5">{publication.title}</h3>
           <p className="mt-0.5 line-clamp-1 text-xs text-[var(--loombus-text-muted)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
+          {statusLabel ? <p className="mt-1 text-[11px] font-medium text-[var(--loombus-gold)]">{statusLabel}</p> : null}
         </Link>
+
         <details className="absolute right-1 top-1 z-10">
           <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-full bg-black/70 text-white backdrop-blur-sm transition hover:bg-black/85 [&::-webkit-details-marker]:hidden" aria-label={`More options for ${publication.title}`}>
             {mutationId === publication.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <MoreHorizontal className="h-4 w-4" aria-hidden="true" />}
           </summary>
-          <div className="absolute right-0 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-1.5 shadow-xl">
-            <Link href={`/library/read/${publication.id}`} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium hover:bg-[var(--loombus-surface-muted)]"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Read</Link>
-            <button type="button" disabled={mutationId === publication.id} onClick={() => void toggleMyLibrary(publication.id)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><Bookmark className="h-3.5 w-3.5" aria-hidden="true" />Remove from My Library</button>
+          <div className="absolute right-0 mt-1 w-52 overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-1.5 shadow-xl">
+            <Link href={`/library/read/${publication.id}?open=1`} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium hover:bg-[var(--loombus-surface-muted)]"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Read</Link>
+            {lifecycle?.state !== "want_to_read" ? <button type="button" disabled={mutationId === publication.id} onClick={() => void setReadingLifecycle(publication.id, "want_to_read")} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><Clock3 className="h-3.5 w-3.5" aria-hidden="true" />Want to Read</button> : null}
+            {lifecycle?.state === "finished" ? <button type="button" disabled={mutationId === publication.id} onClick={() => void setReadingLifecycle(publication.id, "reading")} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Still Reading</button> : <button type="button" disabled={mutationId === publication.id} onClick={() => void setReadingLifecycle(publication.id, "finished")} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><BookCheck className="h-3.5 w-3.5" aria-hidden="true" />Mark as Finished</button>}
+            {savedIds.has(publication.id) ? <button type="button" disabled={mutationId === publication.id} onClick={() => void toggleMyLibrary(publication.id)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><Bookmark className="h-3.5 w-3.5" aria-hidden="true" />Remove from My Library</button> : <button type="button" disabled={mutationId === publication.id} onClick={() => void toggleMyLibrary(publication.id)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><Bookmark className="h-3.5 w-3.5" aria-hidden="true" />Add to My Library</button>}
           </div>
         </details>
       </article>
@@ -234,7 +374,7 @@ export function LibraryFunctionalSurface() {
           const publication = publicationById.get(row.publication_id);
           if (!publication) return null;
           return (
-            <Link key={row.publication_id} href={`/library/read/${row.publication_id}`} className="flex w-72 shrink-0 items-center gap-3 rounded-xl bg-[var(--loombus-surface-strong)] p-3 ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]">
+            <Link key={row.publication_id} href={`/library/read/${row.publication_id}?open=1`} className="flex w-72 shrink-0 items-center gap-3 rounded-xl bg-[var(--loombus-surface-strong)] p-3 ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]">
               <span className="block aspect-[2/3] w-12 shrink-0 overflow-hidden rounded-md bg-[var(--loombus-surface-muted)]">
                 <LibraryCoverImage storagePath={publication.cover_url} alt={`${publication.title} cover`} fallbackClassName="h-4 w-4" />
               </span>
@@ -251,11 +391,15 @@ export function LibraryFunctionalSurface() {
     );
   }
 
+  function PublicationShelf({ rows, emptyTitle, emptyBody, limit, statusLabel }: { rows: Publication[]; emptyTitle: string; emptyBody: string; limit?: number; statusLabel?: string }) {
+    const visibleRows = typeof limit === "number" ? rows.slice(0, limit) : rows;
+    if (loading) return <div className="grid min-h-40 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading Library shelf" /></div>;
+    if (!visibleRows.length) return <EmptyState title={emptyTitle} body={emptyBody} action={{ label: "Explore Library", view: "Discover" }} />;
+    return <div className="grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">{visibleRows.map((publication) => <BookTile key={publication.id} publication={publication} statusLabel={statusLabel} />)}</div>;
+  }
+
   function MyLibraryShelf({ limit }: { limit?: number }) {
-    const rows = typeof limit === "number" ? myLibraryPublications.slice(0, limit) : myLibraryPublications;
-    if (loading) return <div className="grid min-h-40 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading My Library" /></div>;
-    if (!rows.length) return <EmptyState title="My Library is empty" body={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} action={{ label: "Explore Library", view: "Discover" }} />;
-    return <div className="grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">{rows.map((publication) => <BookTile key={publication.id} publication={publication} />)}</div>;
+    return <PublicationShelf rows={myLibraryPublications} limit={limit} emptyTitle="My Library is empty" emptyBody={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />;
   }
 
   const showSearch = activeView !== "Home" || Boolean(searchQuery);
@@ -284,7 +428,9 @@ export function LibraryFunctionalSurface() {
               <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Library</p>
               <div className="space-y-1">
                 <SidebarButton active={activeView === "My Library"} icon={LibraryBig} label="My Library" onClick={() => setActiveView("My Library")} />
+                <SidebarButton active={activeView === "Want to Read"} icon={Clock3} label="Want to Read" onClick={() => setActiveView("Want to Read")} />
                 <SidebarButton active={activeView === "Continue Reading"} icon={BookOpen} label="Continue Reading" onClick={() => setActiveView("Continue Reading")} />
+                <SidebarButton active={activeView === "Finished"} icon={BookCheck} label="Finished" onClick={() => setActiveView("Finished")} />
                 <SidebarButton active={activeView === "Highlights"} icon={Highlighter} label="Highlights & Notes" onClick={() => setActiveView("Highlights")} />
               </div>
             </div>
@@ -311,7 +457,7 @@ export function LibraryFunctionalSurface() {
               <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search books, authors, topics..." className="w-full bg-transparent text-sm outline-none" />
             </label>
             <nav aria-label="Library sections" className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {(["Home", "Discover", "My Library", "Continue Reading", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
+              {(["Home", "Discover", "My Library", "Want to Read", "Continue Reading", "Finished", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
             </nav>
           </div>
 
@@ -334,6 +480,11 @@ export function LibraryFunctionalSurface() {
                 <MyLibraryShelf limit={8} />
               </section>
 
+              {wantToReadPublications.length ? <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
+                <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Want to Read</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Saved for later.</p></div><button type="button" onClick={() => setActiveView("Want to Read")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
+                <PublicationShelf rows={wantToReadPublications} limit={8} emptyTitle="Nothing saved for later" emptyBody="Mark a published work as Want to Read." statusLabel="Want to Read" />
+              </section> : null}
+
               <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
                 <button type="button" onClick={() => setActiveView("Discover")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Discover published work</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Browse books, essays, research, reports, guides, and articles.</span></span><Compass className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
               </section>
@@ -348,7 +499,9 @@ export function LibraryFunctionalSurface() {
               {activeView === "Discover" ? <LibraryDiscoverCatalog query={searchQuery} savedIds={savedIds} mutationId={mutationId} onToggleSaved={toggleMyLibrary} /> : null}
               {activeView === "Authors" ? <LibraryAuthorsCatalog query={searchQuery} /> : null}
               {activeView === "My Library" ? <MyLibraryShelf /> : null}
+              {activeView === "Want to Read" ? <PublicationShelf rows={wantToReadPublications} emptyTitle="Nothing in Want to Read" emptyBody={userId ? "Use a book's menu to save it for later." : "Sign in to keep a private Want to Read list."} statusLabel="Want to Read" /> : null}
               {activeView === "Continue Reading" ? <ContinueShelf /> : null}
+              {activeView === "Finished" ? <PublicationShelf rows={finishedPublications} emptyTitle="No finished books yet" emptyBody={userId ? "Books you finish will appear here automatically, or you can mark one as Finished." : "Sign in to keep your reading history private and synced."} statusLabel="Finished" /> : null}
               {!loading && activeView === "Highlights" ? <div className="space-y-4">{highlights.length || notes.length ? <>{highlights.map((highlight) => { const publication = publicationById.get(highlight.publication_id); return <article key={highlight.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>; })}{notes.map((note) => { const publication = publicationById.get(note.publication_id); return <article key={note.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>; })}</> : <EmptyState title="No highlights or notes" body={userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}</div> : null}
             </div>
           ) : null}
