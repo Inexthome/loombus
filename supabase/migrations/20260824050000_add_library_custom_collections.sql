@@ -27,6 +27,10 @@ create table if not exists public.library_collection_items (
   constraint library_collection_items_owner_fk
     foreign key (collection_id, user_id)
     references public.library_collections(id, user_id)
+    on delete cascade,
+  constraint library_collection_items_member_item_fk
+    foreign key (user_id, publication_id)
+    references public.library_member_items(user_id, publication_id)
     on delete cascade
 );
 
