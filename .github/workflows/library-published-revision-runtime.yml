@@ -1,0 +1,31 @@
+name: Library published revision runtime
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260824001500_add_library_revision_schema.sql"
+      - "supabase/migrations/20260824001700_harden_library_revision_open_state.sql"
+      - "supabase/migrations/20260824002000_add_library_revision_ingestion.sql"
+      - "supabase/migrations/20260824002500_add_library_revision_editorial_runtime.sql"
+      - "supabase/migrations/20260824002700_finalize_library_revision_history_state.sql"
+      - "supabase/migrations/20260824003000_harden_library_revision_reader_state.sql"
+      - "src/app/library/publish/layout.tsx"
+      - "src/app/library/publish/revisions/page.tsx"
+      - "src/app/admin/library-review/layout.tsx"
+      - "src/app/admin/library-review/revisions/page.tsx"
+      - "src/components/library/library-version-normalized-preview.tsx"
+      - "scripts/verification/verify-library-published-revision-runtime.mjs"
+      - ".github/workflows/library-published-revision-runtime.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library published revision runtime
+        run: node scripts/verification/verify-library-published-revision-runtime.mjs
