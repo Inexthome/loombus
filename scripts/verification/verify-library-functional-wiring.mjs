@@ -2,11 +2,13 @@ import fs from "node:fs";
 
 const pagePath = "src/app/library/page.tsx";
 const surfacePath = "src/components/library/library-functional-surface.tsx";
+const discoverPath = "src/components/library/library-discover-catalog.tsx";
 const page = fs.readFileSync(pagePath, "utf8");
 const surface = fs.readFileSync(surfacePath, "utf8");
+const discover = fs.readFileSync(discoverPath, "utf8");
 const failures = [];
 
-const requiredTokens = [
+const requiredSurfaceTokens = [
   'from "@/lib/supabase/client"',
   'from("library_publications")',
   'from("library_member_items")',
@@ -14,15 +16,18 @@ const requiredTokens = [
   'from("library_highlights")',
   'from("library_notes")',
   'supabase.auth.getUser()',
-  'Add to My Library',
   'Remove from My Library',
   'Continue Reading',
   'Highlights',
   'Authors',
 ];
 
-for (const token of requiredTokens) {
+for (const token of requiredSurfaceTokens) {
   if (!surface.includes(token)) failures.push(`missing functional contract: ${token}`);
+}
+
+for (const token of ["Add to My Library", "Remove from My Library", "onToggleSaved"]) {
+  if (!discover.includes(token)) failures.push(`missing discovery save contract: ${token}`);
 }
 
 if (!page.includes("LibraryFunctionalSurface")) failures.push("Library route is not wired to the functional surface");
@@ -41,6 +46,7 @@ const forbiddenTokens = [
 
 for (const token of forbiddenTokens) {
   if (surface.toLowerCase().includes(token.toLowerCase())) failures.push(`out-of-scope capability present: ${token}`);
+  if (discover.toLowerCase().includes(token.toLowerCase())) failures.push(`out-of-scope discovery capability present: ${token}`);
 }
 
 if (!surface.includes("var(--loombus-gold)")) failures.push("Loombus Gold theme token missing");
@@ -53,7 +59,7 @@ if (failures.length) {
 }
 
 console.log("Loombus Library functional wiring verification passed");
-console.log("- published discovery/search wired");
+console.log("- published discovery/search wired through the dedicated catalog component");
 console.log("- My Library add/remove uses authenticated browser client");
 console.log("- private progress/highlights/notes are read through RLS-protected tables");
 console.log("- Light/Dark/System theme tokens preserved");
