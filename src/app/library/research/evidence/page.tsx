@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GitBranch, MessageSquareShare, Network } from "lucide-react";
 import { LibraryEvidenceKnowledgeSurface } from "@/components/library/library-evidence-knowledge-surface";
+import { LibraryKnowledgePromotionBridge } from "@/components/library/library-knowledge-promotion-bridge";
 
 export default function LibraryEvidenceKnowledgePage() {
   return (
@@ -25,6 +26,7 @@ export default function LibraryEvidenceKnowledgePage() {
           <MessageSquareShare className="size-4" /> Promote to Discussion
         </Link>
       </div>
+      <LibraryKnowledgePromotionBridge />
       <LibraryEvidenceKnowledgeSurface />
     </>
   );
