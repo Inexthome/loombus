@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { LibraryDiscussPassageLauncher } from "@/components/library/library-discuss-passage-launcher";
 import { LibraryReaderAccessBoundary } from "@/components/library/library-reader-access-boundary";
+import { LibraryReaderModernization } from "@/components/library/library-reader-modernization";
 import { LibraryReaderSurface } from "@/components/library/library-reader-surface";
 import { LibraryResearchShortcut } from "@/components/library/library-research-shortcut";
 
@@ -18,6 +19,7 @@ export default async function LibraryReaderPage({
 
   return (
     <LibraryReaderAccessBoundary publicationId={publicationId}>
+      <LibraryReaderModernization />
       <LibraryReaderSurface publicationId={publicationId} />
       <LibraryResearchShortcut />
       <LibraryDiscussPassageLauncher publicationId={publicationId} />
