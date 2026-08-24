@@ -43,7 +43,7 @@ for (const token of [
   'Create your first collection',
   'Add books from My Library',
   'A book can belong to multiple collections',
-  'Remove it here does not remove it from My Library',
+  'Removing it here does not remove it from My Library',
 ]) {
   if (!collections.includes(token)) failures.push(`missing collections UI contract: ${token}`);
 }
