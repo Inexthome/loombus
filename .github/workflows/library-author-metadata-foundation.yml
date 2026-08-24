@@ -1,0 +1,21 @@
+name: Library author metadata foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260824091500_add_library_author_metadata_foundation.sql"
+      - "scripts/verification/verify-library-author-metadata-foundation.mjs"
+      - ".github/workflows/library-author-metadata-foundation.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author metadata foundation
+        run: node scripts/verification/verify-library-author-metadata-foundation.mjs
