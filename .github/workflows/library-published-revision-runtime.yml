@@ -6,6 +6,7 @@ on:
       - "supabase/migrations/20260824001500_add_library_revision_schema.sql"
       - "supabase/migrations/20260824001700_harden_library_revision_open_state.sql"
       - "supabase/migrations/20260824002000_add_library_revision_ingestion.sql"
+      - "supabase/migrations/20260824002200_preserve_initial_library_epub_path.sql"
       - "supabase/migrations/20260824002500_add_library_revision_editorial_runtime.sql"
       - "supabase/migrations/20260824002700_finalize_library_revision_history_state.sql"
       - "supabase/migrations/20260824003000_harden_library_revision_reader_state.sql"
