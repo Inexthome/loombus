@@ -87,3 +87,52 @@ set
   finished_at = excluded.finished_at,
   updated_at = excluded.updated_at
 where public.library_reading_lifecycle.state = 'want_to_read';
+
+-- Progress is the authoritative signal for automatic lifecycle movement.
+-- Entering the final normalized section produces 100% progress and marks Finished.
+-- Any later progress write below 100% means the member resumed reading and clears Finished.
+create or replace function public.sync_library_reading_lifecycle_from_progress()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.progress_percent <= 0 then
+    return new;
+  end if;
+
+  insert into public.library_reading_lifecycle (
+    user_id,
+    publication_id,
+    state,
+    finished_at,
+    created_at,
+    updated_at
+  )
+  values (
+    new.user_id,
+    new.publication_id,
+    case when new.progress_percent >= 100 then 'finished' else 'reading' end,
+    case when new.progress_percent >= 100 then coalesce(new.updated_at, new.last_read_at, now()) else null end,
+    coalesce(new.created_at, now()),
+    coalesce(new.updated_at, new.last_read_at, now())
+  )
+  on conflict (user_id, publication_id) do update
+  set
+    state = excluded.state,
+    finished_at = excluded.finished_at,
+    updated_at = excluded.updated_at;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.sync_library_reading_lifecycle_from_progress() from public;
+
+drop trigger if exists sync_library_reading_lifecycle_from_progress on public.library_reading_progress;
+create trigger sync_library_reading_lifecycle_from_progress
+after insert or update of locator, progress_percent, last_read_at, updated_at
+on public.library_reading_progress
+for each row
+execute function public.sync_library_reading_lifecycle_from_progress();
