@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FileUp, Loader2, RefreshCw } from "lucide-react";
 import { LibraryAuthorCoverUpload } from "@/components/library/library-author-cover-upload";
 import { LibraryAuthorNormalizedPreview } from "@/components/library/library-author-normalized-preview";
+import { LibraryBibliographicMetadataEditor } from "@/components/library/library-bibliographic-metadata-editor";
 import { supabase } from "@/lib/supabase/client";
 
 const MAX_EPUB_BYTES = 50 * 1024 * 1024;
@@ -163,6 +164,7 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
   return (
     <>
       <LibraryAuthorCoverUpload publicationId={publicationId} editable={editable} published={published} />
+      <LibraryBibliographicMetadataEditor mode="publication" publicationId={publicationId} editable={editable && !published} />
 
       <section className="mt-6 border-t border-[var(--loombus-border)] pt-5" aria-labelledby="library-epub-heading">
         <div className="flex flex-wrap items-start justify-between gap-3">

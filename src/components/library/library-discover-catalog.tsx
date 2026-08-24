@@ -24,6 +24,11 @@ type Publication = {
   cover_url: string | null;
   isbn: string | null;
   publication_date: string | null;
+  series_title: string | null;
+  series_position: number | null;
+  edition_label: string | null;
+  subjects: string[];
+  audience_label: string | null;
   total_count: number;
 };
 
@@ -36,6 +41,13 @@ type Props = {
 
 function humanType(value: string) {
   return value.replaceAll("_", " ");
+}
+
+function seriesLabel(publication: Publication) {
+  if (!publication.series_title) return null;
+  return publication.series_position
+    ? `${publication.series_title} · ${Number(publication.series_position).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+    : publication.series_title;
 }
 
 export function LibraryDiscoverCatalog({ query, savedIds, mutationId, onToggleSaved }: Props) {
@@ -133,6 +145,7 @@ export function LibraryDiscoverCatalog({ query, savedIds, mutationId, onToggleSa
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {rows.map((publication) => {
             const saved = savedIds.has(publication.id);
+            const series = seriesLabel(publication);
             return (
               <article key={publication.id} className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -144,9 +157,17 @@ export function LibraryDiscoverCatalog({ query, savedIds, mutationId, onToggleSa
                 <h3 className="mt-4 text-base font-semibold">{publication.title}</h3>
                 {publication.subtitle ? <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
                 <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
+                {series ? <p className="mt-2 text-xs font-semibold text-[var(--loombus-gold)]">{series}</p> : null}
+                {(publication.edition_label || publication.audience_label || publication.subjects?.length) ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {publication.edition_label ? <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[10px] text-[var(--loombus-text-muted)]">{publication.edition_label}</span> : null}
+                    {publication.audience_label ? <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[10px] text-[var(--loombus-text-muted)]">{publication.audience_label}</span> : null}
+                    {(publication.subjects ?? []).slice(0, 2).map((subject) => <span key={subject} className="rounded-full bg-[var(--loombus-gold-surface)] px-2.5 py-1 text-[10px] text-[var(--loombus-text-muted)]">{subject}</span>)}
+                  </div>
+                ) : null}
                 {publication.description ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--loombus-text-muted)]">{publication.description}</p> : null}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <Link href={`/library/read/${publication.id}`} className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-semibold text-black transition hover:opacity-90"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Read</Link>
+                  <Link href={`/library/publication/${publication.id}`} className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-semibold text-black transition hover:opacity-90"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />View</Link>
                   <button
                     type="button"
                     disabled={mutationId === publication.id}
@@ -166,7 +187,7 @@ export function LibraryDiscoverCatalog({ query, savedIds, mutationId, onToggleSa
       {!loading && !error && !rows.length ? (
         <div className="rounded-[1.5rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-8 text-center">
           <h3 className="text-sm font-semibold">No published matches</h3>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--loombus-text-muted)]">Try another title, author, publisher, ISBN, type, or topic.</p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--loombus-text-muted)]">Try another title, author, publisher, ISBN, series, subject, audience, type, or topic.</p>
         </div>
       ) : null}
 
