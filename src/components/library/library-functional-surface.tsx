@@ -8,6 +8,7 @@ import {
   Bookmark,
   Clock3,
   Compass,
+  Folders,
   Highlighter,
   Home,
   LibraryBig,
@@ -19,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { LibraryAuthorsCatalog } from "@/components/library/library-authors-catalog";
+import { LibraryCollectionsPanel } from "@/components/library/library-collections-panel";
 import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { LibraryDiscoverCatalog } from "@/components/library/library-discover-catalog";
 import { supabase } from "@/lib/supabase/client";
@@ -30,6 +32,7 @@ type LibraryView =
   | "Want to Read"
   | "Continue Reading"
   | "Finished"
+  | "Collections"
   | "Highlights"
   | "Authors";
 
@@ -431,6 +434,7 @@ export function LibraryFunctionalSurface() {
                 <SidebarButton active={activeView === "Want to Read"} icon={Clock3} label="Want to Read" onClick={() => setActiveView("Want to Read")} />
                 <SidebarButton active={activeView === "Continue Reading"} icon={BookOpen} label="Continue Reading" onClick={() => setActiveView("Continue Reading")} />
                 <SidebarButton active={activeView === "Finished"} icon={BookCheck} label="Finished" onClick={() => setActiveView("Finished")} />
+                <SidebarButton active={activeView === "Collections"} icon={Folders} label="Collections" onClick={() => setActiveView("Collections")} />
                 <SidebarButton active={activeView === "Highlights"} icon={Highlighter} label="Highlights & Notes" onClick={() => setActiveView("Highlights")} />
               </div>
             </div>
@@ -457,7 +461,7 @@ export function LibraryFunctionalSurface() {
               <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search books, authors, topics..." className="w-full bg-transparent text-sm outline-none" />
             </label>
             <nav aria-label="Library sections" className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {(["Home", "Discover", "My Library", "Want to Read", "Continue Reading", "Finished", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
+              {(["Home", "Discover", "My Library", "Want to Read", "Continue Reading", "Finished", "Collections", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
             </nav>
           </div>
 
@@ -485,8 +489,9 @@ export function LibraryFunctionalSurface() {
                 <PublicationShelf rows={wantToReadPublications} limit={8} emptyTitle="Nothing saved for later" emptyBody="Mark a published work as Want to Read." statusLabel="Want to Read" />
               </section> : null}
 
-              <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
+              <section className="mt-10 grid gap-3 border-t border-[var(--loombus-border)] pt-8 sm:grid-cols-2">
                 <button type="button" onClick={() => setActiveView("Discover")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Discover published work</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Browse books, essays, research, reports, guides, and articles.</span></span><Compass className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
+                <button type="button" onClick={() => setActiveView("Collections")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Organize with Collections</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Group the books in My Library without creating duplicate copies.</span></span><Folders className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
               </section>
             </div>
           ) : null}
@@ -502,6 +507,7 @@ export function LibraryFunctionalSurface() {
               {activeView === "Want to Read" ? <PublicationShelf rows={wantToReadPublications} emptyTitle="Nothing in Want to Read" emptyBody={userId ? "Use a book's menu to save it for later." : "Sign in to keep a private Want to Read list."} statusLabel="Want to Read" /> : null}
               {activeView === "Continue Reading" ? <ContinueShelf /> : null}
               {activeView === "Finished" ? <PublicationShelf rows={finishedPublications} emptyTitle="No finished books yet" emptyBody={userId ? "Books you finish will appear here automatically, or you can mark one as Finished." : "Sign in to keep your reading history private and synced."} statusLabel="Finished" /> : null}
+              {activeView === "Collections" ? <LibraryCollectionsPanel query={searchQuery} /> : null}
               {!loading && activeView === "Highlights" ? <div className="space-y-4">{highlights.length || notes.length ? <>{highlights.map((highlight) => { const publication = publicationById.get(highlight.publication_id); return <article key={highlight.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>; })}{notes.map((note) => { const publication = publicationById.get(note.publication_id); return <article key={note.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>; })}</> : <EmptyState title="No highlights or notes" body={userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}</div> : null}
             </div>
           ) : null}
