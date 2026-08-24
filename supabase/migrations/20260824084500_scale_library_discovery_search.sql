@@ -22,7 +22,11 @@ alter table public.library_publications
   ) stored;
 
 create index if not exists library_publications_published_newest_idx
-  on public.library_publications(publication_date desc nulls last, title asc, id asc)
+  on public.library_publications(publication_date desc nulls last, lower(title), id)
+  where status = 'published';
+
+create index if not exists library_publications_published_oldest_idx
+  on public.library_publications(publication_date asc nulls last, lower(title), id)
   where status = 'published';
 
 create index if not exists library_publications_published_title_idx
@@ -30,7 +34,7 @@ create index if not exists library_publications_published_title_idx
   where status = 'published';
 
 create index if not exists library_publications_published_type_newest_idx
-  on public.library_publications(publication_type, publication_date desc nulls last, title asc, id asc)
+  on public.library_publications(publication_type, publication_date desc nulls last, lower(title), id)
   where status = 'published';
 
 create index if not exists library_publications_discovery_search_trgm_idx
@@ -76,6 +80,7 @@ declare
   v_sort text := coalesce(nullif(btrim(p_sort), ''), 'newest');
   v_limit integer := greatest(1, least(coalesce(p_limit, 24), 48));
   v_offset integer := greatest(0, least(coalesce(p_offset, 0), 10000));
+  v_order text;
 begin
   if v_type is not null and v_type not in ('book','essay','research','report','guide','article','other') then
     raise exception 'library_discovery_publication_type_invalid';
@@ -84,34 +89,37 @@ begin
     raise exception 'library_discovery_sort_invalid';
   end if;
 
-  return query
-  select
-    p.id,
-    p.slug,
-    p.title,
-    p.subtitle,
-    p.description,
-    p.publication_type,
-    p.author_name,
-    p.publisher_name,
-    p.language_code,
-    p.cover_url,
-    p.isbn,
-    p.publication_date,
-    count(*) over() as total_count
-  from public.library_publications p
-  where p.status = 'published'
-    and (v_type is null or p.publication_type = v_type)
-    and (v_query is null or p.discovery_search_text like '%' || v_query || '%')
-  order by
-    case when v_sort = 'newest' then p.publication_date end desc nulls last,
-    case when v_sort = 'oldest' then p.publication_date end asc nulls last,
-    case when v_sort = 'title_asc' then lower(p.title) end asc,
-    case when v_sort = 'title_desc' then lower(p.title) end desc,
-    case when v_sort in ('newest','oldest') then lower(p.title) end asc,
-    p.id asc
-  limit v_limit
-  offset v_offset;
+  v_order := case v_sort
+    when 'newest' then 'p.publication_date desc nulls last, lower(p.title) asc, p.id asc'
+    when 'oldest' then 'p.publication_date asc nulls last, lower(p.title) asc, p.id asc'
+    when 'title_asc' then 'lower(p.title) asc, p.id asc'
+    else 'lower(p.title) desc, p.id asc'
+  end;
+
+  return query execute format($query$
+    select
+      p.id,
+      p.slug,
+      p.title,
+      p.subtitle,
+      p.description,
+      p.publication_type,
+      p.author_name,
+      p.publisher_name,
+      p.language_code,
+      p.cover_url,
+      p.isbn,
+      p.publication_date,
+      count(*) over() as total_count
+    from public.library_publications p
+    where p.status = 'published'
+      and ($1::text is null or p.publication_type = $1)
+      and ($2::text is null or p.discovery_search_text like '%%' || $2 || '%%')
+    order by %s
+    limit $3
+    offset $4
+  $query$, v_order)
+  using v_type, v_query, v_limit, v_offset;
 end;
 $$;
 
