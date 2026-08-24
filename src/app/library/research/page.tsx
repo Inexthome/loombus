@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brain } from "lucide-react";
+import { LibraryResearchDiscussionConvergence } from "@/components/library/library-research-discussion-convergence";
 import { LibraryResearchPassageHandoff } from "@/components/library/library-research-passage-handoff";
 import { LibraryResearchSurface } from "@/components/library/library-research-surface";
 
@@ -14,6 +15,7 @@ export default function LibraryResearchPage() {
         Evidence & Knowledge
       </Link>
       <LibraryResearchPassageHandoff />
+      <LibraryResearchDiscussionConvergence />
       <LibraryResearchSurface />
     </div>
   );
