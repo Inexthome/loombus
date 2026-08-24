@@ -16,8 +16,10 @@ import {
   MoreHorizontal,
   PenSquare,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Users,
+  X,
 } from "lucide-react";
 import { LibraryAuthorsCatalog } from "@/components/library/library-authors-catalog";
 import { LibraryCollectionsPanel } from "@/components/library/library-collections-panel";
@@ -37,6 +39,7 @@ type LibraryView =
   | "Authors";
 
 type LifecycleState = "want_to_read" | "reading" | "finished";
+type PersonalSortMode = "recent" | "title" | "author" | "progress";
 
 type Publication = {
   id: string;
@@ -97,6 +100,8 @@ function SidebarLink({ href, icon: Icon, label }: { href: string; icon: typeof H
 export function LibraryFunctionalSurface() {
   const [activeView, setActiveView] = useState<LibraryView>("Home");
   const [searchQuery, setSearchQuery] = useState("");
+  const [personalSort, setPersonalSort] = useState<PersonalSortMode>("recent");
+  const [personalType, setPersonalType] = useState("all");
   const [userId, setUserId] = useState<string | null>(null);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [memberItems, setMemberItems] = useState<MemberItem[]>([]);
@@ -191,6 +196,7 @@ export function LibraryFunctionalSurface() {
   const publicationById = useMemo(() => new Map(publications.map((publication) => [publication.id, publication])), [publications]);
   const savedIds = useMemo(() => new Set(memberItems.map((item) => item.publication_id)), [memberItems]);
   const lifecycleByPublicationId = useMemo(() => new Map(lifecycleRows.map((row) => [row.publication_id, row])), [lifecycleRows]);
+  const progressByPublicationId = useMemo(() => new Map(progressRows.map((row) => [row.publication_id, row])), [progressRows]);
   const normalizedQuery = normalizeSearch(searchQuery);
 
   const myLibraryPublications = useMemo(
@@ -200,6 +206,17 @@ export function LibraryFunctionalSurface() {
       .filter((publication) => publicationMatches(publication, normalizedQuery)),
     [memberItems, publicationById, normalizedQuery],
   );
+
+  const organizedMyLibraryPublications = useMemo(() => {
+    const filtered = myLibraryPublications.filter((publication) => personalType === "all" || publication.publication_type === personalType);
+    const rows = [...filtered];
+    if (personalSort === "title") return rows.sort((a, b) => a.title.localeCompare(b.title));
+    if (personalSort === "author") return rows.sort((a, b) => (a.author_name ?? a.publisher_name ?? "").localeCompare(b.author_name ?? b.publisher_name ?? "") || a.title.localeCompare(b.title));
+    if (personalSort === "progress") return rows.sort((a, b) => Number(progressByPublicationId.get(b.id)?.progress_percent ?? 0) - Number(progressByPublicationId.get(a.id)?.progress_percent ?? 0) || a.title.localeCompare(b.title));
+    return rows;
+  }, [myLibraryPublications, personalSort, personalType, progressByPublicationId]);
+
+  const personalPublicationTypes = useMemo(() => [...new Set(myLibraryPublications.map((publication) => publication.publication_type))].sort(), [myLibraryPublications]);
 
   const continueReadingRows = useMemo(
     () => progressRows.filter((row) => row.progress_percent > 0 && row.progress_percent < 100 && publicationById.has(row.publication_id)),
@@ -330,6 +347,7 @@ export function LibraryFunctionalSurface() {
 
   function BookTile({ publication, statusLabel }: { publication: Publication; statusLabel?: string }) {
     const lifecycle = lifecycleByPublicationId.get(publication.id);
+    const progress = progressByPublicationId.get(publication.id);
     return (
       <article className="group relative min-w-0">
         <Link href={`/library/publication/${publication.id}`} className="block">
@@ -338,7 +356,7 @@ export function LibraryFunctionalSurface() {
           </span>
           <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5">{publication.title}</h3>
           <p className="mt-0.5 line-clamp-1 text-xs text-[var(--loombus-text-muted)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
-          {statusLabel ? <p className="mt-1 text-[11px] font-medium text-[var(--loombus-gold)]">{statusLabel}</p> : null}
+          {statusLabel ? <p className="mt-1 text-[11px] font-medium text-[var(--loombus-gold)]">{statusLabel}</p> : progress && progress.progress_percent > 0 ? <p className="mt-1 text-[11px] font-medium text-[var(--loombus-gold)]">{Math.round(progress.progress_percent)}% read</p> : null}
         </Link>
 
         <details className="absolute right-1 top-1 z-10">
@@ -402,7 +420,31 @@ export function LibraryFunctionalSurface() {
   }
 
   function MyLibraryShelf({ limit }: { limit?: number }) {
-    return <PublicationShelf rows={myLibraryPublications} limit={limit} emptyTitle="My Library is empty" emptyBody={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />;
+    return <PublicationShelf rows={organizedMyLibraryPublications} limit={limit} emptyTitle="My Library is empty" emptyBody={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />;
+  }
+
+  function PersonalLibraryControls() {
+    return (
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--loombus-border)] pb-5">
+        <div className="flex flex-wrap gap-3">
+          <label className="grid gap-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Type
+            <select value={personalType} onChange={(event) => setPersonalType(event.target.value)} className="min-h-10 rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm outline-none focus:border-[var(--loombus-gold)]">
+              <option value="all">All types</option>
+              {personalPublicationTypes.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Sort
+            <select value={personalSort} onChange={(event) => setPersonalSort(event.target.value as PersonalSortMode)} className="min-h-10 rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm outline-none focus:border-[var(--loombus-gold)]">
+              <option value="recent">Recently added</option>
+              <option value="title">Title A–Z</option>
+              <option value="author">Author A–Z</option>
+              <option value="progress">Reading progress</option>
+            </select>
+          </label>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-[var(--loombus-text-muted)]"><SlidersHorizontal className="h-4 w-4 text-[var(--loombus-gold)]" aria-hidden="true" />{organizedMyLibraryPublications.length} {organizedMyLibraryPublications.length === 1 ? "work" : "works"}</div>
+      </div>
+    );
   }
 
   const showSearch = activeView !== "Home" || Boolean(searchQuery);
@@ -414,6 +456,7 @@ export function LibraryFunctionalSurface() {
           <label className="mb-5 flex min-h-10 items-center gap-2 rounded-xl bg-[var(--loombus-surface-strong)] px-3 ring-1 ring-[var(--loombus-border)]">
             <Search className="h-4 w-4 shrink-0 text-[var(--loombus-text-muted)]" aria-hidden="true" />
             <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--loombus-text-subtle)]" />
+            {searchQuery ? <button type="button" onClick={() => setSearchQuery("")} className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-[var(--loombus-surface-muted)]" aria-label="Clear Library search"><X className="h-3.5 w-3.5" /></button> : null}
           </label>
 
           <nav aria-label="Library navigation" className="space-y-5">
@@ -459,6 +502,7 @@ export function LibraryFunctionalSurface() {
             <label className="flex min-h-11 items-center gap-2 rounded-xl bg-[var(--loombus-surface-strong)] px-3 ring-1 ring-[var(--loombus-border)]">
               <Search className="h-4 w-4 text-[var(--loombus-text-muted)]" aria-hidden="true" />
               <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search books, authors, topics..." className="w-full bg-transparent text-sm outline-none" />
+              {searchQuery ? <button type="button" onClick={() => setSearchQuery("")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full" aria-label="Clear Library search"><X className="h-4 w-4" /></button> : null}
             </label>
             <nav aria-label="Library sections" className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {(["Home", "Discover", "My Library", "Want to Read", "Continue Reading", "Finished", "Collections", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
@@ -503,7 +547,7 @@ export function LibraryFunctionalSurface() {
               {showSearch && searchQuery && activeView !== "Discover" && activeView !== "Authors" ? <p className="mb-5 text-sm text-[var(--loombus-text-muted)]">Filtered by “{searchQuery}”</p> : null}
               {activeView === "Discover" ? <LibraryDiscoverCatalog query={searchQuery} savedIds={savedIds} mutationId={mutationId} onToggleSaved={toggleMyLibrary} /> : null}
               {activeView === "Authors" ? <LibraryAuthorsCatalog query={searchQuery} /> : null}
-              {activeView === "My Library" ? <MyLibraryShelf /> : null}
+              {activeView === "My Library" ? <><PersonalLibraryControls /><MyLibraryShelf /></> : null}
               {activeView === "Want to Read" ? <PublicationShelf rows={wantToReadPublications} emptyTitle="Nothing in Want to Read" emptyBody={userId ? "Use a book's menu to save it for later." : "Sign in to keep a private Want to Read list."} statusLabel="Want to Read" /> : null}
               {activeView === "Continue Reading" ? <ContinueShelf /> : null}
               {activeView === "Finished" ? <PublicationShelf rows={finishedPublications} emptyTitle="No finished books yet" emptyBody={userId ? "Books you finish will appear here automatically, or you can mark one as Finished." : "Sign in to keep your reading history private and synced."} statusLabel="Finished" /> : null}
