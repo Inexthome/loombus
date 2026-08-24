@@ -11,9 +11,10 @@ const detail = read("src/components/library/library-publication-detail.tsx");
 const discover = read("src/components/library/library-discover-catalog.tsx");
 
 const checks = [
-  [migration.includes("discovery_bibliographic_text") && migration.includes("search_library_published_catalog"), "discovery RPC remains the single richer metadata catalog path"],
+  [migration.includes("search_library_published_catalog") && migration.includes("published_series_trgm_idx") && migration.includes("published_subjects_gin_idx"), "discovery RPC remains the single indexed richer metadata catalog path"],
   [migration.includes("p.status = 'published'") && migration.includes("security invoker"), "catalog remains published-only and RLS-invoker scoped"],
-  [migration.includes("series_title") && migration.includes("subjects") && migration.includes("audience_label"), "richer metadata is returned by discovery"],
+  [migration.includes("series_title") && migration.includes("subjects") && migration.includes("audience_label"), "richer metadata is returned and searched by discovery"],
+  [!migration.includes("generated always as") && !migration.includes("array_to_string(subjects"), "richer discovery avoids non-immutable generated expressions"],
   [editor.includes("update_library_author_bibliographic_metadata") && editor.includes("update_library_author_revision_bibliographic_metadata"), "author editor uses guarded foundation RPCs"],
   [authorUpload.includes("LibraryBibliographicMetadataEditor") && authorUpload.includes('mode="publication"'), "first-publication runtime exposes bibliographic editor"],
   [revisions.includes("LibraryBibliographicMetadataEditor") && revisions.includes('mode="revision"'), "revision runtime exposes version-scoped bibliographic editor"],
