@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BookMarked,
   BookOpen,
   Bookmark,
-  ChevronRight,
+  Compass,
   Highlighter,
+  Home,
   LibraryBig,
   Loader2,
+  MoreHorizontal,
+  PenSquare,
   Search,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import { LibraryAuthorsCatalog } from "@/components/library/library-authors-catalog";
 import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { LibraryDiscoverCatalog } from "@/components/library/library-discover-catalog";
 import { supabase } from "@/lib/supabase/client";
 
-type LibraryTab = "Discover" | "My Library" | "Continue Reading" | "Highlights" | "Authors";
+type LibraryView = "Home" | "Discover" | "My Library" | "Continue Reading" | "Highlights" | "Authors";
 
 type Publication = {
   id: string;
@@ -37,7 +41,6 @@ type ReadingProgress = { publication_id: string; locator: string | null; progres
 type Highlight = { id: string; publication_id: string; locator: string; selected_text: string; created_at: string };
 type Note = { id: string; publication_id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
 
-const tabs: LibraryTab[] = ["Discover", "My Library", "Continue Reading", "Highlights", "Authors"];
 const publicationSelect = "id, slug, title, subtitle, description, publication_type, author_name, publisher_name, cover_url, publication_date";
 
 function normalizeSearch(value: string) { return value.trim().toLowerCase(); }
@@ -47,8 +50,30 @@ function publicationMatches(publication: Publication, query: string) {
     .filter(Boolean).join(" ").toLowerCase().includes(query);
 }
 
+function SidebarButton({ active, icon: Icon, label, onClick }: { active: boolean; icon: typeof Home; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition ${active ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"}`}
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function SidebarLink({ href, icon: Icon, label }: { href: string; icon: typeof Home; label: string }) {
+  return (
+    <Link href={href} className="flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
+      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>{label}</span>
+    </Link>
+  );
+}
+
 export function LibraryFunctionalSurface() {
-  const [activeTab, setActiveTab] = useState<LibraryTab>("Discover");
+  const [activeView, setActiveView] = useState<LibraryView>("Home");
   const [searchQuery, setSearchQuery] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -165,70 +190,169 @@ export function LibraryFunctionalSurface() {
     setMutationId(null);
   }
 
-  function PublicationCard({ publication }: { publication: Publication }) {
-    const saved = savedIds.has(publication.id);
+  function BookTile({ publication }: { publication: Publication }) {
     return (
-      <article className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5">
-        <div className="flex items-start justify-between gap-4">
-          <span className="grid aspect-[2/3] w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
-            <LibraryCoverImage storagePath={publication.cover_url} alt={`${publication.title} cover`} fallbackClassName="h-5 w-5" />
+      <article className="group relative min-w-0">
+        <Link href={`/library/publication/${publication.id}`} className="block">
+          <span className="block aspect-[2/3] w-full overflow-hidden rounded-lg bg-[var(--loombus-surface-strong)] shadow-sm ring-1 ring-[var(--loombus-border)] transition group-hover:-translate-y-0.5 group-hover:shadow-md">
+            <LibraryCoverImage storagePath={publication.cover_url} alt={`${publication.title} cover`} fallbackClassName="h-6 w-6" />
           </span>
-          <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--loombus-text-muted)]">{publication.publication_type}</span>
-        </div>
-        <h3 className="mt-4 text-base font-semibold">{publication.title}</h3>
-        {publication.subtitle ? <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
-        <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
-        {publication.description ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--loombus-text-muted)]">{publication.description}</p> : null}
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <Link href={`/library/read/${publication.id}`} className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-semibold text-black transition hover:opacity-90"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Read</Link>
-          <button type="button" disabled={mutationId === publication.id} onClick={() => void toggleMyLibrary(publication.id)} className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] px-3.5 py-2 text-xs font-semibold text-[var(--loombus-text)] transition hover:border-[var(--loombus-gold)] disabled:cursor-wait disabled:opacity-60">
-            {mutationId === publication.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Bookmark className="h-3.5 w-3.5 text-[var(--loombus-gold)]" aria-hidden="true" />}
-            {saved ? "Remove from My Library" : "Add to My Library"}
-          </button>
-        </div>
+          <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5">{publication.title}</h3>
+          <p className="mt-0.5 line-clamp-1 text-xs text-[var(--loombus-text-muted)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
+        </Link>
+        <details className="absolute right-1 top-1 z-10">
+          <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-full bg-black/70 text-white backdrop-blur-sm transition hover:bg-black/85 [&::-webkit-details-marker]:hidden" aria-label={`More options for ${publication.title}`}>
+            {mutationId === publication.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <MoreHorizontal className="h-4 w-4" aria-hidden="true" />}
+          </summary>
+          <div className="absolute right-0 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-1.5 shadow-xl">
+            <Link href={`/library/read/${publication.id}`} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium hover:bg-[var(--loombus-surface-muted)]"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Read</Link>
+            <button type="button" disabled={mutationId === publication.id} onClick={() => void toggleMyLibrary(publication.id)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium hover:bg-[var(--loombus-surface-muted)] disabled:opacity-50"><Bookmark className="h-3.5 w-3.5" aria-hidden="true" />Remove from My Library</button>
+          </div>
+        </details>
       </article>
     );
   }
 
-  function EmptyState({ title, body }: { title: string; body: string }) {
-    return <div className="rounded-[1.5rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-8 text-center"><LibraryBig className="mx-auto h-6 w-6 text-[var(--loombus-gold)]" aria-hidden="true" /><h3 className="mt-3 text-sm font-semibold">{title}</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--loombus-text-muted)]">{body}</p></div>;
+  function EmptyState({ title, body, action }: { title: string; body: string; action?: { label: string; view: LibraryView } }) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-8 text-center">
+        <LibraryBig className="mx-auto h-6 w-6 text-[var(--loombus-gold)]" aria-hidden="true" />
+        <h3 className="mt-3 text-sm font-semibold">{title}</h3>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--loombus-text-muted)]">{body}</p>
+        {action ? <button type="button" onClick={() => setActiveView(action.view)} className="mt-4 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-semibold text-black">{action.label}</button> : null}
+      </div>
+    );
   }
 
+  function ContinueShelf() {
+    if (loading) return <div className="grid min-h-28 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading reading progress" /></div>;
+    if (!continueReadingRows.length) return <EmptyState title="Nothing in progress" body={userId ? "Start reading a publication and your saved position will appear here." : "Sign in to keep your reading position private and synced."} action={{ label: "Explore Library", view: "Discover" }} />;
+
+    return (
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {continueReadingRows.map((row) => {
+          const publication = publicationById.get(row.publication_id);
+          if (!publication) return null;
+          return (
+            <Link key={row.publication_id} href={`/library/read/${row.publication_id}`} className="flex w-72 shrink-0 items-center gap-3 rounded-xl bg-[var(--loombus-surface-strong)] p-3 ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]">
+              <span className="block aspect-[2/3] w-12 shrink-0 overflow-hidden rounded-md bg-[var(--loombus-surface-muted)]">
+                <LibraryCoverImage storagePath={publication.cover_url} alt={`${publication.title} cover`} fallbackClassName="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="line-clamp-2 text-sm font-semibold">{publication.title}</span>
+                <span className="mt-1 block line-clamp-1 text-xs text-[var(--loombus-text-muted)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</span>
+                <span className="mt-2 block text-[11px] font-medium text-[var(--loombus-text-muted)]">{Math.round(row.progress_percent)}% complete</span>
+                <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><span className="block h-full rounded-full bg-[var(--loombus-gold)]" style={{ width: `${Math.min(100, Math.max(0, row.progress_percent))}%` }} /></span>
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function MyLibraryShelf({ limit }: { limit?: number }) {
+    const rows = typeof limit === "number" ? myLibraryPublications.slice(0, limit) : myLibraryPublications;
+    if (loading) return <div className="grid min-h-40 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading My Library" /></div>;
+    if (!rows.length) return <EmptyState title="My Library is empty" body={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} action={{ label: "Explore Library", view: "Discover" }} />;
+    return <div className="grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">{rows.map((publication) => <BookTile key={publication.id} publication={publication} />)}</div>;
+  }
+
+  const showSearch = activeView !== "Home" || Boolean(searchQuery);
+
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-28 pt-6 text-[var(--loombus-text)] sm:px-6 md:pt-24 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <section className="overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-sm">
-          <div className="border-b border-[var(--loombus-border)] px-5 py-7 sm:px-8 sm:py-9">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]"><BookMarked className="h-4 w-4" aria-hidden="true" />Loombus Library</div>
-                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Read deeply. Keep the signal.</h1>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">Discover published long-form work and keep your personal reading state private by default.</p>
+    <main className="min-h-screen bg-[var(--loombus-page-bg)] pb-28 text-[var(--loombus-text)] md:pt-20">
+      <div className="mx-auto flex w-full max-w-[1600px] gap-0 lg:px-4">
+        <aside className="hidden w-56 shrink-0 border-r border-[var(--loombus-border)] px-3 py-6 lg:sticky lg:top-20 lg:block lg:h-[calc(100vh-5rem)] lg:overflow-y-auto">
+          <label className="mb-5 flex min-h-10 items-center gap-2 rounded-xl bg-[var(--loombus-surface-strong)] px-3 ring-1 ring-[var(--loombus-border)]">
+            <Search className="h-4 w-4 shrink-0 text-[var(--loombus-text-muted)]" aria-hidden="true" />
+            <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--loombus-text-subtle)]" />
+          </label>
+
+          <nav aria-label="Library navigation" className="space-y-5">
+            <div className="space-y-1"><SidebarButton active={activeView === "Home"} icon={Home} label="Home" onClick={() => setActiveView("Home")} /></div>
+
+            <div>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Discover</p>
+              <div className="space-y-1">
+                <SidebarButton active={activeView === "Discover"} icon={Compass} label="Explore" onClick={() => setActiveView("Discover")} />
+                <SidebarButton active={activeView === "Authors"} icon={Users} label="Authors" onClick={() => setActiveView("Authors")} />
               </div>
-              <label className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 lg:max-w-sm">
-                <Search className="h-4 w-4 shrink-0 text-[var(--loombus-gold)]" aria-hidden="true" />
-                <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} aria-label="Search the Loombus Library" placeholder="Search books, authors, topics..." className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--loombus-text-subtle)]" />
-              </label>
             </div>
+
+            <div>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Library</p>
+              <div className="space-y-1">
+                <SidebarButton active={activeView === "My Library"} icon={LibraryBig} label="My Library" onClick={() => setActiveView("My Library")} />
+                <SidebarButton active={activeView === "Continue Reading"} icon={BookOpen} label="Continue Reading" onClick={() => setActiveView("Continue Reading")} />
+                <SidebarButton active={activeView === "Highlights"} icon={Highlighter} label="Highlights & Notes" onClick={() => setActiveView("Highlights")} />
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Knowledge</p>
+              <div className="space-y-1">
+                <SidebarLink href="/library/research" icon={Sparkles} label="Research" />
+                <SidebarLink href="/library/ask-loombus" icon={Sparkles} label="Ask Loombus" />
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Author</p>
+              <div className="space-y-1"><SidebarLink href="/library/publish" icon={PenSquare} label="My Publications" /></div>
+            </div>
+          </nav>
+        </aside>
+
+        <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-5 lg:hidden">
+            <label className="flex min-h-11 items-center gap-2 rounded-xl bg-[var(--loombus-surface-strong)] px-3 ring-1 ring-[var(--loombus-border)]">
+              <Search className="h-4 w-4 text-[var(--loombus-text-muted)]" aria-hidden="true" />
+              <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => { if (activeView === "Home") setActiveView("Discover"); }} aria-label="Search the Loombus Library" placeholder="Search books, authors, topics..." className="w-full bg-transparent text-sm outline-none" />
+            </label>
+            <nav aria-label="Library sections" className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {(["Home", "Discover", "My Library", "Continue Reading", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
+            </nav>
           </div>
-          <div className="overflow-x-auto border-b border-[var(--loombus-border)] px-3 sm:px-6"><nav aria-label="Library sections" className="flex min-w-max gap-1 py-2">{tabs.map((tab) => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`rounded-full px-4 py-2 text-sm font-medium transition ${activeTab === tab ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-text)] ring-1 ring-[color:color-mix(in_srgb,var(--loombus-gold)_42%,var(--loombus-border))]" : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"}`}>{tab}</button>)}</nav></div>
-          <div className="grid gap-4 p-5 sm:grid-cols-3 sm:p-8">{[
-            { title: "Continue reading", count: continueReadingRows.length, icon: BookOpen, tab: "Continue Reading" as LibraryTab },
-            { title: "Your library", count: memberItems.length, icon: LibraryBig, tab: "My Library" as LibraryTab },
-            { title: "Highlights & notes", count: highlights.length + notes.length, icon: Highlighter, tab: "Highlights" as LibraryTab },
-          ].map(({ title, count, icon: Icon, tab }) => <button key={title} type="button" onClick={() => setActiveTab(tab)} className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5 text-left transition hover:border-[var(--loombus-gold)]"><span className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]"><Icon className="h-5 w-5" aria-hidden="true" /></span><h2 className="mt-5 text-base font-semibold">{title}</h2><p className="mt-2 text-2xl font-semibold">{loading ? "—" : count}</p><span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--loombus-gold)]">Open <ChevronRight className="h-4 w-4" aria-hidden="true" /></span></button>)}</div>
-        </section>
 
-        <section className="mt-6 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-8">
-          <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-gold)]">{activeTab}</p><h2 className="mt-2 text-xl font-semibold">{activeTab === "Discover" ? "Published Library" : activeTab}</h2></div>{loading && activeTab !== "Discover" && activeTab !== "Authors" ? <Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading private Library state" /> : null}</div>
-          {errorMessage ? <div role="alert" className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4 text-sm text-[var(--loombus-text-muted)]">{errorMessage}</div> : null}
+          {errorMessage ? <div role="alert" className="mb-5 rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4 text-sm text-[var(--loombus-text-muted)]">{errorMessage}</div> : null}
 
-          {activeTab === "Discover" ? <LibraryDiscoverCatalog query={searchQuery} savedIds={savedIds} mutationId={mutationId} onToggleSaved={toggleMyLibrary} /> : null}
-          {!loading && activeTab === "My Library" ? <div className="mt-6">{myLibraryPublications.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{myLibraryPublications.map((publication) => <PublicationCard key={publication.id} publication={publication} />)}</div> : <EmptyState title="My Library is empty" body={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />}</div> : null}
-          {!loading && activeTab === "Continue Reading" ? <div className="mt-6 space-y-3">{continueReadingRows.length ? continueReadingRows.map((row) => { const publication = publicationById.get(row.publication_id); if (!publication) return null; return <Link key={row.publication_id} href={`/library/read/${row.publication_id}`} className="block rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5 transition hover:border-[var(--loombus-gold)]"><div className="flex items-start justify-between gap-4"><div><h3 className="font-semibold">{publication.title}</h3><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{row.locator ? `Position: ${row.locator}` : "Reading position saved"}</p></div><span className="text-sm font-semibold text-[var(--loombus-gold)]">{Math.round(row.progress_percent)}%</span></div><div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><div className="h-full rounded-full bg-[var(--loombus-gold)]" style={{ width: `${Math.min(100, Math.max(0, row.progress_percent))}%` }} /></div></Link>; }) : <EmptyState title="Nothing in progress" body={userId ? "Your saved reading progress will appear here." : "Sign in to keep your reading position private and synced."} />}</div> : null}
-          {!loading && activeTab === "Highlights" ? <div className="mt-6 space-y-4">{highlights.length || notes.length ? <>{highlights.map((highlight) => { const publication = publicationById.get(highlight.publication_id); return <article key={highlight.id} className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>; })}{notes.map((note) => { const publication = publicationById.get(note.publication_id); return <article key={note.id} className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>; })}</> : <EmptyState title="No highlights or notes" body={userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}</div> : null}
-          {activeTab === "Authors" ? <LibraryAuthorsCatalog query={searchQuery} /> : null}
-        </section>
+          {activeView === "Home" ? (
+            <div>
+              <div className="mb-8 flex items-end justify-between gap-4">
+                <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Loombus Library</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Home</h1></div>
+                <button type="button" onClick={() => setActiveView("Discover")} className="hidden rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[var(--loombus-gold)] sm:inline-flex">Explore Library</button>
+              </div>
+
+              <section>
+                <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Continue</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Pick up where you left off.</p></div><button type="button" onClick={() => setActiveView("Continue Reading")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
+                <ContinueShelf />
+              </section>
+
+              <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
+                <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">My Library</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Your saved published works.</p></div><button type="button" onClick={() => setActiveView("My Library")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
+                <MyLibraryShelf limit={8} />
+              </section>
+
+              <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
+                <button type="button" onClick={() => setActiveView("Discover")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Discover published work</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Browse books, essays, research, reports, guides, and articles.</span></span><Compass className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
+              </section>
+            </div>
+          ) : null}
+
+          {activeView !== "Home" ? (
+            <div>
+              <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Loombus Library</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{activeView}</h1></div>
+
+              {showSearch && searchQuery && activeView !== "Discover" && activeView !== "Authors" ? <p className="mb-5 text-sm text-[var(--loombus-text-muted)]">Filtered by “{searchQuery}”</p> : null}
+              {activeView === "Discover" ? <LibraryDiscoverCatalog query={searchQuery} savedIds={savedIds} mutationId={mutationId} onToggleSaved={toggleMyLibrary} /> : null}
+              {activeView === "Authors" ? <LibraryAuthorsCatalog query={searchQuery} /> : null}
+              {activeView === "My Library" ? <MyLibraryShelf /> : null}
+              {activeView === "Continue Reading" ? <ContinueShelf /> : null}
+              {!loading && activeView === "Highlights" ? <div className="space-y-4">{highlights.length || notes.length ? <>{highlights.map((highlight) => { const publication = publicationById.get(highlight.publication_id); return <article key={highlight.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>; })}{notes.map((note) => { const publication = publicationById.get(note.publication_id); return <article key={note.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>; })}</> : <EmptyState title="No highlights or notes" body={userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}</div> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </main>
   );
