@@ -1,20 +1,23 @@
 -- Loombus Library richer metadata discovery runtime.
 -- Keeps the existing bounded published-catalog RPC as the single discovery truth path.
 
-alter table public.library_publications
-  add column if not exists discovery_bibliographic_text text
-  generated always as (
-    lower(
-      coalesce(series_title, '') || ' ' ||
-      coalesce(edition_label, '') || ' ' ||
-      coalesce(array_to_string(subjects, ' '), '') || ' ' ||
-      coalesce(audience_label, '')
-    )
-  ) stored;
-
-create index if not exists library_publications_discovery_bibliographic_trgm_idx
+create index if not exists library_publications_published_series_trgm_idx
   on public.library_publications
-  using gin (discovery_bibliographic_text extensions.gin_trgm_ops)
+  using gin (lower(series_title) extensions.gin_trgm_ops)
+  where status = 'published' and series_title is not null;
+
+create index if not exists library_publications_published_edition_trgm_idx
+  on public.library_publications
+  using gin (lower(edition_label) extensions.gin_trgm_ops)
+  where status = 'published' and edition_label is not null;
+
+create index if not exists library_publications_published_audience_trgm_idx
+  on public.library_publications
+  using gin (lower(audience_label) extensions.gin_trgm_ops)
+  where status = 'published' and audience_label is not null;
+
+create index if not exists library_publications_published_subjects_gin_idx
+  on public.library_publications using gin (subjects)
   where status = 'published';
 
 -- PostgreSQL cannot CREATE OR REPLACE a function with a changed RETURNS TABLE shape.
@@ -100,7 +103,14 @@ begin
       and (
         $2::text is null
         or p.discovery_search_text like '%%' || $2 || '%%'
-        or p.discovery_bibliographic_text like '%%' || $2 || '%%'
+        or lower(coalesce(p.series_title, '')) like '%%' || $2 || '%%'
+        or lower(coalesce(p.edition_label, '')) like '%%' || $2 || '%%'
+        or lower(coalesce(p.audience_label, '')) like '%%' || $2 || '%%'
+        or exists (
+          select 1
+          from unnest(p.subjects) as subject(value)
+          where lower(subject.value) like '%%' || $2 || '%%'
+        )
       )
     order by %s
     limit $3
@@ -115,5 +125,3 @@ grant execute on function public.search_library_published_catalog(text,text,text
 
 comment on function public.search_library_published_catalog(text,text,text,integer,integer) is
   'Bounded published-only Library catalog search including version-safe richer bibliographic metadata. RLS remains authoritative through SECURITY INVOKER.';
-comment on column public.library_publications.discovery_bibliographic_text is
-  'Stored lowercase series/edition/subject/audience text used only for published Library discovery search.';
