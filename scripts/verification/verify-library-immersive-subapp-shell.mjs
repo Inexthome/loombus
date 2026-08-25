@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const files = {
   boundary: "src/components/app-chrome-boundary.tsx",
+  routeClientLayout: "src/app/route-client-layout.tsx",
   layout: "src/app/library/layout.tsx",
   shell: "src/components/library/library-immersive-subapp-shell.tsx",
   css: "src/app/library/library-immersive-shell.css",
@@ -12,6 +13,7 @@ for (const path of Object.values(files)) {
 }
 
 const boundary = fs.readFileSync(files.boundary, "utf8");
+const routeClientLayout = fs.readFileSync(files.routeClientLayout, "utf8");
 const layout = fs.readFileSync(files.layout, "utf8");
 const shell = fs.readFileSync(files.shell, "utf8");
 const css = fs.readFileSync(files.css, "utf8");
@@ -22,6 +24,9 @@ function requireText(source, text, label) {
 
 requireText(boundary, 'pathname === "/library" || pathname.startsWith("/library/")', "Library namespace chrome boundary");
 requireText(boundary, "isLibraryPath(pathname)", "Library shell suppression");
+requireText(routeClientLayout, 'pathname === "/library" || pathname.startsWith("/library/")', "Library namespace ClientLayout boundary");
+requireText(routeClientLayout, "isLibraryPath(pathname)", "legacy ClientLayout suppression");
+requireText(routeClientLayout, 'className="library-route-client-boundary"', "Library route bypass wrapper");
 requireText(layout, "LibraryImmersiveSubappShell", "Library immersive layout wrapper");
 requireText(layout, 'import "./library-immersive-shell.css"', "Library immersive CSS wiring");
 
@@ -44,7 +49,7 @@ requireText(css, 'data-library-search-open="true"', "on-demand Library search re
 requireText(css, "env(safe-area-inset-bottom)", "mobile safe-area protection");
 
 for (const forbidden of ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "dangerouslySetInnerHTML", "library-publication-originals"]) {
-  if (shell.includes(forbidden) || boundary.includes(forbidden)) throw new Error(`Forbidden immersive Library shell token: ${forbidden}`);
+  if (shell.includes(forbidden) || boundary.includes(forbidden) || routeClientLayout.includes(forbidden)) throw new Error(`Forbidden immersive Library shell token: ${forbidden}`);
 }
 
-console.log("PASS: Library immersive sub-app shell suppresses Loombus chrome across /library, preserves Reader controls, exposes explicit exit/appearance/navigation/Ask controls, and adds no schema dependency.");
+console.log("PASS: Library immersive sub-app shell suppresses both global AppChrome and legacy ClientLayout utilities across /library, preserves Reader controls, exposes explicit exit/appearance/navigation/Ask controls, and adds no schema dependency.");
