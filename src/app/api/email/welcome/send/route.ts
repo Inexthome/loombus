@@ -199,6 +199,27 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // A global auth-aware trigger may run for any signed-in member. Only create a
+  // first-time welcome-email event for a recently created account. Existing
+  // failed events remain retryable regardless of account age.
+  if (!existingEvent) {
+    const createdAtMs = Date.parse(user.created_at ?? "");
+    const accountAgeMs = Date.now() - createdAtMs;
+    const maxWelcomeAgeMs = 24 * 60 * 60 * 1000;
+
+    if (
+      !Number.isFinite(createdAtMs) ||
+      accountAgeMs < 0 ||
+      accountAgeMs > maxWelcomeAgeMs
+    ) {
+      return NextResponse.json({
+        sent: false,
+        skipped: true,
+        status: "skipped",
+      });
+    }
+  }
+
   const resendApiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.PRODUCT_FROM_EMAIL || process.env.DIGEST_FROM_EMAIL;
 

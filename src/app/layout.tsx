@@ -32,6 +32,7 @@ import { PlatformNativeAlertBridge } from "@/components/platform-native-alert-br
 import { PlatformPromptBridge } from "@/components/platform-prompt-bridge";
 import { PlatformPromptDomBridge } from "@/components/platform-prompt-dom-bridge";
 import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
+import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -132,6 +133,7 @@ export default function RootLayout({
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
+        <WelcomeEmailTrigger />
         <NativeBiometricSessionGate />
         <NativePushRegistration />
       </body>
