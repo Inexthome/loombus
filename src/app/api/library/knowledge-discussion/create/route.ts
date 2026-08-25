@@ -85,6 +85,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const summary = (knowledge.summary as string | null)?.trim() || null;
+    const { data: readinessMemberships, error: readinessMembershipError } = await supabase
+      .from("library_knowledge_claims")
+      .select("claim_id")
+      .eq("knowledge_object_id", knowledgeObjectId);
+
+    if (readinessMembershipError) {
+      return NextResponse.json({ error: "Unable to verify knowledge promotion readiness." }, { status: 500 });
+    }
+
+    const readinessClaimIds = [...new Set((readinessMemberships ?? []).map((row) => row.claim_id as string))];
+    if (knowledge.status !== "synthesized" || !summary || readinessClaimIds.length === 0) {
+      return NextResponse.json(
+        {
+          error: "Finish synthesizing this knowledge object, add a summary, and link at least one claim before promotion.",
+          code: "knowledge_not_ready",
+        },
+        { status: 409 }
+      );
+    }
+
+    const { data: readinessEvidence, error: readinessEvidenceError } = await supabase
+      .from("library_research_claim_evidence")
+      .select("claim_id")
+      .in("claim_id", readinessClaimIds)
+      .limit(1);
+
+    if (readinessEvidenceError) {
+      return NextResponse.json({ error: "Unable to verify evidence-backed knowledge readiness." }, { status: 500 });
+    }
+    if (!(readinessEvidence ?? []).length) {
+      return NextResponse.json(
+        {
+          error: "At least one linked claim needs explicit evidence before this knowledge object can be promoted.",
+          code: "knowledge_not_evidence_backed",
+        },
+        { status: 409 }
+      );
+    }
+
     const requestedById = new Map<string, Required<SelectedClaimInput>>();
     for (const raw of selectedClaims) {
       const id = asNonEmptyString(raw.id);
@@ -153,16 +193,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const summary = (knowledge.summary as string | null)?.trim() || null;
-    if (!summary && approvedClaims.length === 0) {
-      return NextResponse.json(
-        { error: "Add a knowledge summary or explicitly select at least one claim before promoting." },
-        { status: 400 }
-      );
-    }
-
-    const discussionBodyParts: string[] = [];
-    if (summary) discussionBodyParts.push(summary);
+    const discussionBodyParts: string[] = [summary];
     if (approvedClaims.length) {
       discussionBodyParts.push(
         "Selected claims:",
