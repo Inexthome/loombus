@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ReaderDisplayMode = "system" | "light" | "dark";
 
@@ -69,11 +69,15 @@ function protectReaderViewport() {
     selectionToolbar.dataset.libraryReaderSelectionToolbar = "true";
     selectionToolbar.style.position = "fixed";
     selectionToolbar.style.left = "50%";
+    selectionToolbar.style.right = "auto";
+    selectionToolbar.style.top = "auto";
     selectionToolbar.style.transform = "translateX(-50%)";
     selectionToolbar.style.bottom = window.innerWidth < 768
-      ? "calc(env(safe-area-inset-bottom, 0px) + 7.25rem)"
-      : "1.5rem";
-    selectionToolbar.style.maxHeight = window.innerWidth < 768 ? "calc(100dvh - 10rem)" : "calc(100dvh - 3rem)";
+      ? "calc(env(safe-area-inset-bottom, 0px) + 8.25rem)"
+      : "1.25rem";
+    selectionToolbar.style.width = window.innerWidth < 768 ? "calc(100vw - 1rem)" : "max-content";
+    selectionToolbar.style.maxWidth = window.innerWidth < 768 ? "24rem" : "min(42rem, calc(100vw - 2rem))";
+    selectionToolbar.style.maxHeight = window.innerWidth < 768 ? "calc(100dvh - 11rem)" : "calc(100dvh - 2.5rem)";
     selectionToolbar.style.overflowY = "auto";
     selectionToolbar.style.zIndex = "120";
   }
@@ -95,6 +99,7 @@ export function LibraryReaderRuntimeGuardrails() {
   const [displayMode, setDisplayMode] = useState<ReaderDisplayMode>("system");
   const [systemDark, setSystemDark] = useState(false);
   const [appearancePanel, setAppearancePanel] = useState<HTMLElement | null>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     setDisplayMode(readDisplayMode());
@@ -112,6 +117,49 @@ export function LibraryReaderRuntimeGuardrails() {
     document.body.dataset.libraryReaderDisplay = displayMode;
     document.body.dataset.libraryReaderResolved = resolvedDark ? "dark" : "light";
   }, [displayMode, resolvedDark]);
+
+  useEffect(() => {
+    function onTouchStart(event: TouchEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('[data-library-reader-root="true"]')) return;
+      if (target.closest('aside,[data-library-reader-selection-toolbar="true"],[data-library-reader-mobile-sheet="true"],button,a,input,textarea')) {
+        swipeStart.current = null;
+        return;
+      }
+      const touch = event.touches[0];
+      swipeStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+    }
+
+    function onTouchEnd(event: TouchEvent) {
+      const start = swipeStart.current;
+      swipeStart.current = null;
+      if (!start) return;
+      const target = event.target as HTMLElement | null;
+      const reader = target?.closest<HTMLElement>('[data-library-reader-root="true"]');
+      if (!reader) return;
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.abs(dx) < 44 || Math.abs(dx) <= Math.abs(dy) * 1.15) return;
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      const direction = dx < 0 ? "Next page" : "Previous page";
+      const control = reader.querySelector<HTMLButtonElement>(`button[aria-label="${direction}"]`);
+      if (control && !control.disabled) control.click();
+    }
+
+    document.addEventListener("touchstart", onTouchStart, { capture: true, passive: true });
+    document.addEventListener("touchend", onTouchEnd, { capture: true, passive: false });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart, true);
+      document.removeEventListener("touchend", onTouchEnd, true);
+    };
+  }, []);
 
   useEffect(() => {
     let frame = 0;
@@ -235,6 +283,24 @@ export function LibraryReaderRuntimeGuardrails() {
           background: rgb(36 36 36 / 0.98) !important;
           color: #ffffff !important;
           border-color: rgb(255 255 255 / 0.12) !important;
+          margin: 0 !important;
+          padding: 0.375rem !important;
+          border-radius: 1rem !important;
+          box-sizing: border-box !important;
+        }
+        [data-library-reader-selection-toolbar="true"] > div:first-child {
+          display: grid !important;
+          grid-template-columns: repeat(5, minmax(0, auto)) !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 0.125rem !important;
+        }
+        [data-library-reader-selection-toolbar="true"] > div:first-child > button {
+          min-width: 0 !important;
+          min-height: 2.5rem !important;
+          padding-left: 0.7rem !important;
+          padding-right: 0.7rem !important;
+          white-space: nowrap !important;
         }
         [data-library-reader-selection-toolbar="true"] button,
         [data-library-reader-selection-toolbar="true"] input,
@@ -272,9 +338,21 @@ export function LibraryReaderRuntimeGuardrails() {
         }
 
         [data-library-reader-page]::-webkit-scrollbar { display: none; }
+        [data-library-reader-root="true"] { touch-action: pan-y pinch-zoom; overscroll-behavior-x: contain; }
+
         @media (max-width: 767px) {
           body.loombus-reader-paginated [data-library-reader-root="true"] {
             padding-bottom: env(safe-area-inset-bottom, 0px);
+          }
+          [data-library-reader-selection-toolbar="true"] > div:first-child {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 0.2rem !important;
+          }
+          [data-library-reader-selection-toolbar="true"] > div:first-child > button {
+            min-height: 2.35rem !important;
+            padding-left: 0.35rem !important;
+            padding-right: 0.35rem !important;
+            font-size: 0.8rem !important;
           }
         }
       `}</style>
