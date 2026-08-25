@@ -64,7 +64,7 @@ for (const token of [
   'theme: "paper"',
   'font: "serif"',
   'spread: "auto"',
-  'theme: "night"',
+  'parsed.theme === "loombus" || parsed.theme === "quiet" || parsed.theme === "paper" || parsed.theme === "night"',
   "lineHeight",
   "width",
 ]) requireText(modernization, token, "appearance preference contract");
