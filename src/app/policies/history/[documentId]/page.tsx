@@ -59,7 +59,7 @@ export default async function PolicyHistoryPage({
         </p>
         <h1 className="mt-2 text-3xl font-semibold">{title}</h1>
         <p className="mt-3 max-w-3xl text-[var(--loombus-text-muted)]">
-          This page lists public effective and superseded versions only. Internal review notes, publication blockers, and reviewer details are not included.
+          This page lists public effective and superseded versions only. Public change notes explain version-level changes when available. Internal review notes, publication blockers, and reviewer details are not included.
         </p>
       </header>
 
@@ -81,9 +81,12 @@ export default async function PolicyHistoryPage({
               </Link>
             </div>
             {entry.changeNote ? (
-              <p className="mt-4 text-sm text-[var(--loombus-text-muted)]">
-                {entry.changeNote}
-              </p>
+              <div className="mt-4 border-t border-[var(--loombus-border)] pt-4">
+                <p className="text-sm font-semibold">What changed</p>
+                <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                  {entry.changeNote}
+                </p>
+              </div>
             ) : null}
           </Panel>
         ))}
