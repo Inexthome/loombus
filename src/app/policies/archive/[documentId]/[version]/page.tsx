@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PolicyAnalyticsView } from "@/components/policy-content/policy-analytics-view";
 import { PolicyChangeNote } from "@/components/policy-content/policy-change-note";
 import { StructuredPolicyRenderer } from "@/components/policy-content/structured-policy-renderer";
 import { policyHistoryHref } from "@/lib/policy-content-history";
@@ -80,6 +81,11 @@ export default async function PolicyArchivePage({
 
   return (
     <>
+      <PolicyAnalyticsView
+        surface="archive"
+        documentId={resolved.family.documentId}
+        version={resolved.version.version}
+      />
       <aside className="mx-auto max-w-5xl px-4 pt-8 sm:px-6">
         <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-sm">
           <p className="font-semibold">{statusLabel}</p>
