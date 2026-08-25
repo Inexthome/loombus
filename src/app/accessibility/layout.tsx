@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PolicyAnalyticsView } from "@/components/policy-content/policy-analytics-view";
 import { PolicyChangeNote } from "@/components/policy-content/policy-change-note";
 import { StructuredPolicyRenderer } from "@/components/policy-content/structured-policy-renderer";
 import { resolvePolicyCanonicalRoutePayload } from "@/lib/policy-content-canonical-route";
@@ -22,6 +23,11 @@ export default function AccessibilityLayout({
 
   return (
     <>
+      <PolicyAnalyticsView
+        surface="current"
+        documentId={resolution.version.documentId}
+        version={resolution.version.version}
+      />
       <PolicyChangeNote
         changeNote={resolution.version.changeNote}
         version={resolution.version.version}
