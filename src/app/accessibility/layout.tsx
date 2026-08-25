@@ -13,7 +13,10 @@ export default function AccessibilityLayout({
     "POLICY-ACCESSIBILITY",
   );
 
-  if (!resolution.resolved || !resolution.payload || !resolution.version) {
+  if (!resolution.resolved || !resolution.payload) {
+    return children;
+  }
+  if (!resolution.version) {
     return children;
   }
 
