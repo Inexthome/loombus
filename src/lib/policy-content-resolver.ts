@@ -15,6 +15,28 @@ export type PolicyResolutionReason =
   | "no_public_effective_version"
   | "multiple_public_effective_versions";
 
+export type PolicyScheduledTransitionReason =
+  | PolicyEligibilityReason
+  | "no_stored_public_effective_version"
+  | "multiple_stored_public_effective_versions"
+  | "multiple_due_successors_for_predecessor"
+  | "due_scheduled_chain_disconnected";
+
+export type PolicyScheduledTransitionState =
+  | "none"
+  | "pending"
+  | "activated"
+  | "blocked";
+
+export type PolicyLifecycleProjectionResult = {
+  family: PolicyDocumentFamily;
+  versions: PolicyVersionRecord[];
+  currentVersion: PolicyVersionRecord | null;
+  transitionState: PolicyScheduledTransitionState;
+  activatedVersions: readonly string[];
+  blockedReasons: readonly PolicyScheduledTransitionReason[];
+};
+
 export type PolicyResolutionResult = {
   resolved: boolean;
   reasons: PolicyResolutionReason[];
@@ -22,7 +44,7 @@ export type PolicyResolutionResult = {
   version: PolicyVersionRecord | null;
 };
 
-function uniqueReasons(reasons: PolicyResolutionReason[]) {
+function uniqueReasons<T extends string>(reasons: readonly T[]) {
   return [...new Set(reasons)];
 }
 
@@ -59,6 +81,160 @@ function resolved(
     reasons: [],
     family,
     version,
+  };
+}
+
+function effectiveTime(version: PolicyVersionRecord) {
+  if (!version.effectiveAt) return null;
+  const parsed = new Date(version.effectiveAt).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function normalizedEffectiveVersion(version: PolicyVersionRecord) {
+  return version.status === "effective"
+    ? version
+    : ({ ...version, status: "effective" } satisfies PolicyVersionRecord);
+}
+
+function evaluateProjectedPublicationEligibility(
+  family: PolicyDocumentFamily,
+  version: PolicyVersionRecord,
+  now: Date,
+) {
+  return evaluatePolicyVersionPublicationEligibility(
+    family,
+    normalizedEffectiveVersion(version),
+    now,
+  );
+}
+
+/**
+ * Project a registry-managed family to the public lifecycle state that applies at
+ * `now` without mutating repository records.
+ *
+ * Stored `effective`/`superseded` records remain the durable audit source. A
+ * scheduled successor is projected into the public lifecycle only after its
+ * effective timestamp and only when the exact predecessor chain and every
+ * publication gate still pass. Ambiguity or approval/source/blocker drift fails
+ * closed at that transition point and leaves the last valid current version live.
+ */
+export function projectPolicyFamilyPublicLifecycle(
+  family: PolicyDocumentFamily,
+  now = new Date(),
+): PolicyLifecycleProjectionResult {
+  const versions = family.registryManagedVersions.map((version) => ({ ...version }));
+  const storedPublicEffective = versions.filter(
+    (version) =>
+      version.status === "effective" &&
+      evaluatePolicyVersionPublicationEligibility(family, version, now).eligible,
+  );
+  const scheduled = versions.filter((version) => version.status === "scheduled");
+
+  if (storedPublicEffective.length === 0) {
+    return {
+      family,
+      versions,
+      currentVersion: null,
+      transitionState: scheduled.length > 0 ? "blocked" : "none",
+      activatedVersions: [],
+      blockedReasons:
+        scheduled.length > 0 ? ["no_stored_public_effective_version"] : [],
+    };
+  }
+
+  if (storedPublicEffective.length > 1) {
+    return {
+      family,
+      versions,
+      currentVersion: null,
+      transitionState: "blocked",
+      activatedVersions: [],
+      blockedReasons: ["multiple_stored_public_effective_versions"],
+    };
+  }
+
+  let current = storedPublicEffective[0];
+  const nowMs = now.getTime();
+  const due = scheduled
+    .filter((version) => {
+      const timestamp = effectiveTime(version);
+      return timestamp !== null && timestamp <= nowMs;
+    })
+    .sort((left, right) => {
+      const byTime = (effectiveTime(left) ?? 0) - (effectiveTime(right) ?? 0);
+      return byTime !== 0 ? byTime : left.version.localeCompare(right.version);
+    });
+  const pending = scheduled.some((version) => {
+    const timestamp = effectiveTime(version);
+    return timestamp !== null && timestamp > nowMs;
+  });
+  const activatedVersions: string[] = [];
+  const blockedReasons: PolicyScheduledTransitionReason[] = [];
+  const remaining = [...due];
+
+  while (remaining.length > 0) {
+    const successors = remaining.filter(
+      (candidate) => candidate.supersedesVersion === current.version,
+    );
+
+    if (successors.length === 0) {
+      blockedReasons.push("due_scheduled_chain_disconnected");
+      break;
+    }
+    if (successors.length > 1) {
+      blockedReasons.push("multiple_due_successors_for_predecessor");
+      break;
+    }
+
+    const candidate = successors[0];
+    const eligibility = evaluateProjectedPublicationEligibility(
+      family,
+      candidate,
+      now,
+    );
+    if (!eligibility.eligible) {
+      blockedReasons.push(...eligibility.reasons);
+      break;
+    }
+
+    const currentIndex = versions.findIndex(
+      (version) => version.version === current.version,
+    );
+    const candidateIndex = versions.findIndex(
+      (version) => version.version === candidate.version,
+    );
+    if (currentIndex < 0 || candidateIndex < 0) {
+      blockedReasons.push("due_scheduled_chain_disconnected");
+      break;
+    }
+
+    versions[currentIndex] = {
+      ...versions[currentIndex],
+      status: "superseded",
+    };
+    versions[candidateIndex] = {
+      ...versions[candidateIndex],
+      status: "effective",
+    };
+    current = versions[candidateIndex];
+    activatedVersions.push(candidate.version);
+    remaining.splice(remaining.indexOf(candidate), 1);
+  }
+
+  const blocked = blockedReasons.length > 0;
+  return {
+    family,
+    versions,
+    currentVersion: current,
+    transitionState: blocked
+      ? "blocked"
+      : activatedVersions.length > 0
+        ? "activated"
+        : pending
+          ? "pending"
+          : "none",
+    activatedVersions,
+    blockedReasons: uniqueReasons(blockedReasons),
   };
 }
 
@@ -105,7 +281,8 @@ export function resolvePolicyCurrentVersionFromRegistry(
     return unresolved(["document_family_not_registry_managed"], family);
   }
 
-  const eligible = family.registryManagedVersions.filter(
+  const projection = projectPolicyFamilyPublicLifecycle(family, now);
+  const eligible = projection.versions.filter(
     (version) =>
       version.status === "effective" &&
       evaluatePolicyVersionPublicationEligibility(family, version, now).eligible,
@@ -115,8 +292,6 @@ export function resolvePolicyCurrentVersionFromRegistry(
     return unresolved(["no_public_effective_version"], family);
   }
 
-  // Multiple publication-eligible effective versions for one document family are
-  // ambiguous. Fail closed rather than silently choosing one by array order.
   if (eligible.length > 1) {
     return unresolved(["multiple_public_effective_versions"], family);
   }
@@ -143,8 +318,9 @@ export function resolvePolicyArchiveVersionFromRegistry(
     return unresolved(["document_family_not_registry_managed"], family);
   }
 
+  const projection = projectPolicyFamilyPublicLifecycle(family, now);
   const version =
-    family.registryManagedVersions.find(
+    projection.versions.find(
       (candidate) => candidate.version === versionId,
     ) ?? null;
 
