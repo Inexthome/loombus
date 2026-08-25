@@ -40,6 +40,7 @@ function protectReaderViewport() {
   const reader = page?.closest<HTMLElement>("main");
   if (!reader) return;
 
+  reader.dataset.libraryReaderRoot = "true";
   reader.style.position = "fixed";
   reader.style.inset = "0";
   reader.style.width = "100vw";
@@ -57,6 +58,7 @@ function protectReaderViewport() {
 
   const mobileControls = reader.querySelector<HTMLElement>('[aria-label="Reader controls"]');
   if (mobileControls) {
+    mobileControls.dataset.libraryReaderMobileTrigger = "true";
     mobileControls.style.position = "fixed";
     mobileControls.style.bottom = "calc(env(safe-area-inset-bottom, 0px) + 5.75rem)";
     mobileControls.style.right = "1.25rem";
@@ -64,6 +66,7 @@ function protectReaderViewport() {
 
   const selectionToolbar = findSelectionToolbar();
   if (selectionToolbar && reader.contains(selectionToolbar)) {
+    selectionToolbar.dataset.libraryReaderSelectionToolbar = "true";
     selectionToolbar.style.position = "fixed";
     selectionToolbar.style.left = "50%";
     selectionToolbar.style.transform = "translateX(-50%)";
@@ -78,6 +81,7 @@ function protectReaderViewport() {
   const contentsButton = Array.from(reader.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.trim().startsWith("Contents ·"));
   const mobileSheet = contentsButton?.parentElement;
   if (mobileSheet) {
+    mobileSheet.dataset.libraryReaderMobileSheet = "true";
     mobileSheet.style.position = "fixed";
     mobileSheet.style.left = "0.75rem";
     mobileSheet.style.right = "0.75rem";
@@ -163,36 +167,113 @@ export function LibraryReaderRuntimeGuardrails() {
     <>
       {displayControls}
       <style jsx global>{`
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) {
-          background: #000 !important;
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] {
+          color-scheme: light;
+          background: #fffdf8 !important;
+          color: #231f19 !important;
+        }
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] article {
+          background: #ffffff !important;
+          color: #231f19 !important;
+          box-shadow: 0 14px 45px rgb(0 0 0 / 0.08) !important;
+        }
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] [data-library-reader-page],
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] [data-library-reader-page] span,
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] [data-library-reader-page] mark {
+          color: #231f19 !important;
+        }
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] header,
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] header a,
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] header button {
+          color: #231f19 !important;
+        }
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] aside {
+          background: rgb(255 255 255 / 0.97) !important;
+          color: #211f1a !important;
+          border-color: rgb(0 0 0 / 0.10) !important;
+        }
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] aside input,
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] aside textarea,
+        body[data-library-reader-resolved="light"] [data-library-reader-root="true"] aside button {
+          color: #211f1a !important;
+          border-color: rgb(0 0 0 / 0.10) !important;
+        }
+
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] {
+          color-scheme: dark;
+          background: #000000 !important;
           color: #f4f1ea !important;
         }
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) article {
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] article {
           background: #090909 !important;
           color: #f4f1ea !important;
           box-shadow: 0 14px 45px rgb(0 0 0 / 0.38) !important;
         }
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) header,
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) header a,
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) header button {
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] [data-library-reader-page],
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] [data-library-reader-page] span,
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] [data-library-reader-page] mark {
           color: #f4f1ea !important;
         }
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) aside {
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] header,
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] header a,
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] header button {
+          color: #f4f1ea !important;
+        }
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] aside {
           background: rgb(28 28 30 / 0.97) !important;
           color: #f4f1ea !important;
           border-color: rgb(255 255 255 / 0.12) !important;
         }
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) aside input,
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) aside textarea,
-        body[data-library-reader-resolved="dark"] main:has([data-library-reader-page]) aside button {
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] aside input,
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] aside textarea,
+        body[data-library-reader-resolved="dark"] [data-library-reader-root="true"] aside button {
+          color: #f4f1ea !important;
           border-color: rgb(255 255 255 / 0.14) !important;
         }
-        body[data-library-reader-resolved="light"] main:has([data-library-reader-page]) {
-          color-scheme: light;
+
+        [data-library-reader-selection-toolbar="true"] {
+          background: rgb(36 36 36 / 0.98) !important;
+          color: #ffffff !important;
+          border-color: rgb(255 255 255 / 0.12) !important;
         }
+        [data-library-reader-selection-toolbar="true"] button,
+        [data-library-reader-selection-toolbar="true"] input,
+        [data-library-reader-selection-toolbar="true"] svg {
+          color: #ffffff !important;
+          stroke: currentColor !important;
+        }
+        [data-library-reader-selection-toolbar="true"] input {
+          background: rgb(255 255 255 / 0.10) !important;
+        }
+
+        [data-library-reader-mobile-sheet="true"] > button,
+        [data-library-reader-mobile-sheet="true"] > div > button,
+        [data-library-reader-mobile-sheet="true"] > div > a {
+          background: rgb(58 58 60 / 0.98) !important;
+          color: #ffffff !important;
+        }
+        [data-library-reader-mobile-sheet="true"] button *,
+        [data-library-reader-mobile-sheet="true"] a *,
+        [data-library-reader-mobile-sheet="true"] svg,
+        [data-library-reader-mobile-trigger="true"],
+        [data-library-reader-mobile-trigger="true"] svg {
+          color: #ffffff !important;
+          stroke: currentColor !important;
+        }
+        [data-library-reader-mobile-trigger="true"] {
+          background: rgb(36 36 36 / 0.98) !important;
+          border-color: rgb(255 255 255 / 0.12) !important;
+        }
+
+        body[data-library-reader-resolved="dark"] [data-library-reader-mobile-sheet="true"] > button,
+        body[data-library-reader-resolved="dark"] [data-library-reader-mobile-sheet="true"] > div > button,
+        body[data-library-reader-resolved="dark"] [data-library-reader-mobile-sheet="true"] > div > a {
+          background: rgb(44 44 46 / 0.98) !important;
+        }
+
         [data-library-reader-page]::-webkit-scrollbar { display: none; }
         @media (max-width: 767px) {
-          body.loombus-reader-paginated main:has([data-library-reader-page]) {
+          body.loombus-reader-paginated [data-library-reader-root="true"] {
             padding-bottom: env(safe-area-inset-bottom, 0px);
           }
         }
