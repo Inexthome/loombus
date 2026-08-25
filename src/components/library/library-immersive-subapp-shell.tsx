@@ -171,10 +171,6 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
   if (isReader) return <>{children}</>;
 
-  const chromeVisibilityClass = chromeVisible
-    ? "translate-y-0 opacity-100"
-    : "pointer-events-none opacity-0";
-
   return (
     <div data-library-subapp className="relative min-h-screen bg-[var(--loombus-page-bg)] text-[var(--loombus-text)]">
       <div
