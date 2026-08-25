@@ -1,0 +1,23 @@
+name: Library mobile immersive shell
+
+on:
+  pull_request:
+    paths:
+      - "src/app/library/page.tsx"
+      - "src/components/library/library-mobile-immersive-shell.tsx"
+      - "src/components/app-chrome-boundary.tsx"
+      - "scripts/verification/verify-library-mobile-immersive.mjs"
+      - ".github/workflows/library-mobile-immersive.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/verification/verify-library-mobile-immersive.mjs
