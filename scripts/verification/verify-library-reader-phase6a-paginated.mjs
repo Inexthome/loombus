@@ -79,16 +79,22 @@ for (const token of [
   'control.setAttribute("title", label)',
   'aria-label="Reader controls"',
   '5.75rem',
-  '8.25rem',
+  '7.25rem',
   'data-library-reader-page',
   'overflowY',
   'position = "fixed"',
   'window.visualViewport?.addEventListener("resize", sync)',
   'document.addEventListener("touchstart", onTouchStart',
   'document.addEventListener("touchend", onTouchEnd',
-  'Math.abs(dx) < 44',
-  'button[aria-label="${direction}"]',
+  'document.addEventListener("pointerdown", onPointerDown',
+  'document.addEventListener("pointerup", onPointerUp',
+  'document.addEventListener("wheel", onWheel',
+  'SWIPE_THRESHOLD = 42',
+  'triggerPageTurn',
   'data-library-reader-selection-toolbar',
+  'left: 50vw !important',
+  'width: calc(100vw - 1.25rem) !important',
+  'max-width: 22rem !important',
   'grid-template-columns: repeat(3, minmax(0, 1fr))',
   'touch-action: pan-y pinch-zoom',
 ]) requireText(guardrails, token, "Reader viewport/display/gesture guardrail");
@@ -119,5 +125,5 @@ for (const source of [surface, modernization, guardrails, launcher, boundary, pa
   }
 }
 
-console.log("PASS: Library Reader phase 6A preserves Reader state and provenance while adding responsive pagination, page turns, mobile controls, search, annotations, appearance settings, viewport guardrails, touch swiping, compact selection controls, and exact source return.");
+console.log("PASS: Library Reader phase 6A preserves Reader state and provenance while adding responsive pagination, page turns, mobile controls, search, annotations, appearance settings, viewport guardrails, centered compact selection controls, touch/pointer/trackpad swiping, and exact source return.");
 console.log("- no schema migration required");
