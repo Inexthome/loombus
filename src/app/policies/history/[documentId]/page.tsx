@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PolicyAnalyticsView } from "@/components/policy-content/policy-analytics-view";
 import { PageShell, Panel } from "@/components/ui";
 import { resolvePolicyPublicHistory } from "@/lib/policy-content-history";
 
@@ -43,9 +44,15 @@ export default async function PolicyHistoryPage({
   if (!history) notFound();
 
   const title = history.entries[0]?.title ?? history.family.documentId;
+  const currentVersion = history.entries[0].version;
 
   return (
     <PageShell width="lg">
+      <PolicyAnalyticsView
+        surface="history"
+        documentId={history.family.documentId}
+        version={currentVersion}
+      />
       <Link
         href={history.family.canonicalRoute}
         className="mb-8 inline-block text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2"
