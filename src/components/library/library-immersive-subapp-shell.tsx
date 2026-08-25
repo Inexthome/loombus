@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -32,6 +32,7 @@ type LibraryViewTarget =
   | "Authors";
 
 const APPEARANCE_KEY = "loombus:appearance";
+const LIBRARY_SEARCH_INPUT = 'input[aria-label="Search the Loombus Library"]';
 
 const MORE_TARGETS: Array<{ label: string; view?: LibraryViewTarget; href?: string }> = [
   { label: "Want to Read", view: "Want to Read" },
@@ -63,11 +64,6 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   const [moreOpen, setMoreOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [appearance, setAppearance] = useState<AppearanceMode>("system");
-
-  const librarySearchInput = useMemo(
-    () => 'input[aria-label="Search the Loombus Library"]',
-    [],
-  );
 
   useEffect(() => {
     setAppearance(getStoredAppearance());
@@ -102,7 +98,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
     document.documentElement.dataset.librarySearchOpen = "true";
     activateExistingLibraryView("Discover");
     window.setTimeout(() => {
-      document.querySelector<HTMLInputElement>(librarySearchInput)?.focus();
+      document.querySelector<HTMLInputElement>(LIBRARY_SEARCH_INPUT)?.focus();
     }, 80);
   }
 
@@ -142,7 +138,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
       <div data-library-subapp-controls className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex items-start justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
         <Link
           href="/home"
-          className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[color:var(--loombus-surface)]/92 px-4 text-sm font-semibold shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
+          className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-semibold shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
           aria-label="Back to Loombus"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -153,7 +149,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
           <button
             type="button"
             onClick={() => setAppearanceOpen((open) => !open)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--loombus-border)] bg-[color:var(--loombus-surface)]/92 shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
             aria-label={`Appearance: ${appearance}`}
             aria-expanded={appearanceOpen}
           >
@@ -179,9 +175,9 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
       <div data-library-subapp-content>{children}</div>
 
-      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[85] sm:left-6">
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[85] sm:left-6 lg:hidden">
         {menuOpen ? (
-          <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.75rem] border border-[var(--loombus-border)] bg-[color:var(--loombus-surface)]/96 p-2 shadow-2xl backdrop-blur-2xl">
+          <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 shadow-2xl backdrop-blur-2xl">
             <div className="flex items-center justify-between px-2 pb-2 pt-1">
               <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Library</span>
               <button type="button" onClick={() => { setMenuOpen(false); setMoreOpen(false); }} className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--loombus-surface-muted)]" aria-label="Close Library menu">
@@ -212,7 +208,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className="grid h-14 w-14 place-items-center rounded-full border border-[var(--loombus-border)] bg-[color:var(--loombus-surface)]/94 text-[var(--loombus-text)] shadow-xl backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
+          className="grid h-14 w-14 place-items-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-xl backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
           aria-label="Library navigation"
           aria-expanded={menuOpen}
         >
@@ -222,7 +218,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
       <Link
         href="/library/ask-loombus"
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[85] grid h-14 w-14 place-items-center rounded-full border border-[var(--loombus-gold)] bg-[color:var(--loombus-surface)]/94 text-[var(--loombus-gold)] shadow-xl backdrop-blur-xl transition hover:bg-[var(--loombus-surface-strong)] sm:right-6"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[85] hidden h-14 w-14 place-items-center rounded-full border border-[var(--loombus-gold)] bg-[var(--loombus-surface)] text-[var(--loombus-gold)] shadow-xl backdrop-blur-xl transition hover:bg-[var(--loombus-surface-strong)] max-lg:grid sm:right-6"
         aria-label="Ask Loombus"
         title="Ask Loombus"
       >
