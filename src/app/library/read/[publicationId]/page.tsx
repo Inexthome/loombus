@@ -3,6 +3,7 @@ import { LibraryDiscussPassageLauncher } from "@/components/library/library-disc
 import { LibraryReaderAccessBoundary } from "@/components/library/library-reader-access-boundary";
 import { LibraryReaderModernization } from "@/components/library/library-reader-modernization";
 import { LibraryReaderPassageReturnBoundary } from "@/components/library/library-reader-passage-return-boundary";
+import { LibraryReaderRuntimeGuardrails } from "@/components/library/library-reader-runtime-guardrails";
 import { LibraryReaderSurface } from "@/components/library/library-reader-surface";
 
 function parseOffset(value: string | undefined) {
@@ -39,6 +40,7 @@ export default async function LibraryReaderPage({
     <LibraryReaderAccessBoundary publicationId={publicationId}>
       <LibraryReaderPassageReturnBoundary publicationId={publicationId} focus={focus}>
         <LibraryReaderModernization />
+        <LibraryReaderRuntimeGuardrails />
         <LibraryReaderSurface publicationId={publicationId} focus={focus} />
         <LibraryDiscussPassageLauncher publicationId={publicationId} />
       </LibraryReaderPassageReturnBoundary>
