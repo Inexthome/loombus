@@ -40,7 +40,8 @@ for (const fragment of [
   "create table if not exists public.policy_content_daily_analytics",
   "primary key (event_date, surface, document_id, version)",
   "enable row level security",
-  "revoke all on table public.policy_content_daily_analytics from anon, authenticated",
+  "revoke all on table public.policy_content_daily_analytics from public, anon, authenticated",
+  "grant select on table public.policy_content_daily_analytics to service_role",
   "grant execute on function public.increment_policy_content_daily_analytics(text, text, text) to service_role",
 ]) {
   requireFragment(migration.toLowerCase(), fragment.toLowerCase(), migrationPath);
