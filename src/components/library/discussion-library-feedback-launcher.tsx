@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, Brain, CheckCircle2, FlaskConical, MessageCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { libraryReaderHref } from "@/lib/library/passage-context";
 import { supabase } from "@/lib/supabase/client";
 
 type PassageLink = {
@@ -104,7 +105,7 @@ export function DiscussionLibraryFeedbackLauncher() {
           <blockquote className="mt-3 line-clamp-3 border-l-2 border-[var(--loombus-gold)] pl-3 text-xs leading-5 text-[var(--loombus-text-muted)]">“{passage.selected_text}”</blockquote>
           <p className="mt-2 text-[10px] text-[var(--loombus-text-subtle)]">Verified characters {passage.start_offset}–{passage.end_offset}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link href={`/library/read/${encodeURIComponent(passage.publication_id)}?open=1`} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-xs font-black hover:border-[var(--loombus-gold)]"><BookOpen className="size-3.5 text-[var(--loombus-gold)]" />Open source</Link>
+            <Link href={libraryReaderHref(passage.publication_id, { locator: passage.locator, startOffset: passage.start_offset, endOffset: passage.end_offset, textSha256: passage.text_sha256 })} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-xs font-black hover:border-[var(--loombus-gold)]"><BookOpen className="size-3.5 text-[var(--loombus-gold)]" />Open exact source</Link>
             <Link href="/library/research" className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-xs font-black hover:border-[var(--loombus-gold)]"><FlaskConical className="size-3.5 text-[var(--loombus-gold)]" />{passage.evidenceSaved ? "View evidence" : "Investigate"}</Link>
           </div>
         </section>
