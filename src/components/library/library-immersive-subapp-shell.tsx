@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -33,6 +33,7 @@ type LibraryViewTarget =
 
 const APPEARANCE_KEY = "loombus:appearance";
 const LIBRARY_SEARCH_INPUT = 'input[aria-label="Search the Loombus Library"]';
+const SCROLL_HIDE_THRESHOLD = 20;
 
 const MORE_TARGETS: Array<{ label: string; view?: LibraryViewTarget; href?: string }> = [
   { label: "Want to Read", view: "Want to Read" },
@@ -64,15 +65,49 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   const [moreOpen, setMoreOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [appearance, setAppearance] = useState<AppearanceMode>("system");
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
     setAppearance(getStoredAppearance());
   }, []);
 
   useEffect(() => {
+    if (isReader) return;
+
+    lastScrollYRef.current = window.scrollY;
+    setChromeVisible(true);
+
+    function handleScroll() {
+      const nextScrollY = Math.max(0, window.scrollY);
+      const delta = nextScrollY - lastScrollYRef.current;
+
+      if (menuOpen || appearanceOpen) {
+        setChromeVisible(true);
+        lastScrollYRef.current = nextScrollY;
+        return;
+      }
+
+      if (nextScrollY <= SCROLL_HIDE_THRESHOLD) {
+        setChromeVisible(true);
+      } else if (delta > 3) {
+        setChromeVisible(false);
+      } else if (delta < -3) {
+        setChromeVisible(true);
+      }
+
+      lastScrollYRef.current = nextScrollY;
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isReader, menuOpen, appearanceOpen]);
+
+  useEffect(() => {
     setMenuOpen(false);
     setMoreOpen(false);
     setAppearanceOpen(false);
+    setChromeVisible(true);
     document.documentElement.removeAttribute("data-library-search-open");
 
     if (pathname !== "/library") return;
@@ -105,6 +140,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   function goToView(view: LibraryViewTarget) {
     setMenuOpen(false);
     setMoreOpen(false);
+    setChromeVisible(true);
     document.documentElement.removeAttribute("data-library-search-open");
     if (pathname === "/library") {
       activateExistingLibraryView(view);
@@ -116,6 +152,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   function goToSearch() {
     setMenuOpen(false);
     setMoreOpen(false);
+    setChromeVisible(true);
     if (pathname === "/library") {
       openLibrarySearch();
       return;
@@ -126,6 +163,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   function setAppearanceMode(mode: AppearanceMode) {
     setAppearance(mode);
     setAppearanceOpen(false);
+    setChromeVisible(true);
     window.localStorage.setItem(APPEARANCE_KEY, mode);
     document.documentElement.dataset.loombusTheme = mode;
     window.dispatchEvent(new CustomEvent("loombus:appearance-change", { detail: { mode } }));
@@ -133,9 +171,17 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
   if (isReader) return <>{children}</>;
 
+  const chromeVisibilityClass = chromeVisible
+    ? "translate-y-0 opacity-100"
+    : "pointer-events-none opacity-0";
+
   return (
     <div data-library-subapp className="relative min-h-screen bg-[var(--loombus-page-bg)] text-[var(--loombus-text)]">
-      <div data-library-subapp-controls className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex items-start justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+      <div
+        data-library-subapp-controls
+        data-library-chrome-visible={chromeVisible ? "true" : "false"}
+        className={`pointer-events-none fixed inset-x-0 top-0 z-[80] flex items-start justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-200 ease-out sm:px-6 ${chromeVisible ? "translate-y-0 opacity-100" : "-translate-y-6 opacity-0"}`}
+      >
         <Link
           href="/home"
           className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-semibold shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
@@ -148,7 +194,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
         <div className="pointer-events-auto relative">
           <button
             type="button"
-            onClick={() => setAppearanceOpen((open) => !open)}
+            onClick={() => { setAppearanceOpen((open) => !open); setChromeVisible(true); }}
             className="grid h-11 w-11 place-items-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-sm backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
             aria-label={`Appearance: ${appearance}`}
             aria-expanded={appearanceOpen}
@@ -175,7 +221,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
       <div data-library-subapp-content>{children}</div>
 
-      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[85] sm:left-6 lg:hidden">
+      <div className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-[85] transition-all duration-200 ease-out sm:left-6 lg:hidden ${chromeVisible || menuOpen ? "translate-y-0 opacity-100" : "translate-y-6 pointer-events-none opacity-0"}`}>
         {menuOpen ? (
           <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 shadow-2xl backdrop-blur-2xl">
             <div className="flex items-center justify-between px-2 pb-2 pt-1">
@@ -207,7 +253,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
         <button
           type="button"
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => { setMenuOpen((open) => !open); setChromeVisible(true); }}
           className="grid h-14 w-14 place-items-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-xl backdrop-blur-xl transition hover:border-[var(--loombus-gold)]"
           aria-label="Library navigation"
           aria-expanded={menuOpen}
@@ -218,7 +264,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
       <Link
         href="/library/ask-loombus"
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[85] hidden h-14 w-14 place-items-center rounded-full border border-[var(--loombus-gold)] bg-[var(--loombus-surface)] text-[var(--loombus-gold)] shadow-xl backdrop-blur-xl transition hover:bg-[var(--loombus-surface-strong)] max-lg:grid sm:right-6"
+        className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[85] hidden h-14 w-14 place-items-center rounded-full border border-[var(--loombus-gold)] bg-[var(--loombus-surface)] text-[var(--loombus-gold)] shadow-xl backdrop-blur-xl transition-all duration-200 ease-out hover:bg-[var(--loombus-surface-strong)] max-lg:grid sm:right-6 ${chromeVisible ? "translate-y-0 opacity-100" : "translate-y-6 pointer-events-none opacity-0"}`}
         aria-label="Ask Loombus"
         title="Ask Loombus"
       >
