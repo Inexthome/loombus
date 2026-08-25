@@ -43,7 +43,8 @@ requireText(launcher, 'fetch("/api/library/save-to-research"', "guarded server s
 requireText(launcher, 'Authorization: `Bearer ${token}`', "member bearer forwarding");
 requireText(launcher, 'writeLibraryPassageContext("research", passage)', "Research passage-context handoff");
 requireText(launcher, 'window.location.href = "/library/research?from=passage"', "Research destination navigation");
-requireText(launcher, 'data-library-page-start', "paginated Reader offset rebasing");
+requireText(launcher, 'page.dataset.libraryPageStart', "paginated Reader offset rebasing");
+requireText(launcher, 'baseOffset = pageStart', "canonical offset rebasing");
 requireText(passageContext, 'research: "loombus:library:research-passage:v1"', "Research passage storage key");
 
 requireText(research, '.from("library_research_items")', "private Research list/delete access");
