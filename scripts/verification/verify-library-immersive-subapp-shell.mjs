@@ -44,6 +44,14 @@ for (const label of ["Home", "Library", "Discover", "Search", "More", "Want to R
 requireText(shell, 'href="/library/ask-loombus"', "floating Ask Loombus destination");
 requireText(shell, 'aria-label="Ask Loombus"', "floating Ask Loombus control");
 
+requireText(shell, "SCROLL_HIDE_THRESHOLD", "Library auto-hide scroll threshold");
+requireText(shell, 'window.addEventListener("scroll", handleScroll, { passive: true })', "Library scroll listener");
+requireText(shell, "delta > 3", "hide chrome on downward scroll");
+requireText(shell, "delta < -3", "restore chrome on upward scroll");
+requireText(shell, "setChromeVisible(false)", "Library chrome hidden state");
+requireText(shell, "setChromeVisible(true)", "Library chrome visible state");
+requireText(shell, 'data-library-chrome-visible={chromeVisible ? "true" : "false"}', "Library chrome visibility state marker");
+
 requireText(css, 'nav[aria-label="Library sections"]', "legacy mobile Library pills hidden");
 requireText(css, 'data-library-search-open="true"', "on-demand Library search reveal");
 requireText(css, "env(safe-area-inset-bottom)", "mobile safe-area protection");
@@ -52,4 +60,4 @@ for (const forbidden of ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "da
   if (shell.includes(forbidden) || boundary.includes(forbidden) || routeClientLayout.includes(forbidden)) throw new Error(`Forbidden immersive Library shell token: ${forbidden}`);
 }
 
-console.log("PASS: Library immersive sub-app shell suppresses both global AppChrome and legacy ClientLayout utilities across /library, preserves Reader controls, exposes explicit exit/appearance/navigation/Ask controls, and adds no schema dependency.");
+console.log("PASS: Library immersive sub-app shell suppresses both global AppChrome and legacy ClientLayout utilities across /library, preserves Reader controls, auto-hides Library chrome on downward scroll, restores it on upward scroll, exposes explicit exit/appearance/navigation/Ask controls, and adds no schema dependency.");
