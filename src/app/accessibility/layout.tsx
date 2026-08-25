@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { PolicyChangeNote } from "@/components/policy-content/policy-change-note";
 import { StructuredPolicyRenderer } from "@/components/policy-content/structured-policy-renderer";
 import { resolvePolicyCanonicalRoutePayload } from "@/lib/policy-content-canonical-route";
+import { policyHistoryHref } from "@/lib/policy-content-history";
 
 export default function AccessibilityLayout({
   children,
@@ -11,9 +13,18 @@ export default function AccessibilityLayout({
     "POLICY-ACCESSIBILITY",
   );
 
-  if (!resolution.resolved || !resolution.payload) {
+  if (!resolution.resolved || !resolution.payload || !resolution.version) {
     return children;
   }
 
-  return <StructuredPolicyRenderer payload={resolution.payload} />;
+  return (
+    <>
+      <PolicyChangeNote
+        changeNote={resolution.version.changeNote}
+        version={resolution.version.version}
+        historyHref={policyHistoryHref(resolution.version.documentId)}
+      />
+      <StructuredPolicyRenderer payload={resolution.payload} />
+    </>
+  );
 }
