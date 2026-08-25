@@ -25,6 +25,7 @@ import { LibraryAuthorsCatalog } from "@/components/library/library-authors-cata
 import { LibraryCollectionsPanel } from "@/components/library/library-collections-panel";
 import { LibraryCoverImage } from "@/components/library/library-cover-image";
 import { LibraryDiscoverCatalog } from "@/components/library/library-discover-catalog";
+import { libraryReaderHref } from "@/lib/library/passage-context";
 import { supabase } from "@/lib/supabase/client";
 
 type LibraryView =
@@ -57,7 +58,16 @@ type Publication = {
 type MemberItem = { publication_id: string; added_at: string };
 type ReadingProgress = { publication_id: string; locator: string | null; progress_percent: number; last_read_at: string };
 type ReadingLifecycle = { publication_id: string; state: LifecycleState; finished_at: string | null; updated_at: string };
-type Highlight = { id: string; publication_id: string; locator: string; selected_text: string; created_at: string };
+type Highlight = {
+  id: string;
+  publication_id: string;
+  locator: string;
+  selected_text: string;
+  start_offset: number | null;
+  end_offset: number | null;
+  text_sha256: string | null;
+  created_at: string;
+};
 type Note = { id: string; publication_id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
 
 const publicationSelect = "id, slug, title, subtitle, description, publication_type, author_name, publisher_name, cover_url, publication_date";
@@ -136,7 +146,7 @@ export function LibraryFunctionalSurface() {
       supabase.from("library_member_items").select("publication_id, added_at").order("added_at", { ascending: false }),
       supabase.from("library_reading_progress").select("publication_id, locator, progress_percent, last_read_at").order("last_read_at", { ascending: false }),
       supabase.from("library_reading_lifecycle").select("publication_id, state, finished_at, updated_at").order("updated_at", { ascending: false }),
-      supabase.from("library_highlights").select("id, publication_id, locator, selected_text, created_at").order("created_at", { ascending: false }),
+      supabase.from("library_highlights").select("id, publication_id, locator, selected_text, start_offset, end_offset, text_sha256, created_at").order("created_at", { ascending: false }),
       supabase.from("library_notes").select("id, publication_id, highlight_id, locator, body, created_at").order("created_at", { ascending: false }),
     ]);
 
@@ -197,14 +207,19 @@ export function LibraryFunctionalSurface() {
   const savedIds = useMemo(() => new Set(memberItems.map((item) => item.publication_id)), [memberItems]);
   const lifecycleByPublicationId = useMemo(() => new Map(lifecycleRows.map((row) => [row.publication_id, row])), [lifecycleRows]);
   const progressByPublicationId = useMemo(() => new Map(progressRows.map((row) => [row.publication_id, row])), [progressRows]);
+  const highlightById = useMemo(() => new Map(highlights.map((highlight) => [highlight.id, highlight])), [highlights]);
   const normalizedQuery = normalizeSearch(searchQuery);
 
-  const myLibraryPublications = useMemo(
+  const homeLibraryPublications = useMemo(
     () => memberItems
       .map((item) => publicationById.get(item.publication_id))
-      .filter((publication): publication is Publication => Boolean(publication))
-      .filter((publication) => publicationMatches(publication, normalizedQuery)),
-    [memberItems, publicationById, normalizedQuery],
+      .filter((publication): publication is Publication => Boolean(publication)),
+    [memberItems, publicationById],
+  );
+
+  const myLibraryPublications = useMemo(
+    () => homeLibraryPublications.filter((publication) => publicationMatches(publication, normalizedQuery)),
+    [homeLibraryPublications, normalizedQuery],
   );
 
   const organizedMyLibraryPublications = useMemo(() => {
@@ -219,9 +234,33 @@ export function LibraryFunctionalSurface() {
   const personalPublicationTypes = useMemo(() => [...new Set(myLibraryPublications.map((publication) => publication.publication_type))].sort(), [myLibraryPublications]);
 
   const continueReadingRows = useMemo(
-    () => progressRows.filter((row) => row.progress_percent > 0 && row.progress_percent < 100 && publicationById.has(row.publication_id)),
-    [progressRows, publicationById],
+    () => progressRows.filter((row) => {
+      if (!(row.progress_percent > 0 && row.progress_percent < 100)) return false;
+      const publication = publicationById.get(row.publication_id);
+      return Boolean(publication && publicationMatches(publication, normalizedQuery));
+    }),
+    [normalizedQuery, progressRows, publicationById],
   );
+
+  const filteredHighlights = useMemo(() => highlights.filter((highlight) => {
+    if (!normalizedQuery) return true;
+    const publication = publicationById.get(highlight.publication_id);
+    return [highlight.selected_text, highlight.locator, publication?.title, publication?.author_name, publication?.publisher_name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  }), [highlights, normalizedQuery, publicationById]);
+
+  const filteredNotes = useMemo(() => notes.filter((note) => {
+    if (!normalizedQuery) return true;
+    const publication = publicationById.get(note.publication_id);
+    return [note.body, note.locator, publication?.title, publication?.author_name, publication?.publisher_name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  }), [normalizedQuery, notes, publicationById]);
 
   const publicationsForLifecycle = useCallback(
     (state: LifecycleState) => lifecycleRows
@@ -387,7 +426,7 @@ export function LibraryFunctionalSurface() {
 
   function ContinueShelf() {
     if (loading) return <div className="grid min-h-28 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading reading progress" /></div>;
-    if (!continueReadingRows.length) return <EmptyState title="Nothing in progress" body={userId ? "Start reading a publication and your saved position will appear here." : "Sign in to keep your reading position private and synced."} action={{ label: "Explore Library", view: "Discover" }} />;
+    if (!continueReadingRows.length) return <EmptyState title={normalizedQuery ? "No matching books in progress" : "Nothing in progress"} body={normalizedQuery ? "Try another Library search." : userId ? "Start reading a publication and your saved position will appear here." : "Sign in to keep your reading position private and synced."} action={normalizedQuery ? undefined : { label: "Explore Library", view: "Discover" }} />;
 
     return (
       <div className="flex gap-3 overflow-x-auto pb-2">
@@ -419,8 +458,8 @@ export function LibraryFunctionalSurface() {
     return <div className="grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">{visibleRows.map((publication) => <BookTile key={publication.id} publication={publication} statusLabel={statusLabel} />)}</div>;
   }
 
-  function MyLibraryShelf({ limit }: { limit?: number }) {
-    return <PublicationShelf rows={organizedMyLibraryPublications} limit={limit} emptyTitle="My Library is empty" emptyBody={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />;
+  function MyLibraryShelf({ limit, home = false }: { limit?: number; home?: boolean }) {
+    return <PublicationShelf rows={home ? homeLibraryPublications : organizedMyLibraryPublications} limit={limit} emptyTitle="My Library is empty" emptyBody={userId ? "Add a published work from Discover to keep it here." : "Sign in to build your personal Library."} />;
   }
 
   function PersonalLibraryControls() {
@@ -447,6 +486,29 @@ export function LibraryFunctionalSurface() {
     );
   }
 
+  function highlightHref(highlight: Highlight) {
+    if (
+      highlight.locator &&
+      Number.isInteger(highlight.start_offset) &&
+      Number.isInteger(highlight.end_offset) &&
+      Number(highlight.end_offset) > Number(highlight.start_offset) &&
+      highlight.text_sha256?.length === 64
+    ) {
+      return libraryReaderHref(highlight.publication_id, {
+        locator: highlight.locator,
+        startOffset: Number(highlight.start_offset),
+        endOffset: Number(highlight.end_offset),
+        textSha256: highlight.text_sha256,
+      });
+    }
+    return `/library/read/${highlight.publication_id}?open=1`;
+  }
+
+  function noteHref(note: Note) {
+    const linkedHighlight = note.highlight_id ? highlightById.get(note.highlight_id) : null;
+    return linkedHighlight ? highlightHref(linkedHighlight) : `/library/read/${note.publication_id}?open=1`;
+  }
+
   const showSearch = activeView !== "Home" || Boolean(searchQuery);
 
   return (
@@ -461,7 +523,6 @@ export function LibraryFunctionalSurface() {
 
           <nav aria-label="Library navigation" className="space-y-5">
             <div className="space-y-1"><SidebarButton active={activeView === "Home"} icon={Home} label="Home" onClick={() => setActiveView("Home")} /></div>
-
             <div>
               <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Discover</p>
               <div className="space-y-1">
@@ -469,7 +530,6 @@ export function LibraryFunctionalSurface() {
                 <SidebarButton active={activeView === "Authors"} icon={Users} label="Authors" onClick={() => setActiveView("Authors")} />
               </div>
             </div>
-
             <div>
               <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Library</p>
               <div className="space-y-1">
@@ -481,7 +541,6 @@ export function LibraryFunctionalSurface() {
                 <SidebarButton active={activeView === "Highlights"} icon={Highlighter} label="Highlights & Notes" onClick={() => setActiveView("Highlights")} />
               </div>
             </div>
-
             <div>
               <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Knowledge</p>
               <div className="space-y-1">
@@ -489,7 +548,6 @@ export function LibraryFunctionalSurface() {
                 <SidebarLink href="/library/ask-loombus" icon={Sparkles} label="Ask Loombus" />
               </div>
             </div>
-
             <div>
               <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">Author</p>
               <div className="space-y-1"><SidebarLink href="/library/publish" icon={PenSquare} label="My Publications" /></div>
@@ -506,6 +564,9 @@ export function LibraryFunctionalSurface() {
             </label>
             <nav aria-label="Library sections" className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {(["Home", "Discover", "My Library", "Want to Read", "Continue Reading", "Finished", "Collections", "Highlights", "Authors"] as LibraryView[]).map((view) => <button key={view} type="button" onClick={() => setActiveView(view)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${activeView === view ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]" : "bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)]"}`}>{view}</button>)}
+              <Link href="/library/research" className="shrink-0 rounded-full bg-[var(--loombus-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--loombus-text-muted)]">Research</Link>
+              <Link href="/library/ask-loombus" className="shrink-0 rounded-full bg-[var(--loombus-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--loombus-text-muted)]">Ask Loombus</Link>
+              <Link href="/library/publish" className="shrink-0 rounded-full bg-[var(--loombus-surface-strong)] px-3 py-2 text-xs font-semibold text-[var(--loombus-text-muted)]">My Publications</Link>
             </nav>
           </div>
 
@@ -517,22 +578,18 @@ export function LibraryFunctionalSurface() {
                 <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Loombus Library</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Home</h1></div>
                 <button type="button" onClick={() => setActiveView("Discover")} className="hidden rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[var(--loombus-gold)] sm:inline-flex">Explore Library</button>
               </div>
-
               <section>
                 <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Continue</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Pick up where you left off.</p></div><button type="button" onClick={() => setActiveView("Continue Reading")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
                 <ContinueShelf />
               </section>
-
               <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
                 <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">My Library</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Your saved published works.</p></div><button type="button" onClick={() => setActiveView("My Library")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
-                <MyLibraryShelf limit={8} />
+                <MyLibraryShelf limit={8} home />
               </section>
-
               {wantToReadPublications.length ? <section className="mt-10 border-t border-[var(--loombus-border)] pt-8">
                 <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Want to Read</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Saved for later.</p></div><button type="button" onClick={() => setActiveView("Want to Read")} className="text-sm font-semibold text-[var(--loombus-gold)]">See All</button></div>
                 <PublicationShelf rows={wantToReadPublications} limit={8} emptyTitle="Nothing saved for later" emptyBody="Mark a published work as Want to Read." statusLabel="Want to Read" />
               </section> : null}
-
               <section className="mt-10 grid gap-3 border-t border-[var(--loombus-border)] pt-8 sm:grid-cols-2">
                 <button type="button" onClick={() => setActiveView("Discover")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Discover published work</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Browse books, essays, research, reports, guides, and articles.</span></span><Compass className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
                 <button type="button" onClick={() => setActiveView("Collections")} className="flex w-full items-center justify-between rounded-2xl bg-[var(--loombus-surface-strong)] p-5 text-left ring-1 ring-[var(--loombus-border)] transition hover:ring-[var(--loombus-gold)]"><span><span className="block text-base font-semibold">Organize with Collections</span><span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">Group the books in My Library without creating duplicate copies.</span></span><Folders className="h-5 w-5 text-[var(--loombus-gold)]" aria-hidden="true" /></button>
@@ -543,7 +600,6 @@ export function LibraryFunctionalSurface() {
           {activeView !== "Home" ? (
             <div>
               <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Loombus Library</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{activeView}</h1></div>
-
               {showSearch && searchQuery && activeView !== "Discover" && activeView !== "Authors" ? <p className="mb-5 text-sm text-[var(--loombus-text-muted)]">Filtered by “{searchQuery}”</p> : null}
               {activeView === "Discover" ? <LibraryDiscoverCatalog query={searchQuery} savedIds={savedIds} mutationId={mutationId} onToggleSaved={toggleMyLibrary} /> : null}
               {activeView === "Authors" ? <LibraryAuthorsCatalog query={searchQuery} /> : null}
@@ -552,7 +608,20 @@ export function LibraryFunctionalSurface() {
               {activeView === "Continue Reading" ? <ContinueShelf /> : null}
               {activeView === "Finished" ? <PublicationShelf rows={finishedPublications} emptyTitle="No finished books yet" emptyBody={userId ? "Books you finish will appear here automatically, or you can mark one as Finished." : "Sign in to keep your reading history private and synced."} statusLabel="Finished" /> : null}
               {activeView === "Collections" ? <LibraryCollectionsPanel query={searchQuery} /> : null}
-              {!loading && activeView === "Highlights" ? <div className="space-y-4">{highlights.length || notes.length ? <>{highlights.map((highlight) => { const publication = publicationById.get(highlight.publication_id); return <article key={highlight.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>; })}{notes.map((note) => { const publication = publicationById.get(note.publication_id); return <article key={note.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>; })}</> : <EmptyState title="No highlights or notes" body={userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}</div> : null}
+              {!loading && activeView === "Highlights" ? (
+                <div className="space-y-4">
+                  {filteredHighlights.length || filteredNotes.length ? <>
+                    {filteredHighlights.map((highlight) => {
+                      const publication = publicationById.get(highlight.publication_id);
+                      return <article key={highlight.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" aria-hidden="true" />Highlight</div><Link href={highlightHref(highlight)} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold transition hover:border-[var(--loombus-gold)]"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />Open passage</Link></div><blockquote className="mt-3 border-l-2 border-[var(--loombus-gold)] pl-4 text-sm leading-6">{highlight.selected_text}</blockquote><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{highlight.locator ? ` · ${highlight.locator}` : ""}</p></article>;
+                    })}
+                    {filteredNotes.map((note) => {
+                      const publication = publicationById.get(note.publication_id);
+                      return <article key={note.id} className="rounded-2xl bg-[var(--loombus-surface-strong)] p-5 ring-1 ring-[var(--loombus-border)]"><div className="flex items-center justify-between gap-3"><div className="text-xs font-semibold text-[var(--loombus-gold)]">Private note</div><Link href={noteHref(note)} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold transition hover:border-[var(--loombus-gold)]"><BookOpen className="h-3.5 w-3.5" aria-hidden="true" />{note.highlight_id && highlightById.has(note.highlight_id) ? "Open passage" : "Open book"}</Link></div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{note.body}</p><p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{publication?.title ?? "Library publication"}{note.locator ? ` · ${note.locator}` : ""}</p></article>;
+                    })}
+                  </> : <EmptyState title={normalizedQuery ? "No matching highlights or notes" : "No highlights or notes"} body={normalizedQuery ? "Try another Library search." : userId ? "Your private reading annotations will appear here." : "Sign in to keep private highlights and notes."} />}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
