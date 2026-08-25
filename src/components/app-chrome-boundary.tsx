@@ -11,9 +11,13 @@ function isFloorPath(pathname: string) {
   return pathname === "/the-floor" || pathname.startsWith("/the-floor/");
 }
 
+function isLibraryPath(pathname: string) {
+  return pathname === "/library" || pathname.startsWith("/library/");
+}
+
 export function AppChromeBoundary({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  if (isRoomsPath(pathname) || isFloorPath(pathname)) return null;
+  if (isRoomsPath(pathname) || isFloorPath(pathname) || isLibraryPath(pathname)) return null;
   return <>{children}</>;
 }
