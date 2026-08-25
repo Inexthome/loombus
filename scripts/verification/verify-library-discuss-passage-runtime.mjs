@@ -26,8 +26,10 @@ for (const contract of [
   'const MAX_PASSAGE_CHARS = 1200',
   'section.content_text.slice(startOffset, endOffset) !== trimmed',
   'sha256Text(section.content_text)',
-  'writeLibraryPassageContext(destination, selection)',
-  'openTool("discuss", "/library/discuss-passage")',
+  'writeLibraryPassageContext(destination, passage)',
+  'openTool("discuss", "/library/discuss-passage", passage)',
+  'data-library-page-start',
+  'closestReaderPage',
   "Discuss passage",
 ]) {
   if (!launcher.includes(contract)) throw new Error(`Launcher contract missing: ${contract}`);
@@ -68,4 +70,4 @@ for (const token of forbidden) {
   if (launcher.includes(token) || composer.includes(token) || api.includes(token)) throw new Error(`Forbidden Discuss Passage runtime token found: ${token}`);
 }
 
-console.log("PASS: Library Discuss Passage runtime contracts verified with shared passage context.");
+console.log("PASS: Library Discuss Passage runtime contracts verified with paginated shared passage context.");
