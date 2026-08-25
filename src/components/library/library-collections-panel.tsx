@@ -173,6 +173,9 @@ export function LibraryCollectionsPanel({ query }: { query: string }) {
 
   async function deleteCollection() {
     if (!userId || !selectedCollection) return;
+    const confirmed = window.confirm(`Delete “${selectedCollection.name}”? The collection will be removed, but its books will stay in My Library.`);
+    if (!confirmed) return;
+
     const collectionId = selectedCollection.id;
     setMutationKey(`delete:${collectionId}`);
     setErrorMessage(null);
