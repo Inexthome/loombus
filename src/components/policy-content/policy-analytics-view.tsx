@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { PolicyAnalyticsSurface } from "@/lib/policy-content-analytics";
+
+type PolicyAnalyticsSurface = "current" | "history" | "archive";
 
 export function PolicyAnalyticsView({
   surface,
