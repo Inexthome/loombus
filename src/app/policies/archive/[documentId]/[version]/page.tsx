@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PolicyChangeNote } from "@/components/policy-content/policy-change-note";
 import { StructuredPolicyRenderer } from "@/components/policy-content/structured-policy-renderer";
+import { policyHistoryHref } from "@/lib/policy-content-history";
 import { getPolicyPayloadSource } from "@/lib/policy-content-payload-registry";
 import { resolvePolicyArchiveVersion } from "@/lib/policy-content-resolver";
 
@@ -92,6 +94,11 @@ export default async function PolicyArchivePage({
           </Link>
         </div>
       </aside>
+      <PolicyChangeNote
+        changeNote={resolved.version.changeNote}
+        version={resolved.version.version}
+        historyHref={policyHistoryHref(resolved.family.documentId)}
+      />
       <StructuredPolicyRenderer payload={resolved.payload} />
     </>
   );
