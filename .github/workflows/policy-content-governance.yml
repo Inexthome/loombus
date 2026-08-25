@@ -30,6 +30,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-successor-activation.mjs"
       - "scripts/verification/verify-policy-jump-print.mjs"
       - "scripts/verification/verify-policy-help-discovery.mjs"
+      - "scripts/verification/verify-policy-scheduled-effective-runtime.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -78,6 +79,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-successor-activation.mjs"
       - "scripts/verification/verify-policy-jump-print.mjs"
       - "scripts/verification/verify-policy-help-discovery.mjs"
+      - "scripts/verification/verify-policy-scheduled-effective-runtime.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -118,3 +120,5 @@ jobs:
         run: node scripts/verification/verify-policy-jump-print.mjs
       - name: Verify public Policy and Help discovery
         run: node scripts/verification/verify-policy-help-discovery.mjs
+      - name: Verify scheduled effective-date runtime
+        run: node scripts/verification/verify-policy-scheduled-effective-runtime.mjs
