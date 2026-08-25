@@ -28,7 +28,8 @@ for (const contract of [
   'sha256Text(section.content_text)',
   'writeLibraryPassageContext(destination, passage)',
   'openTool("discuss", "/library/discuss-passage", passage)',
-  'data-library-page-start',
+  'page.dataset.libraryPageStart',
+  'baseOffset = pageStart',
   'closestReaderPage',
   "Discuss passage",
 ]) {
