@@ -24,6 +24,7 @@ on:
       - "src/app/support/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
+      - "scripts/policy-content/build-first20-draft-import-plan.mjs"
       - "scripts/verification/verify-policy-content-registry.mjs"
       - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - "scripts/verification/verify-policy-accessibility-successor.mjs"
@@ -32,6 +33,7 @@ on:
       - "scripts/verification/verify-policy-help-discovery.mjs"
       - "scripts/verification/verify-policy-scheduled-effective-runtime.mjs"
       - "scripts/verification/verify-policy-change-note-presentation.mjs"
+      - "scripts/verification/verify-policy-first20-draft-scaling.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -74,6 +76,7 @@ on:
       - "src/app/support/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
+      - "scripts/policy-content/build-first20-draft-import-plan.mjs"
       - "scripts/verification/verify-policy-content-registry.mjs"
       - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - "scripts/verification/verify-policy-accessibility-successor.mjs"
@@ -82,6 +85,7 @@ on:
       - "scripts/verification/verify-policy-help-discovery.mjs"
       - "scripts/verification/verify-policy-scheduled-effective-runtime.mjs"
       - "scripts/verification/verify-policy-change-note-presentation.mjs"
+      - "scripts/verification/verify-policy-first20-draft-scaling.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -126,3 +130,5 @@ jobs:
         run: node scripts/verification/verify-policy-scheduled-effective-runtime.mjs
       - name: Verify public policy change-note presentation
         run: node scripts/verification/verify-policy-change-note-presentation.mjs
+      - name: Verify first-20 draft scaling
+        run: node scripts/verification/verify-policy-first20-draft-scaling.mjs
