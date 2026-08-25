@@ -42,7 +42,7 @@ export function LibraryResearchPassageHandoff() {
           <button type="button" onClick={dismiss} aria-label="Dismiss research handoff" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"><X className="size-4" /></button>
         </div>
         <div className="mt-4">
-          <Link href={libraryReaderHref(passage.publicationId)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-xs font-black hover:border-[var(--loombus-gold)]"><ArrowLeft className="size-4" /> Back to passage</Link>
+          <Link href={libraryReaderHref(passage.publicationId, passage)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-xs font-black hover:border-[var(--loombus-gold)]"><ArrowLeft className="size-4" /> Back to exact passage</Link>
         </div>
       </div>
     </aside>

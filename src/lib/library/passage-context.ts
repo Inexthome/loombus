@@ -19,6 +19,11 @@ export type LibraryPassageContext = {
   capturedAt: string;
 };
 
+export type LibraryReaderFocus = Pick<
+  LibraryPassageContext,
+  "locator" | "startOffset" | "endOffset" | "textSha256"
+>;
+
 export function isLibraryPassageContext(value: unknown): value is LibraryPassageContext {
   if (!value || typeof value !== "object") return false;
   const passage = value as Partial<LibraryPassageContext>;
@@ -60,8 +65,15 @@ export function clearLibraryPassageContext(destination: LibraryPassageDestinatio
   window.sessionStorage.removeItem(LIBRARY_PASSAGE_CONTEXT_KEYS[destination]);
 }
 
-export function libraryReaderHref(publicationId: string) {
-  return `/library/read/${encodeURIComponent(publicationId)}?open=1`;
+export function libraryReaderHref(publicationId: string, focus?: LibraryReaderFocus) {
+  const params = new URLSearchParams({ open: "1" });
+  if (focus) {
+    params.set("locator", focus.locator);
+    params.set("start", String(focus.startOffset));
+    params.set("end", String(focus.endOffset));
+    params.set("sha", focus.textSha256);
+  }
+  return `/library/read/${encodeURIComponent(publicationId)}?${params.toString()}`;
 }
 
 export function libraryPassageIdentity(

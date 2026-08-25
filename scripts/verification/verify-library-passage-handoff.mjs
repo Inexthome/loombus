@@ -17,6 +17,10 @@ for (const token of [
   'endOffset: number',
   'textSha256: string',
   'libraryReaderHref',
+  'params.set("locator", focus.locator)',
+  'params.set("start", String(focus.startOffset))',
+  'params.set("end", String(focus.endOffset))',
+  'params.set("sha", focus.textSha256)',
 ]) {
   if (!helper.includes(token)) failures.push(`missing shared passage context contract: ${token}`);
 }
@@ -61,7 +65,8 @@ for (const token of [
   'readLibraryPassageContext("research")',
   'source preserved',
   'characters {passage.startOffset}–{passage.endOffset}',
-  'libraryReaderHref(passage.publicationId)',
+  'libraryReaderHref(passage.publicationId, passage)',
+  'Back to exact passage',
 ]) {
   const source = token === 'LibraryResearchPassageHandoff' ? researchPage : researchHandoff;
   if (!source.includes(token)) failures.push(`missing Research handoff contract: ${token}`);
@@ -83,5 +88,6 @@ console.log("Loombus Library passage handoff verification passed");
 console.log("- exact selected passage provenance is captured once and reused across tools");
 console.log("- discussion, Ask Loombus, and Research retain locator, offsets, and source hash");
 console.log("- Research handoff saves the passage before opening the workspace");
+console.log("- return links now preserve locator, UTF-16 offsets, and source hash for exact Reader restoration");
 console.log("- Reader selection remains bounded and checked against normalized section text");
 console.log("- no schema migration or unrelated backend capability is introduced");
