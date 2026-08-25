@@ -6,6 +6,7 @@ import {
   type PolicyDocumentFamily,
 } from "@/lib/policy-content-registry";
 import {
+  projectPolicyFamilyPublicLifecycle,
   resolvePolicyArchiveVersionFromRegistry,
   type PolicyResolutionReason,
 } from "@/lib/policy-content-resolver";
@@ -77,9 +78,10 @@ export function resolvePolicyPublicHistoryFromRegistry(
     };
   }
 
+  const projection = projectPolicyFamilyPublicLifecycle(family, now);
   const entries: PolicyHistoryEntry[] = [];
 
-  for (const version of family.registryManagedVersions) {
+  for (const version of projection.versions) {
     if (version.status !== "effective" && version.status !== "superseded") {
       continue;
     }
