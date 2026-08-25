@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
+
 import { supabase } from "@/lib/supabase/client";
 
 export function WelcomeEmailTrigger() {
   useEffect(() => {
-    async function sendWelcomeEmailOnce() {
+    let cancelled = false;
+
+    async function attemptWelcomeEmail() {
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData.session;
 
-      if (!session?.access_token || !session.user?.id) {
+      if (cancelled || !session?.access_token || !session.user?.id) {
         return;
       }
 
@@ -31,11 +34,24 @@ export function WelcomeEmailTrigger() {
           window.localStorage.setItem(storageKey, "done");
         }
       } catch {
-        // Non-blocking: welcome email delivery should never interrupt dashboard use.
+        // Non-blocking: welcome email delivery must never interrupt app use.
       }
     }
 
-    sendWelcomeEmailOnce();
+    void attemptWelcomeEmail();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        void attemptWelcomeEmail();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return null;

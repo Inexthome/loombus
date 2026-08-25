@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Bell,
   Bookmark,
   BookOpen,
   Compass,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
@@ -557,7 +555,6 @@ export default function DashboardClientPage() {
   if (loading) {
     return (
       <main className="dashboard-v2-page">
-        <WelcomeEmailTrigger />
         <div className="dashboard-v2-shell dashboard-v2-loading-shell" aria-live="polite">
           <div className="dashboard-v2-loading-hero" />
           <div className="dashboard-v2-loading-grid">
@@ -592,7 +589,6 @@ export default function DashboardClientPage() {
 
   return (
     <main className="dashboard-v2-page">
-      <WelcomeEmailTrigger />
       <div className="dashboard-v2-shell">
         <section className="dashboard-v2-hero">
           <div className="dashboard-v2-hero-copy">
