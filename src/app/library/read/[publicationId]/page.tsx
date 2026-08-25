@@ -4,7 +4,6 @@ import { LibraryReaderAccessBoundary } from "@/components/library/library-reader
 import { LibraryReaderModernization } from "@/components/library/library-reader-modernization";
 import { LibraryReaderPassageReturnBoundary } from "@/components/library/library-reader-passage-return-boundary";
 import { LibraryReaderSurface } from "@/components/library/library-reader-surface";
-import { LibraryResearchShortcut } from "@/components/library/library-research-shortcut";
 
 function parseOffset(value: string | undefined) {
   if (!value || !/^\d+$/.test(value)) return null;
@@ -40,8 +39,7 @@ export default async function LibraryReaderPage({
     <LibraryReaderAccessBoundary publicationId={publicationId}>
       <LibraryReaderPassageReturnBoundary publicationId={publicationId} focus={focus}>
         <LibraryReaderModernization />
-        <LibraryReaderSurface publicationId={publicationId} />
-        <LibraryResearchShortcut />
+        <LibraryReaderSurface publicationId={publicationId} focus={focus} />
         <LibraryDiscussPassageLauncher publicationId={publicationId} />
       </LibraryReaderPassageReturnBoundary>
     </LibraryReaderAccessBoundary>
