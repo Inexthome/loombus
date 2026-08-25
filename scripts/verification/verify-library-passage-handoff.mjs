@@ -26,9 +26,12 @@ for (const token of [
 }
 
 for (const token of [
-  'writeLibraryPassageContext(destination, selection)',
-  'writeLibraryPassageContext("research", selection)',
-  'characters {selection.startOffset}–{selection.endOffset}',
+  'writeLibraryPassageContext(destination, passage)',
+  'writeLibraryPassageContext("research", passage)',
+  'data-library-reader-page',
+  'data-library-page-start',
+  'closestReaderPage',
+  'baseOffset + textOffsetWithin',
   'Passage → Discussion → Evidence → Knowledge',
   'Research evidence',
   'Discuss passage',
@@ -36,6 +39,7 @@ for (const token of [
   '"/api/library/save-to-research"',
   '.eq("status", "published")',
   'section.content_text.slice(startOffset, endOffset) !== trimmed',
+  'loombus:reader:passage-action',
 ]) {
   if (!launcher.includes(token)) failures.push(`missing Reader handoff contract: ${token}`);
 }
@@ -85,9 +89,9 @@ if (failures.length) {
 }
 
 console.log("Loombus Library passage handoff verification passed");
-console.log("- exact selected passage provenance is captured once and reused across tools");
+console.log("- exact selected passage provenance is captured from full-section or paginated Reader text");
 console.log("- discussion, Ask Loombus, and Research retain locator, offsets, and source hash");
 console.log("- Research handoff saves the passage before opening the workspace");
-console.log("- return links now preserve locator, UTF-16 offsets, and source hash for exact Reader restoration");
-console.log("- Reader selection remains bounded and checked against normalized section text");
+console.log("- return links preserve locator, UTF-16 offsets, and source hash for exact Reader restoration");
+console.log("- paginated Reader offsets are rebased against the canonical normalized section before handoff");
 console.log("- no schema migration or unrelated backend capability is introduced");

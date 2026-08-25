@@ -47,13 +47,18 @@ for (const fragment of [
 
 for (const fragment of [
   "LibraryReaderAccessBoundary",
+  "<LibraryReaderModernization",
   "<LibraryReaderSurface",
-  "<LibraryResearchShortcut",
+  "focus={focus}",
   "<LibraryDiscussPassageLauncher",
 ]) {
   if (!readerPage.includes(fragment)) {
     throw new Error(`Missing Reader route-boundary contract: ${fragment}`);
   }
+}
+
+if (readerPage.includes("LibraryResearchShortcut")) {
+  throw new Error("Paginated Reader must not restore the superseded floating Research shortcut; Research remains reachable inside Reader controls.");
 }
 
 for (const forbidden of ["delete from public.library_member_items", "delete from public.library_highlights", "delete from public.library_notes"]) {
