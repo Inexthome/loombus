@@ -1,0 +1,53 @@
+[data-library-subapp] {
+  isolation: isolate;
+}
+
+[data-library-subapp-content] {
+  min-height: 100vh;
+}
+
+.library-subapp-menu-item {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.875rem;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.library-subapp-menu-item:hover {
+  background: var(--loombus-surface-muted);
+}
+
+@media (max-width: 1023px) {
+  [data-library-subapp-content] {
+    padding-top: calc(max(0.75rem, env(safe-area-inset-top)) + 3.5rem);
+    padding-bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 4.5rem);
+  }
+
+  [data-library-subapp] nav[aria-label="Library sections"] {
+    display: none !important;
+  }
+
+  [data-library-subapp] div:has(> nav[aria-label="Library sections"]) {
+    display: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  html[data-library-search-open="true"] [data-library-subapp] div:has(> nav[aria-label="Library sections"]) {
+    display: block !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  html[data-library-search-open="true"] [data-library-subapp] nav[aria-label="Library sections"] {
+    display: none !important;
+  }
+
+  html[data-library-search-open="true"] [data-library-subapp] label:has(input[aria-label="Search the Loombus Library"]) {
+    display: flex !important;
+  }
+}
