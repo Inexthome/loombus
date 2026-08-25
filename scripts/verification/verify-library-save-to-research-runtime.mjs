@@ -19,7 +19,6 @@ const page = fs.readFileSync(pagePath, "utf8");
 function requireText(source, text, label) {
   if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`);
 }
-
 function rejectText(source, text, label) {
   if (source.includes(text)) throw new Error(`Forbidden ${label}: ${text}`);
 }
@@ -42,8 +41,9 @@ if (!(verifyHashIndex >= 0 && verifySliceIndex > verifyHashIndex && insertIndex 
 requireText(launcher, '"Research evidence"', "Reader Research evidence action");
 requireText(launcher, 'fetch("/api/library/save-to-research"', "guarded server save call");
 requireText(launcher, 'Authorization: `Bearer ${token}`', "member bearer forwarding");
-requireText(launcher, 'writeLibraryPassageContext("research", selection)', "Research passage-context handoff");
+requireText(launcher, 'writeLibraryPassageContext("research", passage)', "Research passage-context handoff");
 requireText(launcher, 'window.location.href = "/library/research?from=passage"', "Research destination navigation");
+requireText(launcher, 'data-library-page-start', "paginated Reader offset rebasing");
 requireText(passageContext, 'research: "loombus:library:research-passage:v1"', "Research passage storage key");
 
 requireText(research, '.from("library_research_items")', "private Research list/delete access");
@@ -67,4 +67,4 @@ for (const [source, label] of [[route, "route"], [launcher, "launcher"], [resear
   rejectText(source, "dangerouslySetInnerHTML", `${label} raw HTML rendering`);
 }
 
-console.log("PASS: Library Save to Research runtime preserves exact normalized-passage verification, Phase 4A source handoff, and private owner-scoped research access.");
+console.log("PASS: Library Save to Research runtime preserves exact normalized-passage verification, paginated source handoff, and private owner-scoped research access.");
