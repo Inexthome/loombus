@@ -27,6 +27,10 @@ requireText(route, 'supabase.auth.getUser(token)', "member session verification"
 requireText(route, '.from("library_knowledge_objects")', "canonical knowledge re-fetch");
 requireText(route, 'knowledge.updated_at !== sourceUpdatedAt', "knowledge version revalidation");
 requireText(route, '.from("library_knowledge_claims")', "knowledge claim membership re-fetch");
+requireText(route, '.from("library_research_claim_evidence")', "evidence-backed readiness check");
+requireText(route, 'knowledge.status !== "synthesized"', "synthesized readiness enforcement");
+requireText(route, 'code: "knowledge_not_ready"', "incomplete knowledge rejection");
+requireText(route, 'code: "knowledge_not_evidence_backed"', "evidence readiness rejection");
 requireText(route, '.from("library_research_claims")', "claim snapshot re-fetch");
 requireText(route, 'current.statement !== requested.statement', "claim statement version check");
 requireText(route, 'current.claim_type !== requested.claimType', "claim type version check");
@@ -36,11 +40,12 @@ requireText(route, 'fetch(new URL("/api/discussions/create", request.url)', "exi
 requireText(route, '.from("library_knowledge_discussion_promotions")', "private promotion provenance insert");
 requireText(route, '.from("library_knowledge_discussion_claims")', "selected claim snapshot insert");
 
+const readinessIndex = route.indexOf('knowledge.status !== "synthesized"');
 const createDiscussionIndex = route.indexOf('fetch(new URL("/api/discussions/create", request.url)');
 const promotionIndex = route.indexOf('.from("library_knowledge_discussion_promotions")');
 const claimSnapshotIndex = route.indexOf('.from("library_knowledge_discussion_claims")');
-if (!(createDiscussionIndex >= 0 && promotionIndex > createDiscussionIndex && claimSnapshotIndex > promotionIndex)) {
-  throw new Error("Promotion provenance must be recorded only after guarded discussion creation, with claim snapshots after the promotion row.");
+if (!(readinessIndex >= 0 && createDiscussionIndex > readinessIndex && promotionIndex > createDiscussionIndex && claimSnapshotIndex > promotionIndex)) {
+  throw new Error("Promotion readiness must be enforced before guarded discussion creation, with provenance recorded only after creation and claim snapshots after the promotion row.");
 }
 
 requireText(surface, 'new Set()', "claims default unselected");
@@ -60,14 +65,17 @@ for (const [source, label] of [[route, "route"], [surface, "surface"]]) {
 }
 
 for (const privateTable of [
-  "library_research_claim_evidence",
   "library_research_item_metadata",
   "library_research_items",
 ]) {
   rejectText(route, `.from("${privateTable}")`, `promotion route private-data access to ${privateTable}`);
 }
 
+for (const privatePayload of ["selected_text", "text_sha256", "start_offset", "end_offset"]) {
+  rejectText(route, privatePayload, `promotion route private evidence payload exposure (${privatePayload})`);
+}
+
 rejectText(route, '.from("discussions").insert', "parallel discussion insert bypass");
 rejectText(surface, '.from("discussions")', "browser discussion mutation");
 
-console.log("PASS: Library knowledge promotion runtime requires explicit review, revalidates approved knowledge/claim snapshots, uses the existing guarded discussion path, and keeps private Research evidence out of the public payload.");
+console.log("PASS: Library knowledge promotion runtime requires explicit review, enforces synthesized evidence-backed readiness, revalidates approved knowledge/claim snapshots, uses the existing guarded discussion path, and keeps private Research evidence payloads out of the public discussion.");
