@@ -18,7 +18,7 @@ create table if not exists public.policy_content_daily_analytics (
 );
 
 comment on table public.policy_content_daily_analytics is
-  'Privacy-minimized daily aggregate page-view counts for public policy surfaces. Contains no user, session, device, network, location, referrer, search, dwell-time, or scroll data.';
+  'Privacy-minimized daily aggregate page-view counts for public policy surfaces with no reader-level identifiers or behavioral dimensions.';
 
 alter table public.policy_content_daily_analytics enable row level security;
 
