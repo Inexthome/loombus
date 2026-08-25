@@ -205,17 +205,8 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
     return () => document.removeEventListener("loombus:reader:passage-action", handleAction);
   }, [capture, researchEvidence, selection]);
 
+  if (paginatedReader) return null;
   if (!selection && !error) return null;
-
-  if (paginatedReader && selection) {
-    return (
-      <div className="fixed bottom-[8.6rem] right-4 z-[76] sm:bottom-24 sm:right-6 md:bottom-7 md:right-7">
-        <button type="button" onClick={() => openTool("ask", "/library/ask-loombus")} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-[#242424]/95 px-4 text-xs font-semibold text-white shadow-xl backdrop-blur-xl">
-          <Sparkles className="size-4 text-[var(--loombus-gold)]" /> Ask Loombus
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-x-4 bottom-5 z-[120] mx-auto max-w-3xl rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-[var(--loombus-text)] shadow-2xl sm:bottom-7">
