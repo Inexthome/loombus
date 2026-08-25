@@ -53,7 +53,7 @@ for (const token of [
   'window.crypto.subtle.digest("SHA-256"',
   "textOffsetWithin",
   "renderPageText",
-  "highlight.text_sha256",
+  "row.text_sha256 === sectionSha",
   "start_offset: selection.startOffset",
   "end_offset: selection.endOffset",
   "text_sha256: textSha256",
