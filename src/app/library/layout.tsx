@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { LibraryImmersiveSubappShell } from "@/components/library/library-immersive-subapp-shell";
 import "./library-theme.css";
+import "./library-immersive-shell.css";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -20,5 +22,9 @@ export const metadata: Metadata = {
 };
 
 export default function LibraryLayout({ children }: { children: ReactNode }) {
-  return <div data-loombus-library>{children}</div>;
+  return (
+    <div data-loombus-library>
+      <LibraryImmersiveSubappShell>{children}</LibraryImmersiveSubappShell>
+    </div>
+  );
 }
