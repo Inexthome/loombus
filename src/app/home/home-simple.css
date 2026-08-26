@@ -1,5 +1,25 @@
 .home-simple-page {
-  background: #FEFBEC;
+  background: #FEFBEC !important;
+}
+
+html[data-loombus-theme="light"] .home-simple-page {
+  background: #FEFBEC !important;
+}
+
+html[data-loombus-theme="dark"] .home-simple-page {
+  background: var(--loombus-page-bg) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] .home-simple-page {
+    background: var(--loombus-page-bg) !important;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .home-simple-page {
+    background: #FEFBEC !important;
+  }
 }
 
 .home-simple-shell {
@@ -130,12 +150,6 @@
   margin-top: 0.35rem;
   color: var(--loombus-text-muted);
   font-size: 0.88rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .home-simple-page {
-    background: var(--loombus-page-bg);
-  }
 }
 
 @media (max-width: 48rem) {
