@@ -1,5 +1,6 @@
 import NotificationsV2Client from "./notifications-v2-client";
 import TeenSafetyNotificationDestinations from "./teen-safety-notification-destinations";
+import "./notifications-desktop-width.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
