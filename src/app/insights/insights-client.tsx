@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DiscussionViewerInsights } from "@/components/discussion-viewer-insights";
 import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
+import { ViewTrendPanel } from "@/components/view-trend-panel";
 import { supabase } from "@/lib/supabase/client";
 
 type InsightsTab = "discussions" | "replies" | "account";
@@ -350,6 +351,8 @@ export default function InsightsClient() {
               </div>
               <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-subtle)]">Knowledge origin describes provenance only. It does not add Signal by itself.</p>
             </div>
+
+            <ViewTrendPanel range={range} />
 
             <div className="border-b border-[var(--loombus-border)] py-5">
               <div className="mb-3 flex items-end justify-between gap-4">
