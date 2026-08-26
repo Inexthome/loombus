@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { DiscussionViewerInsights } from "@/components/discussion-viewer-insights";
+import { PersistedDetails } from "@/components/persisted-details";
 import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import { ViewTrendPanel } from "@/components/view-trend-panel";
 import { supabase } from "@/lib/supabase/client";
@@ -306,7 +307,7 @@ export default function InsightsClient() {
               ))}
             </div>
 
-            <details open className="group border-b border-[var(--loombus-border)]">
+            <PersistedDetails storageKey="loombus:insights:signal-v1" className="group border-b border-[var(--loombus-border)]">
               <DisclosureSummary
                 eyebrow="Signal v1"
                 title="Meaningful action beyond viewing."
@@ -318,9 +319,9 @@ export default function InsightsClient() {
                 <div className="border-l border-[var(--loombus-border)] py-4 pl-4"><span className="block text-xs text-[var(--loombus-text-muted)]">Signal contributors</span><strong className="mt-1 block text-xl font-black">{loadingSummary ? "—" : impact.totals.signalContributors.toLocaleString()}</strong></div>
                 <div className="border-l border-[var(--loombus-border)] py-4 pl-4"><span className="block text-xs text-[var(--loombus-text-muted)]">Signal depth</span><strong className="mt-1 block text-xl font-black">{loadingSummary ? "—" : formatDepth(impact.totals.signalDepth)}</strong><span className="mt-1 block text-xs text-[var(--loombus-text-subtle)]">actions per contributor</span></div>
               </div>
-            </details>
+            </PersistedDetails>
 
-            <details open className="group border-b border-[var(--loombus-border)]">
+            <PersistedDetails storageKey="loombus:insights:origin-comparison" className="group border-b border-[var(--loombus-border)]">
               <DisclosureSummary
                 eyebrow="Origin comparison"
                 title="Knowledge-origin vs regular discussions."
@@ -342,11 +343,11 @@ export default function InsightsClient() {
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-subtle)]">Knowledge origin describes provenance only. It does not add Signal by itself.</p>
               </div>
-            </details>
+            </PersistedDetails>
 
             <ViewTrendPanel range={range} />
 
-            <details open className="group border-b border-[var(--loombus-border)]">
+            <PersistedDetails storageKey="loombus:insights:discussion-performance" className="group border-b border-[var(--loombus-border)]">
               <DisclosureSummary eyebrow="Discussion performance" title="Where your signal is forming." meta={rangeLabel} />
               <div className="pb-1">
                 {rankedDiscussions.length ? rankedDiscussions.map((item) => (
@@ -361,7 +362,7 @@ export default function InsightsClient() {
                   </Link>
                 )) : <p className="border-t border-[var(--loombus-border)] py-4 text-sm text-[var(--loombus-text-muted)]">No discussion activity recorded in this period.</p>}
               </div>
-            </details>
+            </PersistedDetails>
 
             <DiscussionViewerInsights />
           </section>
