@@ -1,12 +1,6 @@
-import HomeFeaturedSignalAttachment from "@/components/home-featured-signal-attachment";
-import HomeV2ClientPage from "./home-v2-client-page";
-import "./home-featured-signal-attachment.css";
+import HomeSimpleClient from "./home-simple-client";
+import "./home-simple.css";
 
 export default function HomePage() {
-  return (
-    <>
-      <HomeV2ClientPage />
-      <HomeFeaturedSignalAttachment />
-    </>
-  );
+  return <HomeSimpleClient />;
 }
