@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase/client";
 import {
   Check,
   Ellipsis,
+  ExternalLink,
   Eye,
   EyeOff,
   Settings,
@@ -190,6 +191,7 @@ export function DesktopNotificationsTray({
   const [itemMenuId, setItemMenuId] = useState<string | null>(null);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -376,7 +378,11 @@ export function DesktopNotificationsTray({
 
   return (
     <div
-      className="grid max-h-[calc(100vh-5.25rem)] w-[min(430px,calc(100vw-24px))] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20"
+      className={`grid w-[min(430px,calc(100vw-24px))] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20 ${
+        expanded
+          ? "max-h-[calc(100vh-5.25rem)]"
+          : "max-h-[min(650px,calc(100vh-5.25rem))]"
+      }`}
       role="dialog"
       aria-label="Notifications"
     >
@@ -412,6 +418,14 @@ export function DesktopNotificationsTray({
               <Check aria-hidden="true" className="h-4 w-4" />
               Mark all as read
             </button>
+            <Link
+              href="/notifications"
+              onClick={onClose}
+              className="flex min-h-12 items-center gap-3 border-b border-[var(--loombus-border)] px-4 text-sm font-semibold no-underline transition hover:bg-[var(--loombus-surface-muted)]"
+            >
+              <ExternalLink aria-hidden="true" className="h-4 w-4" />
+              Open notifications
+            </Link>
             <Link
               href="/settings"
               onClick={onClose}
@@ -557,15 +571,9 @@ export function DesktopNotificationsTray({
                                 className="flex min-h-11 items-center gap-3 border-b border-[var(--loombus-border)] px-4 text-left text-sm font-semibold transition hover:bg-[var(--loombus-surface-muted)] disabled:opacity-45"
                               >
                                 {unread ? (
-                                  <Eye
-                                    aria-hidden="true"
-                                    className="h-4 w-4"
-                                  />
+                                  <Eye aria-hidden="true" className="h-4 w-4" />
                                 ) : (
-                                  <EyeOff
-                                    aria-hidden="true"
-                                    className="h-4 w-4"
-                                  />
+                                  <EyeOff aria-hidden="true" className="h-4 w-4" />
                                 )}
                                 {unread ? "Mark as read" : "Mark as unread"}
                               </button>
@@ -574,10 +582,7 @@ export function DesktopNotificationsTray({
                                 onClick={onClose}
                                 className="flex min-h-11 items-center gap-3 border-b border-[var(--loombus-border)] px-4 text-sm font-semibold no-underline transition hover:bg-[var(--loombus-surface-muted)]"
                               >
-                                <Settings
-                                  aria-hidden="true"
-                                  className="h-4 w-4"
-                                />
+                                <Settings aria-hidden="true" className="h-4 w-4" />
                                 Manage notifications like this
                               </Link>
                               <button
@@ -588,10 +593,7 @@ export function DesktopNotificationsTray({
                                 }
                                 className="flex min-h-11 items-center gap-3 px-4 text-left text-sm font-semibold text-red-500 transition hover:bg-red-500/10 disabled:opacity-45"
                               >
-                                <Trash2
-                                  aria-hidden="true"
-                                  className="h-4 w-4"
-                                />
+                                <Trash2 aria-hidden="true" className="h-4 w-4" />
                                 Delete notification
                               </button>
                             </div>
@@ -607,13 +609,17 @@ export function DesktopNotificationsTray({
         )}
       </div>
 
-      <Link
-        href="/notifications"
-        onClick={onClose}
-        className="flex min-h-12 items-center justify-center border-t border-[var(--loombus-border)] px-4 py-3 text-sm font-bold text-[var(--loombus-gold-deep)] no-underline transition hover:bg-[var(--loombus-surface-muted)]"
+      <button
+        type="button"
+        onClick={() => {
+          setExpanded((current) => !current);
+          setTopMenuOpen(false);
+          setItemMenuId(null);
+        }}
+        className="flex min-h-12 items-center justify-center border-0 border-t border-solid border-[var(--loombus-border)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--loombus-gold-deep)] transition hover:bg-[var(--loombus-surface-muted)]"
       >
-        Open notifications
-      </Link>
+        {expanded ? "Show fewer notifications" : "See earlier notifications"}
+      </button>
     </div>
   );
 }
