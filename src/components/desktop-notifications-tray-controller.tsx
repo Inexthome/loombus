@@ -134,7 +134,7 @@ export function DesktopNotificationsTrayController() {
   return (
     <div
       ref={trayRef}
-      className="fixed z-[170] hidden md:block [&>div]:max-h-[min(650px,calc(100vh-5.5rem))]"
+      className="fixed z-[170] hidden md:block"
       style={{ top: position.top, right: position.right }}
     >
       <DesktopNotificationsTray
