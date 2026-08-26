@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BarChart3, ChevronRight, Eye, Plus, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
-import { DiscussionViewerInsights } from "@/components/discussion-viewer-insights";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
-import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { supabase } from "@/lib/supabase/client";
 
@@ -76,7 +74,11 @@ export default function HomeSimpleClient() {
         setDobConfirmed(Boolean(storedDob));
       } catch (error) {
         if (!mounted) return;
-        setNotice(error instanceof Error ? error.message : "Home could not be loaded. Refresh and try again.");
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : "Home could not be loaded. Refresh and try again."
+        );
       } finally {
         if (mounted) setLoading(false);
       }
@@ -126,8 +128,34 @@ export default function HomeSimpleClient() {
   }
 
   if (loading) {
-    return <LoombusLoadingScreen title="Loading Home..." message="Preparing your private insights." />;
+    return (
+      <LoombusLoadingScreen
+        title="Loading Home..."
+        message="Preparing your signal brief."
+      />
+    );
   }
+
+  const homeRows = [
+    {
+      href: "/notifications",
+      title: "Recent activity",
+      detail: "Replies, follows, and updates waiting for your attention.",
+      icon: Sparkles,
+    },
+    {
+      href: "/my-discussions",
+      title: "Your discussions",
+      detail: "Revisit conversations you started and see what changed.",
+      icon: Eye,
+    },
+    {
+      href: "/saved",
+      title: "Continue your signal",
+      detail: "Return to discussions and ideas you saved for later.",
+      icon: ChevronRight,
+    },
+  ];
 
   return (
     <main className="home-simple-page min-h-screen text-[var(--loombus-text)]">
@@ -162,21 +190,69 @@ export default function HomeSimpleClient() {
               className="home-simple-dob"
               selectClassName="home-simple-select"
             />
-            <button type="button" onClick={() => void confirmDob()} disabled={dobSaving}>
+            <button
+              type="button"
+              onClick={() => void confirmDob()}
+              disabled={dobSaving}
+            >
               {dobSaving ? "Saving..." : "Confirm date of birth"}
             </button>
           </section>
         ) : null}
 
-        <section id="insights" className="home-simple-insights" aria-labelledby="home-insights-title">
-          <div className="home-simple-insights-heading">
-            <p>Insights</p>
-            <h2 id="home-insights-title">Your private viewer insights.</h2>
-            <span>See who is viewing your discussions and profile.</span>
+        <section className="mt-10" aria-labelledby="home-signal-title">
+          <div className="border-b border-[var(--loombus-border)] pb-4">
+            <p className="home-simple-eyebrow">Your signal today</p>
+            <h2 id="home-signal-title" className="mt-2 text-2xl font-black sm:text-3xl">
+              Pick up where your ideas left off.
+            </h2>
           </div>
 
-          <DiscussionViewerInsights />
-          <ProfileViewersPanel />
+          <div>
+            {homeRows.map(({ href, title, detail, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex items-center gap-4 border-b border-[var(--loombus-border)] py-5 transition"
+              >
+                <Icon
+                  className="size-5 shrink-0 text-[var(--loombus-gold)]"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1">
+                  <strong className="block text-base font-black">{title}</strong>
+                  <span className="mt-1 block text-sm leading-6 text-[var(--loombus-text-muted)]">
+                    {detail}
+                  </span>
+                </div>
+                <ChevronRight
+                  className="size-4 shrink-0 text-[var(--loombus-text-subtle)] transition group-hover:translate-x-0.5 group-hover:text-[var(--loombus-gold)]"
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-10" aria-labelledby="home-insights-title">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--loombus-border)] pb-4">
+            <div>
+              <p className="home-simple-eyebrow">Private viewer insights</p>
+              <h2 id="home-insights-title" className="mt-2 text-2xl font-black sm:text-3xl">
+                Understand your signal.
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
+                Discussion views, profile viewers, and member activity live in one private analytics workspace.
+              </p>
+            </div>
+            <Link
+              href="/insights"
+              className="inline-flex items-center gap-2 py-2 text-sm font-black text-[var(--loombus-gold)]"
+            >
+              Open Insights
+              <BarChart3 className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
         </section>
       </div>
     </main>
