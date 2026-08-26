@@ -6,6 +6,7 @@ import { DiscussionsCreateComposerBridge } from "@/components/discussions-create
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import "./discussion-feed-media.css";
 import "./discussion-feed-refinements.css";
+import "./discussion-flat-system.css";
 import "./discussions-create-modal.css";
 
 export const metadata: Metadata = {
