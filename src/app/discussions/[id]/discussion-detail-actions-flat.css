@@ -56,6 +56,15 @@
   padding-right: 0 !important;
 }
 
+.discussion-audience-detail-badge {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+}
+
 @media (min-width: 40rem) {
   [class*="discussion-detail-actions-layer_actionGrid__"] {
     grid-template-columns: 1fr !important;
