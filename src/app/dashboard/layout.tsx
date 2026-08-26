@@ -1,5 +1,4 @@
-import "./dashboard-v2.css";
-import "./dashboard-v2-density.css";
+import "./dashboard-compact.css";
 
 export default function DashboardLayout({
   children,
