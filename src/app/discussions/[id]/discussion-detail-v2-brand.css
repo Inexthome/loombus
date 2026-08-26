@@ -8,9 +8,7 @@
   --discussion-v2-accent-border: rgba(203, 171, 91, 0.46);
   --discussion-v2-primary-bg: #FEFBEC;
   --discussion-v2-primary-text: #17140B;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(203, 171, 91, 0.12), transparent 34rem),
-    var(--loombus-page-bg);
+  background: var(--loombus-page-bg);
 }
 
 /* Brand accent: Loombus Gold */

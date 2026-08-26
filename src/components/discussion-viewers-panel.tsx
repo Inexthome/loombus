@@ -74,27 +74,30 @@ export function DiscussionViewersPanel() {
   if (!visible) return null;
 
   return (
-    <section className="mx-auto mb-24 mt-6 max-w-[86rem] px-4 text-[var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--loombus-gold)]">
-              Discussion viewers
-            </p>
-            <h2 className="mt-2 text-2xl font-black">Who viewed this discussion.</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
+    <section className="mx-auto mb-20 mt-2 max-w-[86rem] px-4 text-[var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="border-y border-[var(--loombus-border)] py-5 sm:py-6">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--loombus-gold)]">
+                Discussion viewers
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--loombus-text-muted)]">
+                <Eye aria-hidden="true" className="size-4" />
+                {totalViews}
+              </span>
+            </div>
+            <h2 className="mt-2 text-xl font-black sm:text-2xl">Who viewed this discussion.</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)]">
               Reader identities are visible only to the discussion owner and administrators.
-              Views are deduplicated for 24 hours. A private profile still shows the member&apos;s
-              basic public identity here while the rest of that profile remains private.
+              Views are deduplicated for 24 hours. Private profiles expose only the member&apos;s
+              basic public identity here.
             </p>
           </div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] px-3 py-2 text-sm font-bold text-[var(--loombus-text-muted)]">
-            <Eye className="size-4" /> {totalViews}
-          </span>
         </div>
 
         {viewers.length ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-4 grid border-t border-[var(--loombus-border-muted)] sm:grid-cols-2 xl:grid-cols-3">
             {viewers.map((viewer, index) => {
               const profile = viewer.profile;
               const name =
@@ -108,12 +111,12 @@ export function DiscussionViewersPanel() {
                 <Link
                   key={profile?.id ?? `${viewer.viewedAt}-${index}`}
                   href={href}
-                  className="flex items-center gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 transition hover:border-[var(--loombus-gold)]"
+                  className="flex min-w-0 items-center gap-3 border-b border-[var(--loombus-border-muted)] py-3 pr-4 text-inherit transition hover:text-[var(--loombus-gold)] sm:odd:mr-4 xl:[&:nth-child(3n+1)]:mr-4 xl:[&:nth-child(3n+2)]:mr-4"
                 >
                   <ProfileAvatar profile={profile} size="sm" />
                   <div className="min-w-0">
                     <strong className="block truncate text-sm">{name}</strong>
-                    <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
+                    <span className="mt-0.5 block text-xs text-[var(--loombus-text-muted)]">
                       {formatViewedAt(viewer.viewedAt)}
                     </span>
                   </div>
@@ -122,7 +125,7 @@ export function DiscussionViewersPanel() {
             })}
           </div>
         ) : (
-          <p className="mt-5 rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm text-[var(--loombus-text-muted)]">
+          <p className="mt-4 border-t border-[var(--loombus-border-muted)] pt-4 text-sm text-[var(--loombus-text-muted)]">
             No authenticated reader identities have been recorded yet.
           </p>
         )}
