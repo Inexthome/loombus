@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { PersistedDetails } from "@/components/persisted-details";
 import { supabase } from "@/lib/supabase/client";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
@@ -111,7 +112,11 @@ export function SignalTrendPanel({ range }: { range: RangeKey }) {
   const last = payload.points[payload.points.length - 1];
 
   return (
-    <details open className="group border-b border-[var(--loombus-border)]" aria-labelledby="signal-trend-title">
+    <PersistedDetails
+      storageKey="loombus:insights:signal-trend"
+      className="group border-b border-[var(--loombus-border)]"
+      aria-labelledby="signal-trend-title"
+    >
       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Signal trend</p>
@@ -159,6 +164,6 @@ export function SignalTrendPanel({ range }: { range: RangeKey }) {
           <p className="mt-4 border-t border-[var(--loombus-border)] py-6 text-sm text-[var(--loombus-text-muted)]">No replies received or saves earned in this period.</p>
         )}
       </div>
-    </details>
+    </PersistedDetails>
   );
 }
