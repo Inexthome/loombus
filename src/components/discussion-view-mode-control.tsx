@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutList, Rows3, ChevronDown } from "lucide-react";
+import { ChevronDown, LayoutList, Rows3 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,6 +15,7 @@ export function DiscussionViewModeControl() {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const viewLabel = viewMode === "card" ? "Card" : "Compact";
 
   useEffect(() => {
     const route = document.querySelector<HTMLElement>(".discussion-feed-route");
@@ -80,10 +81,11 @@ export function DiscussionViewModeControl() {
         className="discussion-view-trigger"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
+        aria-label={`Discussion view: ${viewLabel}`}
         onClick={() => setMenuOpen((open) => !open)}
       >
         {viewMode === "card" ? <LayoutList aria-hidden="true" size={16} /> : <Rows3 aria-hidden="true" size={16} />}
-        <span>View</span>
+        <span>{viewLabel}</span>
         <ChevronDown aria-hidden="true" size={14} />
       </button>
 
