@@ -28,6 +28,11 @@ function getSince(range: RangeKey) {
   return date.toISOString();
 }
 
+function signalDepth(actions: number, contributors: number) {
+  if (!contributors) return 0;
+  return Number((actions / contributors).toFixed(2));
+}
+
 export async function GET(request: NextRequest) {
   const service = createMemberPrivacyServiceClient();
   if (!service) return jsonError("Insights service is not configured.", 503);
@@ -58,7 +63,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         range,
-        totals: { views: 0, uniqueReach: 0, repliesReceived: 0, savesEarned: 0, engagedMembers: 0 },
+        totals: {
+          views: 0,
+          uniqueReach: 0,
+          repliesReceived: 0,
+          savesEarned: 0,
+          engagedMembers: 0,
+          signalActions: 0,
+          signalContributors: 0,
+          signalDepth: 0,
+        },
         discussions: [],
       },
       { headers: { "Cache-Control": "private, no-store" } }
@@ -105,9 +119,17 @@ export async function GET(request: NextRequest) {
 
   const overallViewers = new Set<string>();
   const overallEngaged = new Set<string>();
+  const overallSignalContributors = new Set<string>();
   const byDiscussion = new Map<
     string,
-    { views: number; viewers: Set<string>; repliers: Set<string>; savers: Set<string>; replies: number; saves: number }
+    {
+      views: number;
+      viewers: Set<string>;
+      repliers: Set<string>;
+      savers: Set<string>;
+      replies: number;
+      saves: number;
+    }
   >();
 
   for (const id of ids) {
@@ -139,6 +161,7 @@ export async function GET(request: NextRequest) {
     if (row.user_id) {
       bucket.repliers.add(row.user_id);
       overallEngaged.add(row.user_id);
+      overallSignalContributors.add(row.user_id);
     }
   }
 
@@ -149,6 +172,7 @@ export async function GET(request: NextRequest) {
     if (row.user_id) {
       bucket.savers.add(row.user_id);
       overallEngaged.add(row.user_id);
+      overallSignalContributors.add(row.user_id);
     }
   }
 
@@ -159,6 +183,12 @@ export async function GET(request: NextRequest) {
       ...bucket.repliers,
       ...bucket.savers,
     ]);
+    const signalContributors = new Set<string>([
+      ...bucket.repliers,
+      ...bucket.savers,
+    ]);
+    const signalActions = bucket.replies + bucket.saves;
+
     return {
       id: discussion.id,
       title: discussion.title,
@@ -168,8 +198,13 @@ export async function GET(request: NextRequest) {
       repliesReceived: bucket.replies,
       savesEarned: bucket.saves,
       engagedMembers: engaged.size,
+      signalActions,
+      signalContributors: signalContributors.size,
+      signalDepth: signalDepth(signalActions, signalContributors.size),
     };
   });
+
+  const totalSignalActions = replies.length + saves.length;
 
   return NextResponse.json(
     {
@@ -180,6 +215,9 @@ export async function GET(request: NextRequest) {
         repliesReceived: replies.length,
         savesEarned: saves.length,
         engagedMembers: overallEngaged.size,
+        signalActions: totalSignalActions,
+        signalContributors: overallSignalContributors.size,
+        signalDepth: signalDepth(totalSignalActions, overallSignalContributors.size),
       },
       discussions: discussionMetrics,
     },
