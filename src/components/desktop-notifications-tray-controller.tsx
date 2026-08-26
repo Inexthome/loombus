@@ -8,6 +8,11 @@ import { DesktopNotificationsTray } from "./desktop-notifications-tray";
 const DESKTOP_NOTIFICATION_BUTTON_SELECTOR =
   '.loombus-desktop-top-navbar button[aria-label="Notifications"]';
 
+type TrayPosition = {
+  top: number;
+  right: number;
+};
+
 /**
  * Owns the desktop notification-bell interaction while the top navigation
  * remains responsible for its unread badge. Keeping the tray controller
@@ -18,6 +23,7 @@ export function DesktopNotificationsTrayController() {
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<TrayPosition | null>(null);
   const trayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -43,14 +49,28 @@ export function DesktopNotificationsTrayController() {
 
   useEffect(() => {
     setOpen(false);
+    setPosition(null);
   }, [pathname]);
 
   useEffect(() => {
-    function syncExpandedState(nextOpen: boolean) {
-      const button = document.querySelector<HTMLButtonElement>(
+    function getNotificationButton() {
+      return document.querySelector<HTMLButtonElement>(
         DESKTOP_NOTIFICATION_BUTTON_SELECTOR,
       );
+    }
+
+    function syncExpandedState(nextOpen: boolean) {
+      const button = getNotificationButton();
       if (button) button.setAttribute("aria-expanded", String(nextOpen));
+    }
+
+    function syncTrayPosition(button = getNotificationButton()) {
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 8,
+        right: Math.max(12, window.innerWidth - rect.right),
+      });
     }
 
     function handleDocumentClick(event: MouseEvent) {
@@ -65,9 +85,11 @@ export function DesktopNotificationsTrayController() {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        syncTrayPosition(notificationButton);
         setOpen((current) => {
           const next = !current;
           syncExpandedState(next);
+          if (!next) setPosition(null);
           return next;
         });
         return;
@@ -75,6 +97,7 @@ export function DesktopNotificationsTrayController() {
 
       if (open && !trayRef.current?.contains(target as Node)) {
         setOpen(false);
+        setPosition(null);
         syncExpandedState(false);
       }
     }
@@ -82,32 +105,44 @@ export function DesktopNotificationsTrayController() {
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape" || !open) return;
       setOpen(false);
+      setPosition(null);
       syncExpandedState(false);
-      document
-        .querySelector<HTMLButtonElement>(DESKTOP_NOTIFICATION_BUTTON_SELECTOR)
-        ?.focus();
+      getNotificationButton()?.focus();
+    }
+
+    function handleViewportChange() {
+      if (open) syncTrayPosition();
     }
 
     document.addEventListener("click", handleDocumentClick, true);
     window.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
     syncExpandedState(open);
+    if (open) syncTrayPosition();
 
     return () => {
       document.removeEventListener("click", handleDocumentClick, true);
       window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
     };
   }, [open]);
 
-  if (!open || !userId) return null;
+  if (!open || !userId || !position) return null;
 
   return (
     <div
       ref={trayRef}
-      className="fixed left-1/2 top-[4.85rem] z-[170] hidden -translate-x-1/2 md:block"
+      className="fixed z-[170] hidden md:block [&>div]:max-h-[min(650px,calc(100vh-5.5rem))]"
+      style={{ top: position.top, right: position.right }}
     >
       <DesktopNotificationsTray
         userId={userId}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setPosition(null);
+        }}
       />
     </div>
   );
