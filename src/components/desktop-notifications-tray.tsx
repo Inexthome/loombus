@@ -37,8 +37,24 @@ type TrayProfile = {
   avatar_url: string | null;
 };
 
-type TrayFilter = "all" | "unread";
+type TrayCategory =
+  | "replies"
+  | "follows"
+  | "discussions"
+  | "messages"
+  | "system";
+type TrayFilter = "all" | "unread" | TrayCategory;
 type TrayTimeGroup = "new" | "today" | "earlier";
+
+const FILTERS: { value: TrayFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "unread", label: "Unread" },
+  { value: "discussions", label: "Discussions" },
+  { value: "messages", label: "Messages" },
+  { value: "replies", label: "Replies" },
+  { value: "follows", label: "Follows" },
+  { value: "system", label: "System" },
+];
 
 const GROUP_LABELS: Record<TrayTimeGroup, string> = {
   new: "New",
@@ -61,6 +77,42 @@ function getMessage(
     return `${getProfileName(actor)} followed you.`;
   }
   return normalizePublicText(notification.message);
+}
+
+function getCategory(notification: TrayNotification): TrayCategory {
+  const type = notification.type.toLowerCase();
+  const targetType = notification.target_type.toLowerCase();
+
+  if (
+    targetType === "conversation" ||
+    type === "new_message" ||
+    type === "message_reply"
+  ) {
+    return "messages";
+  }
+
+  if (
+    type === "reply" ||
+    type === "mention" ||
+    type === "followed_reply" ||
+    type === "room_reply"
+  ) {
+    return "replies";
+  }
+
+  if (
+    type === "followed_discussion" ||
+    targetType === "discussion" ||
+    type.includes("discussion")
+  ) {
+    return "discussions";
+  }
+
+  if (type === "follow" || type.includes("follow_request")) {
+    return "follows";
+  }
+
+  return "system";
 }
 
 function getHref(
@@ -206,12 +258,39 @@ export function DesktopNotificationsTray({
     };
   }, [onUnreadCountChange, userId]);
 
+  useEffect(() => {
+    if (!topMenuOpen && !itemMenuId) return;
+
+    function handlePointerDown(event: globalThis.MouseEvent) {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target?.closest("[data-notifications-tray-menu]")) {
+        setTopMenuOpen(false);
+        setItemMenuId(null);
+      }
+    }
+
+    function handleEscape(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setTopMenuOpen(false);
+      setItemMenuId(null);
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [itemMenuId, topMenuOpen]);
+
   const unreadCount = notifications.filter((item) => !item.read_at).length;
   const visibleNotifications = useMemo(
     () =>
-      filter === "unread"
-        ? notifications.filter((item) => !item.read_at)
-        : notifications,
+      notifications.filter((item) => {
+        if (filter === "unread") return !item.read_at;
+        if (filter === "all") return true;
+        return getCategory(item) === filter;
+      }),
     [filter, notifications],
   );
 
@@ -297,14 +376,17 @@ export function DesktopNotificationsTray({
 
   return (
     <div
-      className="grid max-h-[calc(100vh-5.25rem)] w-[min(410px,calc(100vw-24px))] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20"
+      className="grid max-h-[calc(100vh-5.25rem)] w-[min(430px,calc(100vw-24px))] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20"
       role="dialog"
       aria-label="Notifications"
     >
       <div className="relative flex items-center justify-between gap-3 px-4 pb-2 pt-4">
-        <h2 className="m-0 text-xl font-extrabold tracking-[-0.03em]">Notifications</h2>
+        <h2 className="m-0 text-xl font-extrabold tracking-[-0.03em]">
+          Notifications
+        </h2>
         <button
           type="button"
+          data-notifications-tray-menu
           aria-label="Notification actions"
           aria-expanded={topMenuOpen}
           onClick={() => {
@@ -317,7 +399,10 @@ export function DesktopNotificationsTray({
         </button>
 
         {topMenuOpen ? (
-          <div className="absolute right-3 top-[3.4rem] z-40 grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20">
+          <div
+            data-notifications-tray-menu
+            className="absolute right-3 top-[3.4rem] z-40 grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20"
+          >
             <button
               type="button"
               disabled={unreadCount === 0}
@@ -339,31 +424,29 @@ export function DesktopNotificationsTray({
         ) : null}
       </div>
 
-      <div className="flex gap-1 border-b border-[var(--loombus-border)] px-4 pb-2">
-        <button
-          type="button"
-          aria-pressed={filter === "all"}
-          onClick={() => setFilter("all")}
-          className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
-            filter === "all"
-              ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold-deep)]"
-              : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
-          }`}
-        >
-          All
-        </button>
-        <button
-          type="button"
-          aria-pressed={filter === "unread"}
-          onClick={() => setFilter("unread")}
-          className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
-            filter === "unread"
-              ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold-deep)]"
-              : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
-          }`}
-        >
-          Unread{unreadCount > 0 ? ` ${unreadCount}` : ""}
-        </button>
+      <div className="flex flex-wrap gap-1 border-b border-[var(--loombus-border)] px-4 pb-2">
+        {FILTERS.map((item) => (
+          <button
+            key={item.value}
+            type="button"
+            aria-pressed={filter === item.value}
+            onClick={() => {
+              setFilter(item.value);
+              setTopMenuOpen(false);
+              setItemMenuId(null);
+            }}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+              filter === item.value
+                ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold-deep)]"
+                : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
+            }`}
+          >
+            {item.label}
+            {item.value === "unread" && unreadCount > 0
+              ? ` ${unreadCount}`
+              : ""}
+          </button>
+        ))}
       </div>
 
       <div className="min-h-0 overflow-y-auto overscroll-contain py-1">
@@ -373,7 +456,11 @@ export function DesktopNotificationsTray({
           </p>
         ) : visibleNotifications.length === 0 ? (
           <p className="m-0 px-4 py-8 text-center text-sm text-[var(--loombus-text-muted)]">
-            {filter === "unread" ? "No unread notifications." : "You are all caught up."}
+            {filter === "unread"
+              ? "No unread notifications."
+              : filter === "all"
+                ? "You are all caught up."
+                : `No ${filter} notifications.`}
           </p>
         ) : (
           (["new", "today", "earlier"] as TrayTimeGroup[]).map((group) => {
@@ -432,14 +519,19 @@ export function DesktopNotificationsTray({
                           </span>
                         </Link>
 
-                        <div className="relative flex items-center gap-1 pr-2">
+                        <div
+                          data-notifications-tray-menu
+                          className="relative flex items-center gap-1 pr-2"
+                        >
                           <button
                             type="button"
                             aria-label="More notification actions"
                             aria-expanded={menuOpen}
                             onClick={() => {
                               setItemMenuId((current) =>
-                                current === notification.id ? null : notification.id,
+                                current === notification.id
+                                  ? null
+                                  : notification.id,
                               );
                               setTopMenuOpen(false);
                             }}
@@ -459,13 +551,21 @@ export function DesktopNotificationsTray({
                               <button
                                 type="button"
                                 disabled={workingId === notification.id}
-                                onClick={() => void setReadState(notification, !unread)}
+                                onClick={() =>
+                                  void setReadState(notification, !unread)
+                                }
                                 className="flex min-h-11 items-center gap-3 border-b border-[var(--loombus-border)] px-4 text-left text-sm font-semibold transition hover:bg-[var(--loombus-surface-muted)] disabled:opacity-45"
                               >
                                 {unread ? (
-                                  <Eye aria-hidden="true" className="h-4 w-4" />
+                                  <Eye
+                                    aria-hidden="true"
+                                    className="h-4 w-4"
+                                  />
                                 ) : (
-                                  <EyeOff aria-hidden="true" className="h-4 w-4" />
+                                  <EyeOff
+                                    aria-hidden="true"
+                                    className="h-4 w-4"
+                                  />
                                 )}
                                 {unread ? "Mark as read" : "Mark as unread"}
                               </button>
@@ -474,16 +574,24 @@ export function DesktopNotificationsTray({
                                 onClick={onClose}
                                 className="flex min-h-11 items-center gap-3 border-b border-[var(--loombus-border)] px-4 text-sm font-semibold no-underline transition hover:bg-[var(--loombus-surface-muted)]"
                               >
-                                <Settings aria-hidden="true" className="h-4 w-4" />
+                                <Settings
+                                  aria-hidden="true"
+                                  className="h-4 w-4"
+                                />
                                 Manage notifications like this
                               </Link>
                               <button
                                 type="button"
                                 disabled={workingId === notification.id}
-                                onClick={() => void deleteNotification(notification.id)}
+                                onClick={() =>
+                                  void deleteNotification(notification.id)
+                                }
                                 className="flex min-h-11 items-center gap-3 px-4 text-left text-sm font-semibold text-red-500 transition hover:bg-red-500/10 disabled:opacity-45"
                               >
-                                <Trash2 aria-hidden="true" className="h-4 w-4" />
+                                <Trash2
+                                  aria-hidden="true"
+                                  className="h-4 w-4"
+                                />
                                 Delete notification
                               </button>
                             </div>
