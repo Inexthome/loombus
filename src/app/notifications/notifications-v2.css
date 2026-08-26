@@ -139,13 +139,21 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
   padding: 0.1rem 1rem 0.75rem;
   border-bottom: 1px solid var(--loombus-border-muted, var(--loombus-border));
+  scrollbar-width: none;
+}
+
+.notifications-v2-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .notifications-v2-tabs button {
   display: inline-flex;
   min-height: 2.45rem;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.4rem;
   border: 0;
@@ -538,7 +546,7 @@
   .notifications-v2-shell,
   .notifications-v2-state {
     width: min(100%, 430px);
-    margin-right: 1.5rem;
+    margin-right: auto;
     margin-left: auto;
     overflow: visible;
     border: 1px solid var(--loombus-border);
