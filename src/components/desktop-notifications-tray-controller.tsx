@@ -103,7 +103,7 @@ export function DesktopNotificationsTrayController() {
   return (
     <div
       ref={trayRef}
-      className="fixed right-6 top-[4.85rem] z-[170] hidden md:block"
+      className="fixed left-1/2 top-[4.85rem] z-[170] hidden -translate-x-1/2 md:block"
     >
       <DesktopNotificationsTray
         userId={userId}
