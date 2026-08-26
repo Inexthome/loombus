@@ -1,6 +1,12 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, type ReactNode, useEffect, useState } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  type SyntheticEvent,
+  useEffect,
+  useState,
+} from "react";
 
 type PersistedDetailsProps = Omit<ComponentPropsWithoutRef<"details">, "open" | "onToggle"> & {
   storageKey: string;
@@ -26,7 +32,7 @@ export function PersistedDetails({
     }
   }, [storageKey]);
 
-  function handleToggle(event: React.SyntheticEvent<HTMLDetailsElement>) {
+  function handleToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const nextOpen = event.currentTarget.open;
     setOpen(nextOpen);
     try {
