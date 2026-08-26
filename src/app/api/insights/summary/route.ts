@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
           signalActions: 0,
           signalContributors: 0,
           signalDepth: 0,
+          knowledgeOriginDiscussions: 0,
         },
         discussions: [],
       },
@@ -104,18 +105,28 @@ export async function GET(request: NextRequest) {
     savesQuery = savesQuery.gte("created_at", since);
   }
 
-  const [viewsResult, repliesResult, savesResult] = await Promise.all([
+  const [viewsResult, repliesResult, savesResult, promotionsResult] = await Promise.all([
     viewsQuery,
     repliesQuery,
     savesQuery,
+    service
+      .from("library_knowledge_discussion_promotions")
+      .select("discussion_id, source_knowledge_type, source_knowledge_status")
+      .eq("user_id", user.id)
+      .in("discussion_id", ids),
   ]);
 
-  const firstError = viewsResult.error || repliesResult.error || savesResult.error;
+  const firstError =
+    viewsResult.error || repliesResult.error || savesResult.error || promotionsResult.error;
   if (firstError) return jsonError(firstError.message, 500);
 
   const views = viewsResult.data ?? [];
   const replies = repliesResult.data ?? [];
   const saves = savesResult.data ?? [];
+  const promotions = promotionsResult.data ?? [];
+  const promotionByDiscussion = new Map(
+    promotions.map((promotion) => [promotion.discussion_id, promotion])
+  );
 
   const overallViewers = new Set<string>();
   const overallEngaged = new Set<string>();
@@ -178,6 +189,7 @@ export async function GET(request: NextRequest) {
 
   const discussionMetrics = owned.map((discussion) => {
     const bucket = byDiscussion.get(discussion.id)!;
+    const promotion = promotionByDiscussion.get(discussion.id);
     const engaged = new Set<string>([
       ...bucket.viewers,
       ...bucket.repliers,
@@ -201,6 +213,9 @@ export async function GET(request: NextRequest) {
       signalActions,
       signalContributors: signalContributors.size,
       signalDepth: signalDepth(signalActions, signalContributors.size),
+      knowledgeOrigin: Boolean(promotion),
+      knowledgeType: promotion?.source_knowledge_type ?? null,
+      knowledgeStatus: promotion?.source_knowledge_status ?? null,
     };
   });
 
@@ -218,6 +233,7 @@ export async function GET(request: NextRequest) {
         signalActions: totalSignalActions,
         signalContributors: overallSignalContributors.size,
         signalDepth: signalDepth(totalSignalActions, overallSignalContributors.size),
+        knowledgeOriginDiscussions: promotions.length,
       },
       discussions: discussionMetrics,
     },
