@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -110,90 +111,54 @@ export function SignalTrendPanel({ range }: { range: RangeKey }) {
   const last = payload.points[payload.points.length - 1];
 
   return (
-    <section className="border-b border-[var(--loombus-border)] py-5" aria-labelledby="signal-trend-title">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <details open className="group border-b border-[var(--loombus-border)]" aria-labelledby="signal-trend-title">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">
-            Signal trend
-          </p>
-          <h2 id="signal-trend-title" className="mt-2 text-xl font-black">
-            Meaningful actions over time by discussion origin.
-          </h2>
-          <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
-            Replies received and saves earned are combined as Signal actions, then split by knowledge-origin and regular discussions.
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Signal trend</p>
+          <h2 id="signal-trend-title" className="mt-2 text-xl font-black">Meaningful actions over time by discussion origin.</h2>
+          <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Replies received and saves earned are combined as Signal actions, then split by knowledge-origin and regular discussions.</p>
         </div>
-        <span className="text-xs text-[var(--loombus-text-muted)]">
-          {bucketLabel(payload.bucket)} buckets
-        </span>
-      </div>
+        <div className="flex shrink-0 items-center gap-3 pt-1 text-xs text-[var(--loombus-text-muted)]">
+          <span>{bucketLabel(payload.bucket)} buckets</span>
+          <ChevronDown className="size-4 transition group-open:rotate-180" aria-hidden="true" />
+        </div>
+      </summary>
 
-      <div className="mt-4 grid grid-cols-3 border-t border-[var(--loombus-border)] text-xs text-[var(--loombus-text-muted)]">
-        <div className="py-3">
-          <span className="block">Signal actions</span>
-          <strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.signal.toLocaleString()}</strong>
+      <div className="pb-5">
+        <div className="grid grid-cols-3 border-t border-[var(--loombus-border)] text-xs text-[var(--loombus-text-muted)]">
+          <div className="py-3"><span className="block">Signal actions</span><strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.signal.toLocaleString()}</strong></div>
+          <div className="border-l border-[var(--loombus-border)] py-3 pl-4"><span className="block">Replies</span><strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.replies.toLocaleString()}</strong></div>
+          <div className="border-l border-[var(--loombus-border)] py-3 pl-4"><span className="block">Saves</span><strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.saves.toLocaleString()}</strong></div>
         </div>
-        <div className="border-l border-[var(--loombus-border)] py-3 pl-4">
-          <span className="block">Replies</span>
-          <strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.replies.toLocaleString()}</strong>
-        </div>
-        <div className="border-l border-[var(--loombus-border)] py-3 pl-4">
-          <span className="block">Saves</span>
-          <strong className="mt-1 block text-base text-[var(--loombus-text)]">{totals.saves.toLocaleString()}</strong>
-        </div>
-      </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--loombus-border)] pt-3 text-xs text-[var(--loombus-text-muted)]">
-        <span><b className="text-[var(--loombus-gold)]">—</b> Knowledge-origin Signal</span>
-        <span><b className="text-[var(--loombus-text-muted)]">—</b> Regular Signal</span>
-      </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--loombus-border)] pt-3 text-xs text-[var(--loombus-text-muted)]">
+          <span><b className="text-[var(--loombus-gold)]">—</b> Knowledge-origin Signal</span>
+          <span><b className="text-[var(--loombus-text-muted)]">—</b> Regular Signal</span>
+        </div>
 
-      {loading ? (
-        <p className="py-8 text-sm text-[var(--loombus-text-muted)]">Loading Signal trend…</p>
-      ) : notice ? (
-        <p className="py-8 text-sm text-[var(--loombus-text-muted)]">{notice}</p>
-      ) : hasSignal ? (
-        <div className="mt-4">
-          <div className="relative h-56 border-y border-[var(--loombus-border)] py-4">
-            <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[var(--loombus-border)]" aria-hidden="true" />
-            <svg
-              viewBox="0 0 100 34"
-              preserveAspectRatio="none"
-              className="relative h-full w-full overflow-visible"
-              role="img"
-              aria-label="Signal actions over time for knowledge-origin and regular discussions"
-            >
-              <polyline
-                points={chart.regular}
-                fill="none"
-                vectorEffect="non-scaling-stroke"
-                className="stroke-[var(--loombus-text-muted)]"
-                strokeWidth="2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-              <polyline
-                points={chart.knowledge}
-                fill="none"
-                vectorEffect="non-scaling-stroke"
-                className="stroke-[var(--loombus-gold)]"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </svg>
+        {loading ? (
+          <p className="py-8 text-sm text-[var(--loombus-text-muted)]">Loading Signal trend…</p>
+        ) : notice ? (
+          <p className="py-8 text-sm text-[var(--loombus-text-muted)]">{notice}</p>
+        ) : hasSignal ? (
+          <div className="mt-4">
+            <div className="relative h-56 border-y border-[var(--loombus-border)] py-4">
+              <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[var(--loombus-border)]" aria-hidden="true" />
+              <svg viewBox="0 0 100 34" preserveAspectRatio="none" className="relative h-full w-full overflow-visible" role="img" aria-label="Signal actions over time for knowledge-origin and regular discussions">
+                <polyline points={chart.regular} fill="none" vectorEffect="non-scaling-stroke" className="stroke-[var(--loombus-text-muted)]" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points={chart.knowledge} fill="none" vectorEffect="non-scaling-stroke" className="stroke-[var(--loombus-gold)]" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-[var(--loombus-text-subtle)]">
+              <span>{first?.label}</span>
+              <span>Peak bucket {chart.max.toLocaleString()} Signal actions</span>
+              <span>{last?.label}</span>
+            </div>
           </div>
-          <div className="mt-2 flex justify-between text-xs text-[var(--loombus-text-subtle)]">
-            <span>{first?.label}</span>
-            <span>Peak bucket {chart.max.toLocaleString()} Signal actions</span>
-            <span>{last?.label}</span>
-          </div>
-        </div>
-      ) : (
-        <p className="mt-4 border-t border-[var(--loombus-border)] py-6 text-sm text-[var(--loombus-text-muted)]">
-          No replies received or saves earned in this period.
-        </p>
-      )}
-    </section>
+        ) : (
+          <p className="mt-4 border-t border-[var(--loombus-border)] py-6 text-sm text-[var(--loombus-text-muted)]">No replies received or saves earned in this period.</p>
+        )}
+      </div>
+    </details>
   );
 }
