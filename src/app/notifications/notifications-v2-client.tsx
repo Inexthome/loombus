@@ -49,7 +49,13 @@ type Profile = {
   avatar_url: string | null;
 };
 
-type InboxFilter = "all" | "unread";
+type NotificationCategory =
+  | "replies"
+  | "follows"
+  | "discussions"
+  | "messages"
+  | "system";
+type InboxFilter = "all" | "unread" | NotificationCategory;
 type TimeGroup = "new" | "today" | "earlier";
 
 type NotificationPreferences = {
@@ -72,6 +78,16 @@ type NotificationPreferenceKey =
   | "mentionsEnabled"
   | "followedDiscussionsEnabled"
   | "followedRepliesEnabled";
+
+const FILTERS: { value: InboxFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "unread", label: "Unread" },
+  { value: "discussions", label: "Discussions" },
+  { value: "messages", label: "Messages" },
+  { value: "replies", label: "Replies" },
+  { value: "follows", label: "Follows" },
+  { value: "system", label: "System" },
+];
 
 const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   repliesEnabled: true,
@@ -109,6 +125,44 @@ function getNotificationMessage(
   }
 
   return normalizePublicText(notification.message);
+}
+
+function getNotificationCategory(
+  notification: Notification,
+): NotificationCategory {
+  const type = notification.type.toLowerCase();
+  const targetType = notification.target_type.toLowerCase();
+
+  if (
+    targetType === "conversation" ||
+    type === "new_message" ||
+    type === "message_reply"
+  ) {
+    return "messages";
+  }
+
+  if (
+    type === "reply" ||
+    type === "mention" ||
+    type === "followed_reply" ||
+    type === "room_reply"
+  ) {
+    return "replies";
+  }
+
+  if (
+    type === "followed_discussion" ||
+    targetType === "discussion" ||
+    type.includes("discussion")
+  ) {
+    return "discussions";
+  }
+
+  if (type === "follow" || type.includes("follow_request")) {
+    return "follows";
+  }
+
+  return "system";
 }
 
 function getNotificationHref(
@@ -242,6 +296,13 @@ function getTimeGroup(value: string): TimeGroup {
   if (createdAt >= sixHoursAgo) return "new";
   if (createdAt >= startOfToday) return "today";
   return "earlier";
+}
+
+function getEmptyMessage(filter: InboxFilter, query: string) {
+  if (query.trim()) return "No notifications match your search.";
+  if (filter === "unread") return "You have no unread notifications.";
+  if (filter === "all") return "No notifications are available.";
+  return `No ${filter} notifications are available.`;
 }
 
 async function getAccessToken() {
@@ -402,7 +463,23 @@ export default function NotificationsV2Client({
 
   useEffect(() => {
     function handlePointerDown(event: globalThis.MouseEvent) {
-      if (!shellRef.current?.contains(event.target as Node)) {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      if (!target.closest("[data-notifications-top-menu]")) {
+        setTopMenuOpen(false);
+      }
+
+      if (!target.closest("[data-notifications-item-menu]")) {
+        setOpenItemMenuId(null);
+      }
+
+      if (searchOpen && !target.closest("[data-notifications-search]")) {
+        setSearchOpen(false);
+        setQuery("");
+      }
+
+      if (!shellRef.current?.contains(target)) {
         setTopMenuOpen(false);
         setOpenItemMenuId(null);
       }
@@ -435,6 +512,14 @@ export default function NotificationsV2Client({
 
     return notifications.filter((notification) => {
       if (filter === "unread" && notification.read_at) return false;
+      if (
+        filter !== "all" &&
+        filter !== "unread" &&
+        getNotificationCategory(notification) !== filter
+      ) {
+        return false;
+      }
+
       if (!needle) return true;
 
       const actor = notification.actor_id
@@ -679,6 +764,7 @@ export default function NotificationsV2Client({
           <div className="notifications-v2-header-actions">
             <button
               type="button"
+              data-notifications-search
               className={searchOpen ? "is-active" : ""}
               onClick={() => {
                 setSearchOpen((current) => !current);
@@ -686,13 +772,22 @@ export default function NotificationsV2Client({
                 setOpenItemMenuId(null);
                 if (searchOpen) setQuery("");
               }}
-              aria-label={searchOpen ? "Close notification search" : "Search notifications"}
+              aria-label={
+                searchOpen ? "Close notification search" : "Search notifications"
+              }
               aria-expanded={searchOpen}
             >
-              {searchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+              {searchOpen ? (
+                <X aria-hidden="true" />
+              ) : (
+                <Search aria-hidden="true" />
+              )}
             </button>
 
-            <div className="notifications-v2-top-menu-wrap">
+            <div
+              className="notifications-v2-top-menu-wrap"
+              data-notifications-top-menu
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -707,7 +802,10 @@ export default function NotificationsV2Client({
               </button>
 
               {topMenuOpen ? (
-                <div className="notifications-v2-menu notifications-v2-top-menu" role="menu">
+                <div
+                  className="notifications-v2-menu notifications-v2-top-menu"
+                  role="menu"
+                >
                   <button
                     type="button"
                     role="menuitem"
@@ -728,7 +826,7 @@ export default function NotificationsV2Client({
         </header>
 
         {searchOpen ? (
-          <div className="notifications-v2-search">
+          <div className="notifications-v2-search" data-notifications-search>
             <Search aria-hidden="true" />
             <input
               ref={searchInputRef}
@@ -750,26 +848,30 @@ export default function NotificationsV2Client({
           </div>
         ) : null}
 
-        <div className="notifications-v2-tabs" role="tablist" aria-label="Notification filters">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "all"}
-            className={filter === "all" ? "is-active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "unread"}
-            className={filter === "unread" ? "is-active" : ""}
-            onClick={() => setFilter("unread")}
-          >
-            Unread
-            {unreadCount > 0 ? <span>{unreadCount}</span> : null}
-          </button>
+        <div
+          className="notifications-v2-tabs"
+          role="tablist"
+          aria-label="Notification filters"
+        >
+          {FILTERS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              role="tab"
+              aria-selected={filter === item.value}
+              className={filter === item.value ? "is-active" : ""}
+              onClick={() => {
+                setFilter(item.value);
+                setTopMenuOpen(false);
+                setOpenItemMenuId(null);
+              }}
+            >
+              {item.label}
+              {item.value === "unread" && unreadCount > 0 ? (
+                <span>{unreadCount}</span>
+              ) : null}
+            </button>
+          ))}
         </div>
 
         {notice ? (
@@ -786,12 +888,8 @@ export default function NotificationsV2Client({
         ) : results.length === 0 ? (
           <section className="notifications-v2-empty">
             <h2>No notifications here.</h2>
-            <p>
-              {filter === "unread"
-                ? "You have no unread notifications."
-                : "No notifications match your search."}
-            </p>
-            {(query || filter === "unread") && (
+            <p>{getEmptyMessage(filter, query)}</p>
+            {(query || filter !== "all") && (
               <button
                 type="button"
                 onClick={() => {
@@ -825,7 +923,9 @@ export default function NotificationsV2Client({
                       return (
                         <article
                           key={notification.id}
-                          className={`notifications-v2-row${unread ? " is-unread" : ""}`}
+                          className={`notifications-v2-row${
+                            unread ? " is-unread" : ""
+                          }`}
                         >
                           <button
                             type="button"
@@ -837,7 +937,10 @@ export default function NotificationsV2Client({
                             onKeyDown={(event) =>
                               handleRowKeyDown(event, notification, href)
                             }
-                            aria-label={`${getNotificationMessage(notification, profiles)}. ${formatRelativeTime(notification.created_at)} ago`}
+                            aria-label={`${getNotificationMessage(
+                              notification,
+                              profiles,
+                            )}. ${formatRelativeTime(notification.created_at)} ago`}
                           >
                             <ProfileAvatar profile={actor} size="lg" />
                             <span className="notifications-v2-row-copy">
@@ -853,11 +956,16 @@ export default function NotificationsV2Client({
                             </span>
                           </button>
 
-                          <div className="notifications-v2-row-tools">
+                          <div
+                            className="notifications-v2-row-tools"
+                            data-notifications-item-menu
+                          >
                             <button
                               type="button"
                               className="notifications-v2-item-menu-button"
-                              onClick={(event) => toggleItemMenu(event, notification.id)}
+                              onClick={(event) =>
+                                toggleItemMenu(event, notification.id)
+                              }
                               aria-label="More notification actions"
                               aria-expanded={menuOpen}
                               aria-haspopup="menu"
@@ -865,7 +973,10 @@ export default function NotificationsV2Client({
                               <Ellipsis aria-hidden="true" />
                             </button>
                             {unread ? (
-                              <span className="notifications-v2-unread-dot" aria-label="Unread" />
+                              <span
+                                className="notifications-v2-unread-dot"
+                                aria-label="Unread"
+                              />
                             ) : null}
 
                             {menuOpen ? (
@@ -890,14 +1001,18 @@ export default function NotificationsV2Client({
                                   ) : (
                                     <EyeOff aria-hidden="true" />
                                   )}
-                                  <span>{unread ? "Mark as read" : "Mark as unread"}</span>
+                                  <span>
+                                    {unread ? "Mark as read" : "Mark as unread"}
+                                  </span>
                                 </button>
 
                                 {muteLabel ? (
                                   <button
                                     type="button"
                                     role="menuitem"
-                                    onClick={() => void muteNotificationType(notification)}
+                                    onClick={() =>
+                                      void muteNotificationType(notification)
+                                    }
                                     disabled={workingId === notification.id}
                                   >
                                     <VolumeX aria-hidden="true" />
@@ -914,7 +1029,9 @@ export default function NotificationsV2Client({
                                   type="button"
                                   role="menuitem"
                                   className="is-danger"
-                                  onClick={() => void deleteNotification(notification.id)}
+                                  onClick={() =>
+                                    void deleteNotification(notification.id)
+                                  }
                                   disabled={workingId === notification.id}
                                 >
                                   <Trash2 aria-hidden="true" />
