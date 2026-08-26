@@ -1,17 +1,33 @@
 "use client";
 
-import {
-  ProfileAvatar,
-  getProfileDisplayName,
-} from "@/components/profile-avatar";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
+import {
+  Check,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  Flag,
+  Search,
+  Settings,
+  Trash2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./notifications-v2.css";
 
 type Notification = {
@@ -33,84 +49,49 @@ type Profile = {
   avatar_url: string | null;
 };
 
-type AiEntitlement = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
-} | null;
+type InboxFilter = "all" | "unread";
+type TimeGroup = "new" | "today" | "earlier";
 
-type InboxFilter =
-  | "all"
-  | "unread"
-  | "replies"
-  | "follows"
-  | "discussions"
-  | "messages"
-  | "system";
+type NotificationPreferences = {
+  repliesEnabled: boolean;
+  followsEnabled: boolean;
+  mentionsEnabled: boolean;
+  followedDiscussionsEnabled: boolean;
+  followedRepliesEnabled: boolean;
+  emailDigestEnabled: boolean;
+  emailDigestFrequency: "daily" | "weekly";
+  pushMessagesEnabled: boolean;
+  pushRepliesEnabled: boolean;
+  pushFollowsEnabled: boolean;
+  pushAdminReportsEnabled: boolean;
+};
 
-type SortMode = "newest" | "oldest";
-type Category = Exclude<InboxFilter, "all" | "unread">;
+type NotificationPreferenceKey =
+  | "repliesEnabled"
+  | "followsEnabled"
+  | "mentionsEnabled"
+  | "followedDiscussionsEnabled"
+  | "followedRepliesEnabled";
 
-const FILTERS: { value: InboxFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "unread", label: "Unread" },
-  { value: "replies", label: "Replies" },
-  { value: "follows", label: "Follows" },
-  { value: "discussions", label: "Discussions" },
-  { value: "messages", label: "Messages" },
-  { value: "system", label: "System" },
-];
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  repliesEnabled: true,
+  followsEnabled: true,
+  mentionsEnabled: true,
+  followedDiscussionsEnabled: true,
+  followedRepliesEnabled: false,
+  emailDigestEnabled: false,
+  emailDigestFrequency: "weekly",
+  pushMessagesEnabled: true,
+  pushRepliesEnabled: true,
+  pushFollowsEnabled: true,
+  pushAdminReportsEnabled: true,
+};
 
-function hasAdvancedNotificationAccess(
-  entitlement: AiEntitlement,
-  isAdmin: boolean,
-) {
-  return (
-    isAdmin ||
-    (entitlement?.ai_assisted_enabled === true &&
-      entitlement.tier === "premium")
-  );
-}
-
-function getCategory(notification: Notification): Category {
-  if (
-    notification.target_type === "conversation" ||
-    notification.type === "new_message" ||
-    notification.type === "message_reply"
-  ) {
-    return "messages";
-  }
-
-  if (notification.type === "follow") return "follows";
-
-  if (
-    notification.type === "reply" ||
-    notification.type === "mention" ||
-    notification.type === "followed_reply" ||
-    notification.type === "room_reply"
-  ) {
-    return "replies";
-  }
-
-  if (
-    notification.type === "followed_discussion" ||
-    notification.type.includes("discussion")
-  ) {
-    return "discussions";
-  }
-
-  return "system";
-}
-
-function getCategoryLabel(category: Category) {
-  return {
-    replies: "Reply signal",
-    follows: "Network signal",
-    discussions: "Discussion signal",
-    messages: "Message",
-    system: "System",
-  }[category];
-}
+const GROUP_LABELS: Record<TimeGroup, string> = {
+  new: "New",
+  today: "Today",
+  earlier: "Earlier",
+};
 
 function getProfileName(profile: Profile | undefined) {
   return profile?.full_name?.trim() || profile?.username || "Someone";
@@ -149,12 +130,17 @@ function getNotificationHref(
     return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
   }
 
-  if (notification.target_type === "floor_live_program")
+  if (notification.target_type === "floor_live_program") {
     return "/the-floor/live";
-  if (notification.target_type === "floor_contributor_assignment")
-    return "/the-floor/contributors";
+  }
 
-  if (notification.target_type === "identity_verification") return "/profile";
+  if (notification.target_type === "floor_contributor_assignment") {
+    return "/the-floor/contributors";
+  }
+
+  if (notification.target_type === "identity_verification") {
+    return "/profile";
+  }
 
   if (notification.target_type === "profile") {
     const actor = notification.actor_id
@@ -168,33 +154,99 @@ function getNotificationHref(
   return null;
 }
 
-function getActionLabel(notification: Notification) {
-  if (notification.room_id) {
-    return notification.target_type === "room_moderation_item"
-      ? "Open moderation"
-      : "Open Room";
+function getNotificationPreferenceKey(
+  notification: Notification,
+): NotificationPreferenceKey | null {
+  if (notification.type === "follow") return "followsEnabled";
+  if (notification.type === "mention") return "mentionsEnabled";
+  if (notification.type === "followed_discussion") {
+    return "followedDiscussionsEnabled";
   }
-  if (notification.target_type === "discussion") return "Open discussion";
-  if (notification.target_type === "conversation") return "Open message";
-  if (notification.target_type === "floor_live_program")
-    return "Open live schedule";
-  if (notification.target_type === "floor_contributor_assignment")
-    return "Open assignment";
-  if (notification.target_type === "identity_verification") {
-    return "Open verification";
+  if (notification.type === "followed_reply") return "followedRepliesEnabled";
+  if (
+    notification.type === "reply" ||
+    notification.type === "room_reply"
+  ) {
+    return "repliesEnabled";
   }
-  if (notification.target_type === "profile") return "Open profile";
-  return "Open source";
+  return null;
 }
 
-function formatDate(value: string) {
+function getMuteLabel(notification: Notification) {
+  const key = getNotificationPreferenceKey(notification);
+  if (key === "followsEnabled") return "Turn off follow notifications";
+  if (key === "mentionsEnabled") return "Turn off mention notifications";
+  if (key === "followedDiscussionsEnabled") {
+    return "Turn off followed discussion notifications";
+  }
+  if (key === "followedRepliesEnabled") {
+    return "Turn off followed reply notifications";
+  }
+  if (key === "repliesEnabled") return "Turn off reply notifications";
+  return null;
+}
+
+function canReportNotification(notification: Notification) {
+  return Boolean(
+    notification.actor_id &&
+      ["discussion", "conversation", "profile"].includes(
+        notification.target_type,
+      ),
+  );
+}
+
+function formatRelativeTime(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "now";
+
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return "now";
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w`;
+
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo`;
+
+  return `${Math.floor(days / 365)}y`;
+}
+
+function formatFullDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
+}
+
+function getTimeGroup(value: string): TimeGroup {
+  const createdAt = new Date(value);
+  const now = new Date();
+  const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  if (createdAt >= sixHoursAgo) return "new";
+  if (createdAt >= startOfToday) return "today";
+  return "earlier";
+}
+
+async function getAccessToken() {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? "";
 }
 
 export default function NotificationsV2Client({
@@ -204,33 +256,36 @@ export default function NotificationsV2Client({
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
-  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [filter, setFilter] = useState<InboxFilter>("all");
-  const [sort, setSort] = useState<SortMode>("newest");
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [topMenuOpen, setTopMenuOpen] = useState(false);
+  const [openItemMenuId, setOpenItemMenuId] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(
+    DEFAULT_NOTIFICATION_PREFERENCES,
+  );
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [bulkWorking, setBulkWorking] = useState(false);
   const [notice, setNotice] = useState("");
   const loadingRef = useRef(true);
-
-  const canUseAdvancedControls = hasAdvancedNotificationAccess(
-    entitlement,
-    isAdmin,
-  );
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
 
   useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => {
       if (!loadingRef.current) return;
       setNotice(
-        "Signal Inbox took too long to load. Refresh if the list looks incomplete.",
+        "Notifications took too long to load. Refresh if the list looks incomplete.",
       );
       setLoading(false);
     }, 10000);
@@ -262,6 +317,27 @@ export default function NotificationsV2Client({
       );
     }
 
+    async function loadPreferences() {
+      try {
+        const accessToken = await getAccessToken();
+        if (!accessToken) return;
+        const response = await fetch("/api/settings/notification-preferences", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!response.ok) return;
+        const payload = (await response.json().catch(() => ({}))) as {
+          preferences?: Partial<NotificationPreferences>;
+        };
+        if (!alive) return;
+        setPreferences({
+          ...DEFAULT_NOTIFICATION_PREFERENCES,
+          ...(payload.preferences ?? {}),
+        });
+      } catch {
+        // The inbox remains usable even if preference metadata is unavailable.
+      }
+    }
+
     async function loadNotifications() {
       try {
         const { data: userData } = await supabase.auth.getUser();
@@ -275,41 +351,21 @@ export default function NotificationsV2Client({
         if (!alive) return;
         setCurrentUserId(user.id);
 
-        const [
-          profileResult,
-          entitlementResult,
-          blockedIds,
-          notificationResult,
-        ] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, username, full_name, avatar_url, is_admin")
-            .eq("id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("user_ai_entitlements")
-            .select("tier, ai_assisted_enabled, monthly_summary_limit")
-            .eq("user_id", user.id)
-            .maybeSingle(),
+        const [blockedIds, notificationResult] = await Promise.all([
           getBlockedRelationshipUserIds(supabase, user.id),
-          // Selecting all notification columns keeps the inbox compatible both
-          // before and after the manually applied Room migration adds room_id.
           (() => {
             let notificationQuery = supabase
               .from("notifications")
               .select("*")
               .eq("user_id", user.id);
-            if (roomId)
+            if (roomId) {
               notificationQuery = notificationQuery.eq("room_id", roomId);
+            }
             return notificationQuery.order("created_at", { ascending: false });
           })(),
         ]);
 
-        const firstError =
-          profileResult.error ||
-          entitlementResult.error ||
-          notificationResult.error;
-        if (firstError) throw firstError;
+        if (notificationResult.error) throw notificationResult.error;
 
         const visible = filterBlockedActorNotifications(
           (notificationResult.data ?? []) as Notification[],
@@ -317,19 +373,6 @@ export default function NotificationsV2Client({
         ) as Notification[];
 
         if (!alive) return;
-        const profileData = profileResult.data;
-        setCurrentProfile(
-          profileData
-            ? {
-                id: profileData.id,
-                username: profileData.username,
-                full_name: profileData.full_name,
-                avatar_url: profileData.avatar_url,
-              }
-            : null,
-        );
-        setIsAdmin(Boolean(profileData?.is_admin));
-        setEntitlement((entitlementResult.data ?? null) as AiEntitlement);
         setNotifications(visible);
         setLoading(false);
 
@@ -341,10 +384,11 @@ export default function NotificationsV2Client({
           ),
         ];
         void loadActorProfiles(actorIds);
+        void loadPreferences();
       } catch (error) {
-        console.error("Unable to load Signal Inbox.", error);
+        console.error("Unable to load notifications.", error);
         if (alive) {
-          setNotice("Signal Inbox could not load. Refresh and try again.");
+          setNotice("Notifications could not load. Refresh and try again.");
           setLoading(false);
         }
       }
@@ -356,70 +400,106 @@ export default function NotificationsV2Client({
     };
   }, [roomId]);
 
+  useEffect(() => {
+    function handlePointerDown(event: globalThis.MouseEvent) {
+      if (!shellRef.current?.contains(event.target as Node)) {
+        setTopMenuOpen(false);
+        setOpenItemMenuId(null);
+      }
+    }
+
+    function handleEscape(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setTopMenuOpen(false);
+      setOpenItemMenuId(null);
+      if (searchOpen) {
+        setSearchOpen(false);
+        setQuery("");
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [searchOpen]);
+
   const unreadCount = notifications.filter(
     (notification) => !notification.read_at,
   ).length;
-  const readCount = notifications.length - unreadCount;
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<Category, number> = {
-      replies: 0,
-      follows: 0,
-      discussions: 0,
-      messages: 0,
-      system: 0,
-    };
-
-    for (const notification of notifications) {
-      counts[getCategory(notification)] += 1;
-    }
-
-    return counts;
-  }, [notifications]);
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const activeFilter =
-      canUseAdvancedControls || filter === "all" || filter === "unread"
-        ? filter
-        : "all";
-    const activeSort = canUseAdvancedControls ? sort : "newest";
 
-    return notifications
-      .filter((notification) => {
-        if (activeFilter === "unread") return !notification.read_at;
-        if (activeFilter !== "all") {
-          return getCategory(notification) === activeFilter;
-        }
-        return true;
-      })
-      .filter((notification) => {
-        if (!needle) return true;
-        const actor = notification.actor_id
-          ? profiles[notification.actor_id]
-          : undefined;
-        return [
-          getNotificationMessage(notification, profiles),
-          getProfileName(actor),
-          getCategoryLabel(getCategory(notification)),
-          notification.type,
-          notification.target_type,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(needle);
-      })
-      .sort((a, b) => {
-        const delta =
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        return activeSort === "newest" ? delta : -delta;
-      });
-  }, [canUseAdvancedControls, filter, notifications, profiles, query, sort]);
+    return notifications.filter((notification) => {
+      if (filter === "unread" && notification.read_at) return false;
+      if (!needle) return true;
 
-  function getFilterCount(value: InboxFilter) {
-    if (value === "all") return notifications.length;
-    if (value === "unread") return unreadCount;
-    return categoryCounts[value];
+      const actor = notification.actor_id
+        ? profiles[notification.actor_id]
+        : undefined;
+      return [
+        getNotificationMessage(notification, profiles),
+        getProfileName(actor),
+        notification.type,
+        notification.target_type,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [filter, notifications, profiles, query]);
+
+  const groups = useMemo(() => {
+    const next: Record<TimeGroup, Notification[]> = {
+      new: [],
+      today: [],
+      earlier: [],
+    };
+
+    for (const notification of results) {
+      next[getTimeGroup(notification.created_at)].push(notification);
+    }
+
+    return next;
+  }, [results]);
+
+  async function setNotificationReadState(
+    notificationId: string,
+    shouldBeRead: boolean,
+  ) {
+    if (!currentUserId || workingId) return;
+    setWorkingId(notificationId);
+    setNotice("");
+
+    const readAt = shouldBeRead ? new Date().toISOString() : null;
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read_at: readAt })
+      .eq("user_id", currentUserId)
+      .eq("id", notificationId);
+
+    setWorkingId(null);
+    if (error) {
+      setNotice(
+        shouldBeRead
+          ? "Unable to mark this notification as read."
+          : "Unable to mark this notification as unread.",
+      );
+      return;
+    }
+
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read_at: readAt }
+          : notification,
+      ),
+    );
+    setOpenItemMenuId(null);
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
   async function markNotificationIdsRead(ids: string[]) {
@@ -448,14 +528,6 @@ export default function NotificationsV2Client({
     return true;
   }
 
-  async function markRead(notificationId: string) {
-    if (workingId) return;
-    setWorkingId(notificationId);
-    setNotice("");
-    await markNotificationIdsRead([notificationId]);
-    setWorkingId(null);
-  }
-
   async function markAllRead() {
     if (bulkWorking) return;
     const ids = notifications
@@ -463,7 +535,8 @@ export default function NotificationsV2Client({
       .map((notification) => notification.id);
 
     if (ids.length === 0) {
-      setNotice("Your Signal Inbox is already caught up.");
+      setNotice("All notifications are already read.");
+      setTopMenuOpen(false);
       return;
     }
 
@@ -471,7 +544,8 @@ export default function NotificationsV2Client({
     setNotice("");
     const success = await markNotificationIdsRead(ids);
     setBulkWorking(false);
-    if (success) setNotice("All notifications marked read.");
+    setTopMenuOpen(false);
+    if (success) setNotice("All notifications marked as read.");
   }
 
   async function deleteNotification(notificationId: string) {
@@ -494,39 +568,56 @@ export default function NotificationsV2Client({
     setNotifications((current) =>
       current.filter((notification) => notification.id !== notificationId),
     );
+    setOpenItemMenuId(null);
     window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
-  async function clearReadNotifications() {
-    if (!currentUserId || bulkWorking) return;
-    const ids = notifications
-      .filter((notification) => notification.read_at)
-      .map((notification) => notification.id);
+  async function muteNotificationType(notification: Notification) {
+    const preferenceKey = getNotificationPreferenceKey(notification);
+    if (!preferenceKey || workingId) return;
 
-    if (ids.length === 0) {
-      setNotice("There are no read notifications to clear.");
-      return;
-    }
-
-    setBulkWorking(true);
+    setWorkingId(notification.id);
     setNotice("");
-    const { error } = await supabase
-      .from("notifications")
-      .delete()
-      .eq("user_id", currentUserId)
-      .in("id", ids);
-    setBulkWorking(false);
 
-    if (error) {
-      setNotice("Unable to clear read notifications.");
-      return;
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        window.location.href = "/login?next=/notifications";
+        return;
+      }
+
+      const nextPreferences: NotificationPreferences = {
+        ...preferences,
+        [preferenceKey]: false,
+      };
+      const response = await fetch("/api/settings/notification-preferences", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(nextPreferences),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to update notification preferences.");
+      }
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        preferences?: Partial<NotificationPreferences>;
+      };
+      setPreferences({
+        ...nextPreferences,
+        ...(payload.preferences ?? {}),
+      });
+      setNotice(`${getMuteLabel(notification) ?? "Notification type"} turned off.`);
+      setOpenItemMenuId(null);
+    } catch (error) {
+      console.error("Unable to mute notification type.", error);
+      setNotice("Unable to update notification settings.");
+    } finally {
+      setWorkingId(null);
     }
-
-    setNotifications((current) =>
-      current.filter((notification) => !ids.includes(notification.id)),
-    );
-    setNotice("Read notifications cleared.");
-    window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
   async function openNotification(notification: Notification, href: string) {
@@ -536,18 +627,41 @@ export default function NotificationsV2Client({
     window.location.href = href;
   }
 
-  function resetView() {
-    setQuery("");
-    setFilter("all");
-    setSort("newest");
+  function handleRowKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    notification: Notification,
+    href: string | null,
+  ) {
+    if (!href) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      void openNotification(notification, href);
+    }
   }
+
+  function toggleItemMenu(
+    event: MouseEvent<HTMLButtonElement>,
+    notificationId: string,
+  ) {
+    event.stopPropagation();
+    setTopMenuOpen(false);
+    setOpenItemMenuId((current) =>
+      current === notificationId ? null : notificationId,
+    );
+  }
+
+  const settingsHref = roomId
+    ? `/rooms/${encodeURIComponent(roomId)}/notifications`
+    : "/settings";
 
   if (loading) {
     return (
       <main className="notifications-v2-page">
-        <section className="notifications-v2-state">
-          <p>Signal Inbox</p>
-          <h1>Gathering the updates that need your attention…</h1>
+        <section className="notifications-v2-state" aria-live="polite">
+          <div className="notifications-v2-skeleton-heading" />
+          <div className="notifications-v2-skeleton-row" />
+          <div className="notifications-v2-skeleton-row" />
+          <div className="notifications-v2-skeleton-row" />
         </section>
       </main>
     );
@@ -555,269 +669,276 @@ export default function NotificationsV2Client({
 
   return (
     <main className="notifications-v2-page">
-      <div className="notifications-v2-shell">
-        <header className="notifications-v2-hero">
-          <div className="notifications-v2-hero-copy">
-            <p className="notifications-v2-eyebrow">
-              {roomId ? "Room notifications" : "Signal Inbox"}
-            </p>
-            <h1>
-              {roomId
-                ? "Live notices from this Room."
-                : "Attention without the noise."}
-            </h1>
-            <p>
-              {roomId
-                ? "Review announcements, events, discussions, replies, and other activity connected to this Room."
-                : "Review replies, discussions, follows, messages, Room activity, and account updates connected to you, then return to the Signal that matters."}
-            </p>
+      <div className="notifications-v2-shell" ref={shellRef}>
+        <header className="notifications-v2-header">
+          <div>
+            <h1>{roomId ? "Room notifications" : "Notifications"}</h1>
+            {roomId ? <p>Activity from this Room</p> : null}
           </div>
 
-          <div className="notifications-v2-member-card">
-            <ProfileAvatar profile={currentProfile} size="xl" />
-            <div>
-              <span>Member inbox</span>
-              <strong>{getProfileDisplayName(currentProfile)}</strong>
-              <small>
-                {unreadCount === 0 ? "All caught up" : `${unreadCount} unread`}
-              </small>
+          <div className="notifications-v2-header-actions">
+            <button
+              type="button"
+              className={searchOpen ? "is-active" : ""}
+              onClick={() => {
+                setSearchOpen((current) => !current);
+                setTopMenuOpen(false);
+                setOpenItemMenuId(null);
+                if (searchOpen) setQuery("");
+              }}
+              aria-label={searchOpen ? "Close notification search" : "Search notifications"}
+              aria-expanded={searchOpen}
+            >
+              {searchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+            </button>
+
+            <div className="notifications-v2-top-menu-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setTopMenuOpen((current) => !current);
+                  setOpenItemMenuId(null);
+                }}
+                aria-label="Notification actions"
+                aria-expanded={topMenuOpen}
+                aria-haspopup="menu"
+              >
+                <Ellipsis aria-hidden="true" />
+              </button>
+
+              {topMenuOpen ? (
+                <div className="notifications-v2-menu notifications-v2-top-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => void markAllRead()}
+                    disabled={bulkWorking || unreadCount === 0}
+                  >
+                    <Check aria-hidden="true" />
+                    <span>Mark all as read</span>
+                  </button>
+                  <Link href={settingsHref} role="menuitem">
+                    <Settings aria-hidden="true" />
+                    <span>Notification settings</span>
+                  </Link>
+                </div>
+              ) : null}
             </div>
           </div>
         </header>
 
-        <section
-          className="notifications-v2-actions"
-          aria-label="Signal Inbox actions"
-        >
+        {searchOpen ? (
+          <div className="notifications-v2-search">
+            <Search aria-hidden="true" />
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search notifications"
+              aria-label="Search notifications"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear notification search"
+              >
+                <X aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="notifications-v2-tabs" role="tablist" aria-label="Notification filters">
           <button
             type="button"
-            onClick={markAllRead}
-            disabled={bulkWorking || unreadCount === 0}
+            role="tab"
+            aria-selected={filter === "all"}
+            className={filter === "all" ? "is-active" : ""}
+            onClick={() => setFilter("all")}
           >
-            Mark all read
+            All
           </button>
           <button
             type="button"
-            className="is-secondary"
-            onClick={clearReadNotifications}
-            disabled={bulkWorking || readCount === 0}
+            role="tab"
+            aria-selected={filter === "unread"}
+            className={filter === "unread" ? "is-active" : ""}
+            onClick={() => setFilter("unread")}
           >
-            Clear read
+            Unread
+            {unreadCount > 0 ? <span>{unreadCount}</span> : null}
           </button>
-          <Link
-            href={
-              roomId
-                ? `/rooms/${encodeURIComponent(roomId)}/notifications`
-                : "/settings"
-            }
-          >
-            {roomId ? "Room notification settings" : "Notification settings"}
-          </Link>
-        </section>
+        </div>
 
-        <section
-          className="notifications-v2-metrics"
-          aria-label="Signal Inbox overview"
-        >
-          <article>
-            <span>Total</span>
-            <strong>{notifications.length}</strong>
-          </article>
-          <article className="is-accent">
-            <span>Unread</span>
-            <strong>{unreadCount}</strong>
-          </article>
-          <article>
-            <span>Reply signal</span>
-            <strong>{categoryCounts.replies}</strong>
-          </article>
-          <article>
-            <span>Messages</span>
-            <strong>{categoryCounts.messages}</strong>
-          </article>
-        </section>
-
-        {notice && (
+        {notice ? (
           <div className="notifications-v2-notice" role="status">
             {notice}
           </div>
-        )}
-
-        {notifications.length > 0 && (
-          <section className="notifications-v2-controls">
-            <div className="notifications-v2-search-row">
-              <label>
-                <span>Search Signal Inbox</span>
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search messages, members, or notification types"
-                />
-              </label>
-              <label>
-                <span>Sort</span>
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as SortMode)}
-                  disabled={!canUseAdvancedControls}
-                >
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                </select>
-              </label>
-            </div>
-
-            <div
-              className="notifications-v2-filter-rail"
-              aria-label="Signal Inbox filters"
-            >
-              {FILTERS.map((option) => {
-                const advanced =
-                  option.value !== "all" && option.value !== "unread";
-                const disabled = advanced && !canUseAdvancedControls;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFilter(option.value)}
-                    disabled={disabled}
-                    className={filter === option.value ? "is-active" : ""}
-                  >
-                    {option.label}
-                    <span>{getFilterCount(option.value)}</span>
-                    {disabled && <small>Premium</small>}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="notifications-v2-control-summary">
-              <p>
-                Showing {results.length} of {notifications.length} notifications
-              </p>
-              {!canUseAdvancedControls && (
-                <Link href="/premium">
-                  Unlock category filters and oldest-first sorting
-                </Link>
-              )}
-              {(query || filter !== "all" || sort !== "newest") && (
-                <button type="button" onClick={resetView}>
-                  Reset view
-                </button>
-              )}
-            </div>
-          </section>
-        )}
+        ) : null}
 
         {notifications.length === 0 ? (
           <section className="notifications-v2-empty">
-            <p>Signal Inbox</p>
             <h2>You are all caught up.</h2>
-            <span>
-              New replies, follows, discussion updates, messages, Room activity,
-              and account notices will appear here when they need your
-              attention.
-            </span>
-            <div>
-              <Link className="is-primary" href="/discussions">
-                Browse discussions
-              </Link>
-              <Link href="/following">Open following feed</Link>
-              <Link href="/profile">Review profile</Link>
-            </div>
+            <p>New activity connected to you will appear here.</p>
           </section>
         ) : results.length === 0 ? (
           <section className="notifications-v2-empty">
-            <p>Filtered view</p>
-            <h2>No notifications match this view.</h2>
-            <span>Broaden the search or reset the active filters.</span>
-            <button type="button" onClick={resetView}>
-              Reset Signal Inbox
-            </button>
+            <h2>No notifications here.</h2>
+            <p>
+              {filter === "unread"
+                ? "You have no unread notifications."
+                : "No notifications match your search."}
+            </p>
+            {(query || filter === "unread") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter("all");
+                  setQuery("");
+                }}
+              >
+                Show all notifications
+              </button>
+            )}
           </section>
         ) : (
           <section className="notifications-v2-list" aria-label="Notifications">
-            {results.map((notification) => {
-              const actor = notification.actor_id
-                ? profiles[notification.actor_id]
-                : undefined;
-              const href = getNotificationHref(notification, profiles);
-              const category = getCategory(notification);
-              const unread = !notification.read_at;
+            {(["new", "today", "earlier"] as TimeGroup[]).map((group) => {
+              const groupNotifications = groups[group];
+              if (groupNotifications.length === 0) return null;
 
               return (
-                <article
-                  key={notification.id}
-                  className={
-                    unread
-                      ? "notifications-v2-card is-unread"
-                      : "notifications-v2-card"
-                  }
-                >
-                  <div className="notifications-v2-card-head">
-                    <div className="notifications-v2-card-labels">
-                      {unread && <span className="is-new">New</span>}
-                      <span>{getCategoryLabel(category)}</span>
-                    </div>
-                    <time dateTime={notification.created_at}>
-                      {formatDate(notification.created_at)}
-                    </time>
-                  </div>
+                <section className="notifications-v2-group" key={group}>
+                  <h2>{GROUP_LABELS[group]}</h2>
+                  <div className="notifications-v2-group-list">
+                    {groupNotifications.map((notification) => {
+                      const actor = notification.actor_id
+                        ? profiles[notification.actor_id]
+                        : undefined;
+                      const href = getNotificationHref(notification, profiles);
+                      const unread = !notification.read_at;
+                      const menuOpen = openItemMenuId === notification.id;
+                      const muteLabel = getMuteLabel(notification);
 
-                  <div className="notifications-v2-card-body">
-                    <ProfileAvatar profile={actor} size="lg" />
-                    <div>
-                      <p>{getNotificationMessage(notification, profiles)}</p>
-                      {actor && <span>From {getProfileName(actor)}</span>}
-                    </div>
-                  </div>
+                      return (
+                        <article
+                          key={notification.id}
+                          className={`notifications-v2-row${unread ? " is-unread" : ""}`}
+                        >
+                          <button
+                            type="button"
+                            className="notifications-v2-row-main"
+                            disabled={!href}
+                            onClick={() => {
+                              if (href) void openNotification(notification, href);
+                            }}
+                            onKeyDown={(event) =>
+                              handleRowKeyDown(event, notification, href)
+                            }
+                            aria-label={`${getNotificationMessage(notification, profiles)}. ${formatRelativeTime(notification.created_at)} ago`}
+                          >
+                            <ProfileAvatar profile={actor} size="lg" />
+                            <span className="notifications-v2-row-copy">
+                              <span className="notifications-v2-row-message">
+                                {getNotificationMessage(notification, profiles)}
+                              </span>
+                              <time
+                                dateTime={notification.created_at}
+                                title={formatFullDate(notification.created_at)}
+                              >
+                                {formatRelativeTime(notification.created_at)}
+                              </time>
+                            </span>
+                          </button>
 
-                  <div className="notifications-v2-card-actions">
-                    {href && (
-                      <button
-                        type="button"
-                        onClick={() => openNotification(notification, href)}
-                      >
-                        {getActionLabel(notification)}
-                      </button>
-                    )}
-                    {unread && (
-                      <button
-                        type="button"
-                        className="is-secondary"
-                        onClick={() => markRead(notification.id)}
-                        disabled={workingId === notification.id}
-                      >
-                        Mark read
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="is-danger"
-                      onClick={() => deleteNotification(notification.id)}
-                      disabled={workingId === notification.id}
-                    >
-                      Delete
-                    </button>
+                          <div className="notifications-v2-row-tools">
+                            <button
+                              type="button"
+                              className="notifications-v2-item-menu-button"
+                              onClick={(event) => toggleItemMenu(event, notification.id)}
+                              aria-label="More notification actions"
+                              aria-expanded={menuOpen}
+                              aria-haspopup="menu"
+                            >
+                              <Ellipsis aria-hidden="true" />
+                            </button>
+                            {unread ? (
+                              <span className="notifications-v2-unread-dot" aria-label="Unread" />
+                            ) : null}
+
+                            {menuOpen ? (
+                              <div
+                                className="notifications-v2-menu notifications-v2-item-menu"
+                                role="menu"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() =>
+                                    void setNotificationReadState(
+                                      notification.id,
+                                      !unread,
+                                    )
+                                  }
+                                  disabled={workingId === notification.id}
+                                >
+                                  {unread ? (
+                                    <Eye aria-hidden="true" />
+                                  ) : (
+                                    <EyeOff aria-hidden="true" />
+                                  )}
+                                  <span>{unread ? "Mark as read" : "Mark as unread"}</span>
+                                </button>
+
+                                {muteLabel ? (
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => void muteNotificationType(notification)}
+                                    disabled={workingId === notification.id}
+                                  >
+                                    <VolumeX aria-hidden="true" />
+                                    <span>{muteLabel}</span>
+                                  </button>
+                                ) : (
+                                  <Link href={settingsHref} role="menuitem">
+                                    <Settings aria-hidden="true" />
+                                    <span>Manage notifications like this</span>
+                                  </Link>
+                                )}
+
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className="is-danger"
+                                  onClick={() => void deleteNotification(notification.id)}
+                                  disabled={workingId === notification.id}
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                  <span>Delete notification</span>
+                                </button>
+
+                                {canReportNotification(notification) ? (
+                                  <Link href="/contact" role="menuitem">
+                                    <Flag aria-hidden="true" />
+                                    <span>Report issue</span>
+                                  </Link>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                </article>
+                </section>
               );
             })}
           </section>
         )}
-
-        <aside className="notifications-v2-standard">
-          <div>
-            <p>Signal standard</p>
-            <h2>Use the inbox as a return path, not another feed.</h2>
-          </div>
-          <ul>
-            <li>Open the source before reacting.</li>
-            <li>Reply when you can add context or clarity.</li>
-            <li>Mark read when the update no longer needs attention.</li>
-          </ul>
-        </aside>
       </div>
     </main>
   );
