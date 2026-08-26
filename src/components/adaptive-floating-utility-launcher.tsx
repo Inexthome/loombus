@@ -163,7 +163,14 @@ export function AdaptiveFloatingUtilityLauncher() {
     );
   }
 
-  if (!available || suppressed) return null;
+  if (
+    !available ||
+    suppressed ||
+    pathname === "/notifications" ||
+    pathname.startsWith("/notifications/")
+  ) {
+    return null;
+  }
 
   return (
     <div

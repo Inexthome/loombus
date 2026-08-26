@@ -23,6 +23,7 @@ import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
+import { DesktopNotificationsTrayController } from "@/components/desktop-notifications-tray-controller";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
@@ -120,6 +121,7 @@ export default function RootLayout({
         />
         <AppChromeBoundary>
           <DesktopTopNavbar />
+          <DesktopNotificationsTrayController />
           <MobileNavigationShell />
           <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
