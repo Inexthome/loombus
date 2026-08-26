@@ -12,6 +12,7 @@ const STORAGE_KEY = "loombus:discussions:view-mode:v1";
 export function DiscussionViewModeControl() {
   const pathname = usePathname();
   const [viewMode, setViewMode] = useState<DiscussionViewMode>("card");
+  const [preferenceReady, setPreferenceReady] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -23,8 +24,11 @@ export function DiscussionViewModeControl() {
     if (pathname !== "/discussions") {
       route?.removeAttribute("data-discussion-view");
       setHost(null);
+      setPreferenceReady(false);
       return;
     }
+
+    setPreferenceReady(false);
 
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -33,6 +37,8 @@ export function DiscussionViewModeControl() {
       }
     } catch {
       // Keep Card as the safe default when browser storage is unavailable.
+    } finally {
+      setPreferenceReady(true);
     }
 
     const heading = Array.from(document.querySelectorAll<HTMLHeadingElement>("h1")).find(
@@ -46,12 +52,14 @@ export function DiscussionViewModeControl() {
     const route = document.querySelector<HTMLElement>(".discussion-feed-route");
     route?.setAttribute("data-discussion-view", viewMode);
 
+    if (!preferenceReady) return;
+
     try {
       window.localStorage.setItem(STORAGE_KEY, viewMode);
     } catch {
       // View switching still works for the current visit without persistence.
     }
-  }, [pathname, viewMode]);
+  }, [pathname, preferenceReady, viewMode]);
 
   useEffect(() => {
     if (!menuOpen) return;
