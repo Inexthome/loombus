@@ -1,6 +1,12 @@
 "use client";
 
-import { PencilLine, Plus, Sparkles } from "lucide-react";
+import {
+  Check,
+  PencilLine,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { type RefObject, useEffect, useRef, useState } from "react";
@@ -8,6 +14,16 @@ import CreateDiscussionComposer from "@/components/create-discussion-composer";
 import { CreatePublishGuard } from "@/components/create-publish-guard";
 
 const SEARCH_PLACEHOLDER = "Search discussions, topics, and contributors";
+const FILTER_LABELS = [
+  "All",
+  "Following",
+  "Research Questions",
+  "Debates",
+  "Problem Solving",
+  "Saved",
+] as const;
+
+type FilterLabel = (typeof FILTER_LABELS)[number];
 
 function CreateTrigger({
   onOpen,
@@ -44,6 +60,67 @@ function CreateTrigger({
         </span>
       </span>
     </button>
+  );
+}
+
+function FilterControl({
+  open,
+  selected,
+  onToggle,
+  onSelect,
+  controlRef,
+}: {
+  open: boolean;
+  selected: FilterLabel;
+  onToggle: () => void;
+  onSelect: (label: FilterLabel) => void;
+  controlRef: RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div ref={controlRef} className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-subtle)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200/60"
+        aria-label="Filter discussions"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Filter discussions"
+      >
+        <SlidersHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Discussion filters"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(17rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-2 shadow-2xl shadow-black/15"
+          data-discussions-filter-menu
+        >
+          {FILTER_LABELS.map((label) => {
+            const isSelected = selected === label;
+            return (
+              <button
+                key={label}
+                type="button"
+                role="menuitemradio"
+                aria-checked={isSelected}
+                onClick={() => onSelect(label)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                  isSelected
+                    ? "bg-amber-50 text-[#8a6519] dark:bg-amber-400/10 dark:text-[#d6a84f]"
+                    : "text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
+                }`}
+              >
+                <span className="sr-only">Filter: </span>
+                <span className="min-w-0 flex-1">{label}</span>
+                {isSelected ? <Check aria-hidden="true" className="h-4 w-4" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -104,20 +181,59 @@ function CreateModal({ onClose }: { onClose: () => void }) {
 export function DiscussionsCreateComposerBridge() {
   const pathname = usePathname();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [filterSlot, setFilterSlot] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<FilterLabel>("All");
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const filterControlRef = useRef<HTMLDivElement | null>(null);
+  const hiddenTabRowRef = useRef<HTMLElement | null>(null);
+  const hiddenResetButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (target && !filterControlRef.current?.contains(target)) {
+        setFilterOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setFilterOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filterOpen]);
 
   useEffect(() => {
     if (pathname !== "/discussions") {
       setSlot(null);
+      setFilterSlot(null);
       setOpen(false);
+      setFilterOpen(false);
+      setSelectedFilter("All");
+      hiddenTabRowRef.current = null;
+      hiddenResetButtonRef.current = null;
       return;
     }
 
     let cancelled = false;
     let timer = 0;
     let searchLabel: HTMLLabelElement | null = null;
-    let mount: HTMLDivElement | null = null;
+    let headingBlock: HTMLElement | null = null;
+    let tabRow: HTMLElement | null = null;
+    let resetButton: HTMLButtonElement | null = null;
+    let composerMount: HTMLDivElement | null = null;
+    let filterMount: HTMLDivElement | null = null;
 
     function locateSearchBar() {
       if (cancelled) return;
@@ -131,13 +247,57 @@ export function DiscussionsCreateComposerBridge() {
         return;
       }
 
+      const controlsRow = searchLabel.parentElement;
+      const feedRoot = searchLabel.closest("main");
+      const heading = Array.from(feedRoot?.querySelectorAll("h1") ?? []).find(
+        (candidate) => candidate.textContent?.trim() === "Discussions"
+      );
+      headingBlock = heading?.parentElement ?? null;
+      resetButton = controlsRow.querySelector<HTMLButtonElement>(
+        'button[aria-label="Reset discussion filters"]'
+      );
+
+      const controlParent = controlsRow.parentElement;
+      tabRow = controlParent
+        ? (Array.from(controlParent.children).find((candidate) => {
+            const labels = Array.from(candidate.querySelectorAll("button")).map(
+              (button) => button.textContent?.trim() ?? ""
+            );
+            return FILTER_LABELS.every((label) => labels.includes(label));
+          }) as HTMLElement | undefined) ?? null
+        : null;
+
+      if (!resetButton || !tabRow) {
+        timer = window.setTimeout(locateSearchBar, 120);
+        return;
+      }
+
       searchLabel.hidden = true;
       searchLabel.setAttribute("aria-hidden", "true");
-      mount = document.createElement("div");
-      mount.dataset.discussionsCreateTriggerSlot = "true";
-      mount.className = "min-w-0 flex-1";
-      searchLabel.insertAdjacentElement("afterend", mount);
-      setSlot(mount);
+      if (headingBlock) {
+        headingBlock.hidden = true;
+        headingBlock.setAttribute("aria-hidden", "true");
+      }
+      tabRow.hidden = true;
+      tabRow.setAttribute("aria-hidden", "true");
+      resetButton.hidden = true;
+      resetButton.setAttribute("aria-hidden", "true");
+
+      hiddenTabRowRef.current = tabRow;
+      hiddenResetButtonRef.current = resetButton;
+
+      composerMount = document.createElement("div");
+      composerMount.dataset.discussionsCreateTriggerSlot = "true";
+      composerMount.className = "min-w-0 flex-1";
+      searchLabel.insertAdjacentElement("afterend", composerMount);
+
+      filterMount = document.createElement("div");
+      filterMount.dataset.discussionsFilterSlot = "true";
+      filterMount.className = "shrink-0";
+      controlsRow.append(filterMount);
+
+      setSlot(composerMount);
+      setFilterSlot(filterMount);
     }
 
     locateSearchBar();
@@ -146,11 +306,30 @@ export function DiscussionsCreateComposerBridge() {
       cancelled = true;
       window.clearTimeout(timer);
       setSlot(null);
+      setFilterSlot(null);
       setOpen(false);
-      mount?.remove();
+      setFilterOpen(false);
+      setSelectedFilter("All");
+      hiddenTabRowRef.current = null;
+      hiddenResetButtonRef.current = null;
+      composerMount?.remove();
+      filterMount?.remove();
+
       if (searchLabel) {
         searchLabel.hidden = false;
         searchLabel.removeAttribute("aria-hidden");
+      }
+      if (headingBlock) {
+        headingBlock.hidden = false;
+        headingBlock.removeAttribute("aria-hidden");
+      }
+      if (tabRow) {
+        tabRow.hidden = false;
+        tabRow.removeAttribute("aria-hidden");
+      }
+      if (resetButton) {
+        resetButton.hidden = false;
+        resetButton.removeAttribute("aria-hidden");
       }
     };
   }, [pathname]);
@@ -160,12 +339,38 @@ export function DiscussionsCreateComposerBridge() {
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
 
+  function selectFilter(label: FilterLabel) {
+    if (label === "All") {
+      hiddenResetButtonRef.current?.click();
+    } else {
+      const target = Array.from(
+        hiddenTabRowRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? []
+      ).find((button) => button.textContent?.trim() === label);
+      target?.click();
+    }
+
+    setSelectedFilter(label);
+    setFilterOpen(false);
+  }
+
   return (
     <>
       {slot
         ? createPortal(
             <CreateTrigger buttonRef={triggerRef} onOpen={() => setOpen(true)} />,
             slot
+          )
+        : null}
+      {filterSlot
+        ? createPortal(
+            <FilterControl
+              open={filterOpen}
+              selected={selectedFilter}
+              onToggle={() => setFilterOpen((current) => !current)}
+              onSelect={selectFilter}
+              controlRef={filterControlRef}
+            />,
+            filterSlot
           )
         : null}
       {open ? <CreateModal onClose={closeModal} /> : null}

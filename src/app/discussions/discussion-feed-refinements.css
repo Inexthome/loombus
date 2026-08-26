@@ -1,3 +1,15 @@
+html[data-loombus-theme="light"] .discussion-feed-route,
+html[data-loombus-theme="light"] .discussion-feed-route main {
+  background-color: #fefbec !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .discussion-feed-route,
+  html[data-loombus-theme="system"] .discussion-feed-route main {
+    background-color: #fefbec !important;
+  }
+}
+
 .discussion-feed-route button[data-loombus-exact-tab="active"] {
   border-color: var(--loombus-border) !important;
   background: var(--loombus-surface) !important;
