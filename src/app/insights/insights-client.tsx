@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { DiscussionViewerInsights } from "@/components/discussion-viewer-insights";
+import { PersistedDetails } from "@/components/persisted-details";
 import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import { ViewTrendPanel } from "@/components/view-trend-panel";
 import { supabase } from "@/lib/supabase/client";
@@ -11,24 +12,9 @@ import { supabase } from "@/lib/supabase/client";
 type InsightsTab = "discussions" | "replies" | "account";
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
-type Summary = {
-  discussions: number;
-  replies: number;
-  saved: number;
-  following: number;
-};
-
-type ReplyRow = {
-  id: string;
-  discussion_id: string;
-  created_at: string;
-};
-
-type DiscussionRow = {
-  id: string;
-  title: string;
-};
-
+type Summary = { discussions: number; replies: number; saved: number; following: number };
+type ReplyRow = { id: string; discussion_id: string; created_at: string };
+type DiscussionRow = { id: string; title: string };
 type ImpactTotals = {
   views: number;
   uniqueReach: number;
@@ -40,7 +26,6 @@ type ImpactTotals = {
   signalDepth: number;
   knowledgeOriginDiscussions: number;
 };
-
 type ImpactDiscussion = {
   id: string;
   title: string;
@@ -57,24 +42,9 @@ type ImpactDiscussion = {
   knowledgeType: string | null;
   knowledgeStatus: string | null;
 };
-
-type ImpactPayload = {
-  totals: ImpactTotals;
-  discussions: ImpactDiscussion[];
-};
-
-type ComparisonSummary = {
-  count: number;
-  reach: number;
-  replies: number;
-  saves: number;
-  signal: number;
-};
-
-type ComparisonRow = {
-  label: string;
-  data: ComparisonSummary;
-};
+type ImpactPayload = { totals: ImpactTotals; discussions: ImpactDiscussion[] };
+type ComparisonSummary = { count: number; reach: number; replies: number; saves: number; signal: number };
+type ComparisonRow = { label: string; data: ComparisonSummary };
 
 const emptySummary: Summary = { discussions: 0, replies: 0, saved: 0, following: 0 };
 const emptyImpact: ImpactPayload = {
@@ -144,6 +114,32 @@ function summarize(items: ImpactDiscussion[]): ComparisonSummary {
 
 function formatAverage(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
+function DisclosureSummary({
+  eyebrow,
+  title,
+  description,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">{eyebrow}</p>
+        <h2 className="mt-2 text-xl font-black">{title}</h2>
+        {description ? <p className="mt-1 text-sm leading-6 text-[var(--loombus-text-muted)]">{description}</p> : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-3 pt-1 text-xs text-[var(--loombus-text-muted)]">
+        {meta}
+        <ChevronDown className="size-4 transition group-open:rotate-180" aria-hidden="true" />
+      </div>
+    </summary>
+  );
 }
 
 export default function InsightsClient() {
@@ -311,66 +307,62 @@ export default function InsightsClient() {
               ))}
             </div>
 
-            <div className="border-b border-[var(--loombus-border)] py-5">
-              <div className="flex flex-wrap items-start justify-between gap-5">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Signal v1</p>
-                  <h2 className="mt-2 text-xl font-black">Meaningful action beyond viewing.</h2>
-                  <p className="mt-1 text-sm leading-6 text-[var(--loombus-text-muted)]">Signal actions are replies received plus saves earned. Signal contributors are distinct members who replied or saved. Views and reach do not increase Signal.</p>
-                </div>
-                <span className="text-xs text-[var(--loombus-text-muted)]">{rangeLabel}</span>
-              </div>
-              <div className="mt-5 grid grid-cols-3 border-t border-[var(--loombus-border)]">
+            <PersistedDetails storageKey="loombus:insights:signal-v1" className="group border-b border-[var(--loombus-border)]">
+              <DisclosureSummary
+                eyebrow="Signal v1"
+                title="Meaningful action beyond viewing."
+                description="Signal actions are replies received plus saves earned. Signal contributors are distinct members who replied or saved. Views and reach do not increase Signal."
+                meta={rangeLabel}
+              />
+              <div className="grid grid-cols-3 border-t border-[var(--loombus-border)] pb-1">
                 <div className="py-4"><span className="block text-xs text-[var(--loombus-text-muted)]">Signal actions</span><strong className="mt-1 block text-xl font-black">{loadingSummary ? "—" : impact.totals.signalActions.toLocaleString()}</strong></div>
                 <div className="border-l border-[var(--loombus-border)] py-4 pl-4"><span className="block text-xs text-[var(--loombus-text-muted)]">Signal contributors</span><strong className="mt-1 block text-xl font-black">{loadingSummary ? "—" : impact.totals.signalContributors.toLocaleString()}</strong></div>
                 <div className="border-l border-[var(--loombus-border)] py-4 pl-4"><span className="block text-xs text-[var(--loombus-text-muted)]">Signal depth</span><strong className="mt-1 block text-xl font-black">{loadingSummary ? "—" : formatDepth(impact.totals.signalDepth)}</strong><span className="mt-1 block text-xs text-[var(--loombus-text-subtle)]">actions per contributor</span></div>
               </div>
-            </div>
+            </PersistedDetails>
 
-            <div className="border-b border-[var(--loombus-border)] py-5">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Origin comparison</p>
-                  <h2 className="mt-2 text-xl font-black">Knowledge-origin vs regular discussions.</h2>
-                  <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">Per-discussion averages keep the comparison from being distorted by how many discussions are in each group.</p>
-                </div>
-                <span className="text-xs text-[var(--loombus-text-muted)]">{rangeLabel}</span>
-              </div>
-
-              <div className="overflow-x-auto border-t border-[var(--loombus-border)]">
-                <div className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-3 text-xs font-bold text-[var(--loombus-text-subtle)]">
-                  <span>Origin</span><span className="text-right">Discussions</span><span className="text-right">Avg reach</span><span className="text-right">Avg replies</span><span className="text-right">Avg saves</span><span className="text-right">Avg Signal</span>
-                </div>
-                {comparisonRows.map(({ label, data }) => (
-                  <div key={label} className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-4 text-sm">
-                    <strong>{label}</strong>
-                    <span className="text-right">{data.count.toLocaleString()}</span>
-                    {data.count ? <><span className="text-right">{formatAverage(data.reach)}</span><span className="text-right">{formatAverage(data.replies)}</span><span className="text-right">{formatAverage(data.saves)}</span><span className="text-right">{formatAverage(data.signal)}</span></> : <span className="col-span-4 text-right text-xs text-[var(--loombus-text-muted)]">Not enough data</span>}
+            <PersistedDetails storageKey="loombus:insights:origin-comparison" className="group border-b border-[var(--loombus-border)]">
+              <DisclosureSummary
+                eyebrow="Origin comparison"
+                title="Knowledge-origin vs regular discussions."
+                description="Per-discussion averages keep the comparison from being distorted by how many discussions are in each group."
+                meta={rangeLabel}
+              />
+              <div className="pb-5">
+                <div className="overflow-x-auto border-t border-[var(--loombus-border)]">
+                  <div className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-3 text-xs font-bold text-[var(--loombus-text-subtle)]">
+                    <span>Origin</span><span className="text-right">Discussions</span><span className="text-right">Avg reach</span><span className="text-right">Avg replies</span><span className="text-right">Avg saves</span><span className="text-right">Avg Signal</span>
                   </div>
-                ))}
+                  {comparisonRows.map(({ label, data }) => (
+                    <div key={label} className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-4 text-sm">
+                      <strong>{label}</strong>
+                      <span className="text-right">{data.count.toLocaleString()}</span>
+                      {data.count ? <><span className="text-right">{formatAverage(data.reach)}</span><span className="text-right">{formatAverage(data.replies)}</span><span className="text-right">{formatAverage(data.saves)}</span><span className="text-right">{formatAverage(data.signal)}</span></> : <span className="col-span-4 text-right text-xs text-[var(--loombus-text-muted)]">Not enough data</span>}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-subtle)]">Knowledge origin describes provenance only. It does not add Signal by itself.</p>
               </div>
-              <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-subtle)]">Knowledge origin describes provenance only. It does not add Signal by itself.</p>
-            </div>
+            </PersistedDetails>
 
             <ViewTrendPanel range={range} />
 
-            <div className="border-b border-[var(--loombus-border)] py-5">
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <div><p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Discussion performance</p><h2 className="mt-2 text-xl font-black">Where your signal is forming.</h2></div>
-                <span className="text-xs text-[var(--loombus-text-muted)]">{rangeLabel}</span>
+            <PersistedDetails storageKey="loombus:insights:discussion-performance" className="group border-b border-[var(--loombus-border)]">
+              <DisclosureSummary eyebrow="Discussion performance" title="Where your signal is forming." meta={rangeLabel} />
+              <div className="pb-1">
+                {rankedDiscussions.length ? rankedDiscussions.map((item) => (
+                  <Link key={item.id} href={`/discussions/${item.id}`} className="grid gap-2 border-t border-[var(--loombus-border)] py-4 sm:grid-cols-[minmax(0,1fr)_repeat(6,88px)] sm:items-center">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm">{item.title}</strong>
+                      <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">Created {formatDate(item.createdAt)}{item.knowledgeOrigin ? ` · Knowledge-origin${item.knowledgeType ? ` · ${item.knowledgeType}` : ""}` : ""}</span>
+                    </div>
+                    {[["Views", item.views], ["Reach", item.uniqueReach], ["Replies", item.repliesReceived], ["Saves", item.savesEarned], ["Signal", item.signalActions], ["Contrib.", item.signalContributors]].map(([label, value]) => (
+                      <span key={String(label)} className="text-xs text-[var(--loombus-text-muted)] sm:text-right"><b className="text-[var(--loombus-text)]">{Number(value).toLocaleString()}</b> {label}</span>
+                    ))}
+                  </Link>
+                )) : <p className="border-t border-[var(--loombus-border)] py-4 text-sm text-[var(--loombus-text-muted)]">No discussion activity recorded in this period.</p>}
               </div>
-              {rankedDiscussions.length ? rankedDiscussions.map((item) => (
-                <Link key={item.id} href={`/discussions/${item.id}`} className="grid gap-2 border-t border-[var(--loombus-border)] py-4 sm:grid-cols-[minmax(0,1fr)_repeat(6,88px)] sm:items-center">
-                  <div className="min-w-0">
-                    <strong className="block truncate text-sm">{item.title}</strong>
-                    <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">Created {formatDate(item.createdAt)}{item.knowledgeOrigin ? ` · Knowledge-origin${item.knowledgeType ? ` · ${item.knowledgeType}` : ""}` : ""}</span>
-                  </div>
-                  {[["Views", item.views], ["Reach", item.uniqueReach], ["Replies", item.repliesReceived], ["Saves", item.savesEarned], ["Signal", item.signalActions], ["Contrib.", item.signalContributors]].map(([label, value]) => (
-                    <span key={String(label)} className="text-xs text-[var(--loombus-text-muted)] sm:text-right"><b className="text-[var(--loombus-text)]">{Number(value).toLocaleString()}</b> {label}</span>
-                  ))}
-                </Link>
-              )) : <p className="border-t border-[var(--loombus-border)] py-4 text-sm text-[var(--loombus-text-muted)]">No discussion activity recorded in this period.</p>}
-            </div>
+            </PersistedDetails>
 
             <DiscussionViewerInsights />
           </section>
