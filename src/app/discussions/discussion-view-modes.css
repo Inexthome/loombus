@@ -1,3 +1,13 @@
+.discussion-feed-route {
+  min-height: 100vh;
+  background: var(--loombus-page-bg) !important;
+}
+
+.discussion-feed-route > main,
+.discussion-feed-route .discussion-v2-page {
+  background: var(--loombus-page-bg) !important;
+}
+
 .discussion-view-control {
   position: relative;
   margin-top: 1rem;
