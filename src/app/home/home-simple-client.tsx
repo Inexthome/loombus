@@ -136,6 +136,27 @@ export default function HomeSimpleClient() {
     );
   }
 
+  const homeRows = [
+    {
+      href: "/notifications",
+      title: "Recent activity",
+      detail: "Replies, follows, and updates waiting for your attention.",
+      icon: Sparkles,
+    },
+    {
+      href: "/my-discussions",
+      title: "Your discussions",
+      detail: "Revisit conversations you started and see what changed.",
+      icon: Eye,
+    },
+    {
+      href: "/saved",
+      title: "Continue your signal",
+      detail: "Return to discussions and ideas you saved for later.",
+      icon: ChevronRight,
+    },
+  ];
+
   return (
     <main className="home-simple-page min-h-screen text-[var(--loombus-text)]">
       <div className="home-simple-shell">
@@ -145,9 +166,6 @@ export default function HomeSimpleClient() {
             <h1>
               Welcome back, <span>{getFirstName(profile, email)}</span>.
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">
-              Your signal brief, recent activity, and next useful actions in one place.
-            </p>
           </div>
 
           <Link href="/create" className="home-simple-create">
@@ -182,82 +200,57 @@ export default function HomeSimpleClient() {
           </section>
         ) : null}
 
-        <section className="mt-8">
-          <div className="mb-4">
+        <section className="mt-10" aria-labelledby="home-signal-title">
+          <div className="border-b border-[var(--loombus-border)] pb-4">
             <p className="home-simple-eyebrow">Your signal today</p>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+            <h2 id="home-signal-title" className="mt-2 text-2xl font-black sm:text-3xl">
               Pick up where your ideas left off.
             </h2>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Link
-              href="/notifications"
-              className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 transition hover:border-[var(--loombus-gold)]"
-            >
-              <Sparkles
-                className="size-5 text-[var(--loombus-gold)]"
-                aria-hidden="true"
-              />
-              <strong className="mt-5 block text-lg">Recent activity</strong>
-              <span className="mt-2 block text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Replies, follows, and updates waiting for your attention.
-              </span>
-            </Link>
-
-            <Link
-              href="/my-discussions"
-              className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 transition hover:border-[var(--loombus-gold)]"
-            >
-              <Eye
-                className="size-5 text-[var(--loombus-gold)]"
-                aria-hidden="true"
-              />
-              <strong className="mt-5 block text-lg">Your discussions</strong>
-              <span className="mt-2 block text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Revisit conversations you started and see what changed.
-              </span>
-            </Link>
-
-            <Link
-              href="/saved"
-              className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 transition hover:border-[var(--loombus-gold)]"
-            >
-              <ChevronRight
-                className="size-5 text-[var(--loombus-gold)]"
-                aria-hidden="true"
-              />
-              <strong className="mt-5 block text-lg">Continue your signal</strong>
-              <span className="mt-2 block text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Return to discussions and ideas you saved for later.
-              </span>
-            </Link>
+          <div>
+            {homeRows.map(({ href, title, detail, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex items-center gap-4 border-b border-[var(--loombus-border)] py-5 transition"
+              >
+                <Icon
+                  className="size-5 shrink-0 text-[var(--loombus-gold)]"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1">
+                  <strong className="block text-base font-black">{title}</strong>
+                  <span className="mt-1 block text-sm leading-6 text-[var(--loombus-text-muted)]">
+                    {detail}
+                  </span>
+                </div>
+                <ChevronRight
+                  className="size-4 shrink-0 text-[var(--loombus-text-subtle)] transition group-hover:translate-x-0.5 group-hover:text-[var(--loombus-gold)]"
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
           </div>
         </section>
 
-        <section className="mt-6 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-start gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--loombus-surface-muted)] text-[var(--loombus-gold)]">
-                <BarChart3 className="size-5" aria-hidden="true" />
-              </span>
-              <div>
-                <p className="home-simple-eyebrow">Private viewer insights</p>
-                <h2 className="mt-2 text-xl font-black sm:text-2xl">
-                  See how your signal is reaching people.
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                  Open your private analytics for discussion views, profile viewers, and member activity.
-                </p>
-              </div>
+        <section className="mt-10" aria-labelledby="home-insights-title">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--loombus-border)] pb-4">
+            <div>
+              <p className="home-simple-eyebrow">Private viewer insights</p>
+              <h2 id="home-insights-title" className="mt-2 text-2xl font-black sm:text-3xl">
+                Understand your signal.
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
+                Discussion views, profile viewers, and member activity live in one private analytics workspace.
+              </p>
             </div>
-
             <Link
               href="/insights"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 py-3 text-sm font-black text-black transition hover:opacity-90"
+              className="inline-flex items-center gap-2 py-2 text-sm font-black text-[var(--loombus-gold)]"
             >
               Open Insights
-              <ChevronRight className="size-4" aria-hidden="true" />
+              <BarChart3 className="size-4" aria-hidden="true" />
             </Link>
           </div>
         </section>
