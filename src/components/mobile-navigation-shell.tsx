@@ -49,7 +49,10 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
-import { supabase } from "@/lib/supabase/client";
+import {
+  restorePersistedSupabaseSession,
+  supabase,
+} from "@/lib/supabase/client";
 import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 
 type MobileNavProfile = {
@@ -237,6 +240,7 @@ export function MobileNavigationShell() {
     }
 
     async function loadUser() {
+      await restorePersistedSupabaseSession();
       const { data } = await supabase.auth.getUser();
       const nextUser = data.user ?? null;
 

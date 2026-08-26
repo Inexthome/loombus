@@ -13,6 +13,10 @@ import {
 const AUTHENTICATED_ROOT_DESTINATION = "/discussions";
 const BACKGROUND_REVALIDATION_INTERVAL_MS = 5 * 60 * 1000;
 
+const SESSION_AWARE_PUBLIC_PATH_PREFIXES = [
+  "/discussions",
+];
+
 const PROTECTED_PATH_PREFIXES = [
   "/home",
   "/dashboard",
@@ -43,10 +47,18 @@ type SessionValidationOptions = {
   force?: boolean;
 };
 
-function isProtectedPath(pathname: string) {
-  return PROTECTED_PATH_PREFIXES.some(
+function matchesPathPrefix(pathname: string, prefixes: string[]) {
+  return prefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
+}
+
+function isProtectedPath(pathname: string) {
+  return matchesPathPrefix(pathname, PROTECTED_PATH_PREFIXES);
+}
+
+function isSessionAwarePublicPath(pathname: string) {
+  return matchesPathPrefix(pathname, SESSION_AWARE_PUBLIC_PATH_PREFIXES);
 }
 
 function isAccountBootstrapPath(pathname: string) {
@@ -88,8 +100,9 @@ export function SessionLifecycleGuard() {
   const pathname = usePathname();
   const router = useRouter();
   const protectedPath = isProtectedPath(pathname);
+  const sessionAwarePublicPath = isSessionAwarePublicPath(pathname);
   const rootPath = pathname === "/";
-  const shouldResolveSession = protectedPath || rootPath;
+  const shouldResolveSession = protectedPath || sessionAwarePublicPath || rootPath;
   const [checking, setChecking] = useState(shouldResolveSession);
   const validationInFlightRef = useRef<Promise<boolean> | null>(null);
   const lastSuccessfulValidationAtRef = useRef(0);
@@ -125,7 +138,7 @@ export function SessionLifecycleGuard() {
           const { data: sessionData } = await supabase.auth.getSession();
 
           if (!sessionData.session) {
-            if (rootPath) {
+            if (rootPath || sessionAwarePublicPath) {
               lastSuccessfulValidationAtRef.current = Date.now();
               setChecking(false);
               return true;
@@ -213,7 +226,7 @@ export function SessionLifecycleGuard() {
 
       return validationPromise;
     },
-    [pathname, rootPath, router, shouldResolveSession]
+    [pathname, rootPath, router, sessionAwarePublicPath, shouldResolveSession]
   );
 
   useEffect(() => {
@@ -225,8 +238,11 @@ export function SessionLifecycleGuard() {
       if (!shouldResolveSession) return;
 
       if (event === "SIGNED_OUT" || !session) {
-        if (rootPath) setChecking(false);
-        else router.replace(getLoginHref(pathname));
+        if (rootPath || sessionAwarePublicPath) {
+          setChecking(false);
+        } else {
+          router.replace(getLoginHref(pathname));
+        }
         return;
       }
 
@@ -255,7 +271,14 @@ export function SessionLifecycleGuard() {
       window.removeEventListener("focus", handleWindowFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [pathname, rootPath, router, shouldResolveSession, validateSession]);
+  }, [
+    pathname,
+    rootPath,
+    router,
+    sessionAwarePublicPath,
+    shouldResolveSession,
+    validateSession,
+  ]);
 
   if (!shouldResolveSession || !checking) return null;
 

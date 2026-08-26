@@ -50,7 +50,10 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import { normalizePublicText } from "@/lib/public-text";
-import { supabase } from "@/lib/supabase/client";
+import {
+  restorePersistedSupabaseSession,
+  supabase,
+} from "@/lib/supabase/client";
 import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 
 type DesktopTopNavProfile = {
@@ -333,6 +336,7 @@ export function DesktopTopNavbar() {
     }
 
     async function loadUser() {
+      await restorePersistedSupabaseSession();
       const { data } = await supabase.auth.getUser();
       const nextUser = data.user ?? null;
 

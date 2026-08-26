@@ -15,7 +15,10 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
-import { supabase } from "@/lib/supabase/client";
+import {
+  restorePersistedSupabaseSession,
+  supabase,
+} from "@/lib/supabase/client";
 
 type DockItem = {
   href: string;
@@ -175,6 +178,7 @@ export function PersistentMobilePrimaryDock() {
     }
 
     async function loadUser() {
+      await restorePersistedSupabaseSession();
       const { data } = await supabase.auth.getUser();
       const nextUserId = data.user?.id ?? null;
 
