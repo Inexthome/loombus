@@ -70,14 +70,9 @@ function getModeBadge(article: HTMLElement) {
 }
 
 function renameActivityTerminology(root: Element) {
-  for (const article of Array.from(root.querySelectorAll<HTMLElement>("article"))) {
-    for (const span of Array.from(article.querySelectorAll<HTMLElement>("span"))) {
-      const text = span.textContent?.trim() ?? "";
-      const match = text.match(/^Signal\s+(\d+)$/i);
-      if (match) span.textContent = `Activity ${match[1]}`;
-    }
-  }
-
+  // Discussion score pills are rendered canonically as "Signal {score}" by
+  // the React feed. Do not rewrite them here: this refinement runs after
+  // hydration and previously caused the label to race from Signal to Activity.
   for (const paragraph of Array.from(root.querySelectorAll<HTMLElement>("aside p"))) {
     const text = paragraph.textContent?.trim() ?? "";
     if (text === "Trending topics") {
