@@ -1,7 +1,7 @@
 .discussion-v2-page {
   width: 100%;
   overflow-x: clip;
-  background: var(--loombus-surface) !important;
+  background: var(--loombus-page-bg) !important;
 }
 
 .discussion-v2-main-column {
