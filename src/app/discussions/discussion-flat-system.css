@@ -1,0 +1,177 @@
+.discussion-feed-route main {
+  background: var(--loombus-page-bg) !important;
+}
+
+/* Discussions index: reduce card chrome and make the feed read like an editorial index. */
+.discussion-feed-route main article {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route main article + article {
+  margin-top: 0 !important;
+}
+
+.discussion-feed-route main article > div:first-child {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.discussion-feed-route main article > div:last-child {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route main article [class*="rounded-full"] {
+  box-shadow: none !important;
+}
+
+.discussion-feed-route main input[type="search"] {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route main input[type="search"] + * {
+  box-shadow: none !important;
+}
+
+.discussion-feed-route main aside section {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route main aside section button,
+.discussion-feed-route main aside section a {
+  box-shadow: none !important;
+}
+
+/* Discussion detail: preserve hierarchy while removing stacked-card styling. */
+.discussion-v2-page {
+  background: var(--loombus-page-bg) !important;
+}
+
+.discussion-v2-main-column {
+  gap: 0 !important;
+}
+
+.discussion-v2-opening-card,
+.discussion-v2-intelligence-card,
+.discussion-v2-composer-card,
+.discussion-v2-replies-card,
+.discussion-v2-reply-card,
+.discussion-v2-empty-replies,
+.discussion-v2-not-found {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-opening-card,
+.discussion-v2-intelligence-card,
+.discussion-v2-composer-card,
+.discussion-v2-replies-card {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.discussion-v2-opening-card {
+  padding-top: 1rem !important;
+  padding-bottom: 2rem !important;
+}
+
+.discussion-v2-intelligence-card,
+.discussion-v2-composer-card,
+.discussion-v2-replies-card {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-v2-opening-card {
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-v2-reply-card {
+  padding: 1.25rem 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-v2-reference-card,
+.discussion-v2-ai-output,
+.discussion-v2-ai-lock,
+.discussion-v2-ai-empty,
+.discussion-v2-reply-suggestions,
+.discussion-v2-composer-reference {
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-section-nav,
+.discussion-v2-rail-status,
+.discussion-v2-side-card {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-side-card + .discussion-v2-side-card,
+.discussion-v2-rail-status {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-v2-section-nav button {
+  border-radius: 0.5rem !important;
+}
+
+.discussion-v2-opening-actions,
+.discussion-v2-reply-footer,
+.discussion-v2-composer-footer {
+  border-radius: 0 !important;
+}
+
+.discussion-v2-button {
+  box-shadow: none !important;
+}
+
+.discussion-v2-topic-row > a,
+.discussion-v2-topic-row > span {
+  background: transparent !important;
+  border-color: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0.6rem !important;
+}
+
+.discussion-v2-topic-row > * + *::before {
+  content: "·";
+  margin-right: 0.6rem;
+  color: var(--loombus-text-subtle);
+}
+
+@media (max-width: 767px) {
+  .discussion-feed-route main article > div:first-child,
+  .discussion-feed-route main article > div:last-child {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .discussion-v2-page {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
