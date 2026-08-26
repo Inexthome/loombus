@@ -70,6 +70,11 @@ type ComparisonSummary = {
   signal: number;
 };
 
+type ComparisonRow = {
+  label: string;
+  data: ComparisonSummary;
+};
+
 const emptySummary: Summary = { discussions: 0, replies: 0, saved: 0, following: 0 };
 const emptyImpact: ImpactPayload = {
   totals: {
@@ -248,6 +253,11 @@ export default function InsightsClient() {
     return { knowledge: summarize(knowledge), regular: summarize(regular) };
   }, [impact.discussions]);
 
+  const comparisonRows: ComparisonRow[] = [
+    { label: "Knowledge-origin", data: originComparison.knowledge },
+    { label: "Regular", data: originComparison.regular },
+  ];
+
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] text-[var(--loombus-text)]">
       <div className="mx-auto max-w-7xl px-4 pb-28 pt-7 sm:px-6 lg:px-8 lg:pb-16">
@@ -330,19 +340,13 @@ export default function InsightsClient() {
                 <div className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-3 text-xs font-bold text-[var(--loombus-text-subtle)]">
                   <span>Origin</span><span className="text-right">Discussions</span><span className="text-right">Avg reach</span><span className="text-right">Avg replies</span><span className="text-right">Avg saves</span><span className="text-right">Avg Signal</span>
                 </div>
-                {[
-                  ["Knowledge-origin", originComparison.knowledge],
-                  ["Regular", originComparison.regular],
-                ].map(([label, group]) => {
-                  const data = group as ComparisonSummary;
-                  return (
-                    <div key={String(label)} className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-4 text-sm">
-                      <strong>{label}</strong>
-                      <span className="text-right">{data.count.toLocaleString()}</span>
-                      {data.count ? <><span className="text-right">{formatAverage(data.reach)}</span><span className="text-right">{formatAverage(data.replies)}</span><span className="text-right">{formatAverage(data.saves)}</span><span className="text-right">{formatAverage(data.signal)}</span></> : <span className="col-span-4 text-right text-xs text-[var(--loombus-text-muted)]">Not enough data</span>}
-                    </div>
-                  );
-                })}
+                {comparisonRows.map(({ label, data }) => (
+                  <div key={label} className="grid min-w-[620px] grid-cols-[minmax(180px,1fr)_90px_repeat(4,110px)] border-b border-[var(--loombus-border)] py-4 text-sm">
+                    <strong>{label}</strong>
+                    <span className="text-right">{data.count.toLocaleString()}</span>
+                    {data.count ? <><span className="text-right">{formatAverage(data.reach)}</span><span className="text-right">{formatAverage(data.replies)}</span><span className="text-right">{formatAverage(data.saves)}</span><span className="text-right">{formatAverage(data.signal)}</span></> : <span className="col-span-4 text-right text-xs text-[var(--loombus-text-muted)]">Not enough data</span>}
+                  </div>
+                ))}
               </div>
               <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-subtle)]">Knowledge origin describes provenance only. It does not add Signal by itself.</p>
             </div>
