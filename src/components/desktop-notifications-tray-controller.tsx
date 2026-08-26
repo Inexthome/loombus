@@ -64,6 +64,7 @@ export function DesktopNotificationsTrayController() {
         // compact tray below is now the single desktop notification surface.
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation();
         setOpen((current) => {
           const next = !current;
           syncExpandedState(next);
