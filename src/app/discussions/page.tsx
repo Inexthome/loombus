@@ -183,10 +183,10 @@ function getSignalScore(
   bookmarkCounts: Record<string, number>,
   viewCounts: Record<string, number>
 ) {
+  void viewCounts;
   return (
-    (replyCounts[discussionId] ?? 0) * 3 +
-    (bookmarkCounts[discussionId] ?? 0) * 5 +
-    (viewCounts[discussionId] ?? 0)
+    (replyCounts[discussionId] ?? 0) +
+    (bookmarkCounts[discussionId] ?? 0)
   );
 }
 
