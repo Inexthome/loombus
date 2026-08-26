@@ -64,32 +64,67 @@
   margin-top: 1rem !important;
 }
 
-.discussion-v2-opening-actions {
-  border-top: 1px solid var(--loombus-border) !important;
+.discussion-v2-opening-body {
+  margin-top: 1.5rem !important;
+}
+
+.discussion-v2-structured-grid {
   margin-top: 1.25rem !important;
-  padding-top: 0.85rem !important;
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+}
+
+.discussion-v2-structured-grid > div {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 0 !important;
+}
+
+.discussion-v2-opening-actions {
+  margin: 1.25rem 0 0 !important;
+  padding: 0.8rem 0 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
 }
 
 .discussion-v2-button {
-  min-height: 2.35rem !important;
+  min-height: 2.25rem !important;
   border-radius: 999px !important;
   box-shadow: none !important;
+  padding: 0.5rem 0.75rem !important;
 }
 
 .discussion-v2-button-primary {
-  padding-inline: 0.95rem !important;
+  padding-inline: 0.9rem !important;
+}
+
+.discussion-v2-opening-actions .discussion-v2-button:not(.discussion-v2-button-primary) {
+  border-color: transparent !important;
+  background: transparent !important;
 }
 
 .discussion-v2-intelligence-card,
 .discussion-v2-composer-card {
-  padding: 1.25rem 0 !important;
+  padding: 1.3rem 0 !important;
 }
 
 .discussion-v2-section-heading {
-  margin-bottom: 1rem !important;
+  margin-bottom: 0.9rem !important;
+}
+
+.discussion-v2-plan-chip,
+.discussion-v2-shortcut {
+  border: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .discussion-v2-ai-layout {
+  display: block !important;
+  margin-top: 1rem !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -97,17 +132,46 @@
 }
 
 .discussion-v2-ai-tabs {
-  border-right: 1px solid var(--loombus-border) !important;
+  display: flex !important;
+  gap: 1rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
   background: transparent !important;
-}
-
-.discussion-v2-ai-tabs button,
-.discussion-v2-ai-output {
-  background: transparent !important;
+  overflow-x: auto !important;
+  padding: 0 !important;
 }
 
 .discussion-v2-ai-tabs button {
+  min-height: 2.55rem !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.65rem 0 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-v2-ai-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--loombus-gold) !important;
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-v2-ai-output {
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 0 !important;
+}
+
+.discussion-v2-ai-output-heading {
+  padding-bottom: 0.8rem !important;
+}
+
+.discussion-v2-ai-rating button {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .discussion-v2-reply-card {
@@ -128,6 +192,17 @@
 .discussion-v2-ai-lock,
 .discussion-v2-ai-empty,
 .discussion-v2-ai-loading {
+  border-radius: 0.65rem !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-reaction-row button,
+.discussion-v2-reply-footer button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-composer-card textarea {
   border-radius: 0.75rem !important;
   box-shadow: none !important;
 }
@@ -169,12 +244,28 @@
   border-bottom: 0 !important;
 }
 
+.discussion-v2-side-card .discussion-v2-button-wide {
+  background: transparent !important;
+}
+
 .discussion-v2-plan-chip,
 .discussion-v2-shortcut,
 .discussion-v2-pinned-label,
 .discussion-v2-verified-label {
   border-radius: 999px !important;
   box-shadow: none !important;
+}
+
+@media (min-width: 1100px) {
+  .discussion-v2-layout {
+    gap: 2rem !important;
+  }
+
+  .discussion-v2-main-column {
+    border-left: 1px solid var(--loombus-border-muted);
+    border-right: 1px solid var(--loombus-border-muted);
+    padding-inline: 1.5rem;
+  }
 }
 
 @media (max-width: 767px) {
@@ -185,5 +276,9 @@
 
   .discussion-v2-opening-card > h1 {
     font-size: clamp(1.8rem, 8vw, 2.7rem) !important;
+  }
+
+  .discussion-v2-ai-tabs {
+    gap: 0.85rem !important;
   }
 }
