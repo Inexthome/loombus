@@ -1,0 +1,190 @@
+.discussion-view-control {
+  position: relative;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.discussion-view-trigger {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.55rem 0.8rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.discussion-view-trigger:hover,
+.discussion-view-trigger[aria-expanded="true"] {
+  color: var(--loombus-text);
+  border-color: var(--loombus-text-subtle);
+  background: var(--loombus-surface-muted);
+}
+
+.discussion-view-menu {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  width: min(18rem, calc(100vw - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1rem;
+  background: var(--loombus-surface);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+}
+
+.discussion-view-menu button {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent;
+  padding: 0.85rem 0.95rem;
+  text-align: left;
+  color: var(--loombus-text-muted);
+  cursor: pointer;
+}
+
+.discussion-view-menu button:last-child {
+  border-bottom: 0;
+}
+
+.discussion-view-menu button:hover,
+.discussion-view-menu button.is-selected {
+  background: var(--loombus-surface-muted);
+  color: var(--loombus-text);
+}
+
+.discussion-view-menu button > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.discussion-view-menu strong {
+  font-size: 0.84rem;
+}
+
+.discussion-view-menu small {
+  color: var(--loombus-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+/* Card remains the existing default presentation. Compact is a true dense index. */
+.discussion-feed-route[data-discussion-view="compact"] main article {
+  overflow: visible !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article:first-child {
+  border-top-color: var(--loombus-border) !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child {
+  padding: 0.85rem 0 0.45rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child > div:first-child {
+  margin-bottom: 0.45rem !important;
+  gap: 0.45rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child > div:first-child span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article h2 {
+  font-size: 1.05rem !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article h2 + div {
+  margin-top: 0.35rem !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 1 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 {
+  margin-top: 0.5rem !important;
+  gap: 0.55rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 p:first-child {
+  font-size: 0.75rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 p:last-child {
+  font-size: 0.68rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > div.mt-4.flex.flex-wrap.gap-2 {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child {
+  gap: 0.9rem !important;
+  border-top: 0 !important;
+  padding: 0.4rem 0 0.8rem !important;
+  font-size: 0.72rem !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child svg {
+  width: 0.85rem !important;
+  height: 0.85rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child > span:last-child {
+  margin-left: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  color: var(--loombus-text) !important;
+  font-size: 0.72rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 {
+  display: grid !important;
+  gap: 0 !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-view-control {
+    justify-content: flex-start;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article h2 + div {
+    display: none !important;
+  }
+}

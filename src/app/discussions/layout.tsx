@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import { DiscussionAutoLinker } from "@/components/discussion-auto-linker";
 import { DiscussionFeedRefinements } from "@/components/discussion-feed-refinements";
 import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
+import { DiscussionViewModeControl } from "@/components/discussion-view-mode-control";
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import "./discussion-feed-media.css";
 import "./discussion-feed-refinements.css";
+import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
+import "./[id]/discussion-detail-flat.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
@@ -37,6 +40,7 @@ export default function DiscussionsLayout({
       <DiscussionPublishToast />
       <DiscussionVideoAutoplay />
       <DiscussionsCreateComposerBridge />
+      <DiscussionViewModeControl />
       {children}
     </div>
   );
