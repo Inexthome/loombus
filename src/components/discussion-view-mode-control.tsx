@@ -2,6 +2,7 @@
 
 import { ChevronDown, LayoutList, Rows3 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -89,7 +90,7 @@ export function DiscussionViewModeControl() {
     };
   }, [menuOpen, viewMode]);
 
-  function handleMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+  function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
 
     event.preventDefault();
