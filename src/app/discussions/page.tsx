@@ -158,7 +158,7 @@ function getPlainDiscussionExcerpt(content: string) {
   return normalizePublicText(content)
     .replace(/<[^>]*>/g, " ")
     .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-    .replace(/\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }
