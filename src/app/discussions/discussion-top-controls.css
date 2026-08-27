@@ -1,7 +1,13 @@
 /* Introduce the /discussions weave language without changing bridge behavior. */
 
-[data-discussions-create-trigger-slot="true"] {
+[data-discussions-create-trigger-slot="true"],
+[data-discussions-filter-slot="true"],
+[data-discussions-filter-slot="true"] > div {
   position: relative;
+  background: transparent !important;
+}
+
+[data-discussions-create-trigger-slot="true"] {
   min-width: 0;
 }
 
@@ -26,6 +32,7 @@
   border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   padding: 0.5rem 0 !important;
   box-shadow: none !important;
   gap: 0.8rem !important;
@@ -33,12 +40,14 @@
 
 [data-discussions-create-trigger-slot="true"] > button:hover {
   border-bottom-color: color-mix(in srgb, var(--loombus-gold) 48%, var(--loombus-border)) !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
 [data-discussions-create-trigger-slot="true"] > button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--loombus-gold) 48%, transparent) !important;
   outline-offset: 3px !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
@@ -49,9 +58,10 @@
   height: 2.25rem !important;
   border: 1px solid color-mix(in srgb, var(--loombus-gold) 42%, var(--loombus-border)) !important;
   border-radius: 999px !important;
-  background: var(--loombus-page-bg) !important;
+  background: transparent !important;
+  background-color: transparent !important;
   color: var(--loombus-gold) !important;
-  box-shadow: 0 0 0 4px var(--loombus-page-bg) !important;
+  box-shadow: none !important;
 }
 
 [data-discussions-create-trigger-slot="true"] > button > span:last-child {
@@ -73,6 +83,7 @@
   border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   color: var(--loombus-text-muted) !important;
   box-shadow: none !important;
 }
@@ -81,12 +92,16 @@
 [data-discussions-filter-slot="true"] > div > button[aria-expanded="true"] {
   border-bottom-color: color-mix(in srgb, var(--loombus-gold) 48%, var(--loombus-border)) !important;
   background: transparent !important;
+  background-color: transparent !important;
   color: var(--loombus-text) !important;
+  box-shadow: none !important;
 }
 
 [data-discussions-filter-slot="true"] > div > button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--loombus-gold) 48%, transparent) !important;
   outline-offset: 3px !important;
+  background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
 }
 
