@@ -1,17 +1,17 @@
 /* Card-mode density pass for the Discussion Weave feed. */
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
-  padding-top: 0.9rem !important;
-  padding-bottom: 0.42rem !important;
+  padding-top: 1.2rem !important;
+  padding-bottom: 0.62rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
-  margin-bottom: 0.32rem !important;
+  margin-bottom: 0.42rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article h2 {
-  font-size: clamp(1.12rem, 1.65vw, 1.38rem) !important;
-  line-height: 1.2 !important;
+  font-size: clamp(1.2rem, 1.85vw, 1.5rem) !important;
+  line-height: 1.22 !important;
   letter-spacing: -0.022em !important;
 }
 
@@ -20,48 +20,63 @@
   overflow: hidden !important;
   -webkit-box-orient: vertical !important;
   -webkit-line-clamp: 2 !important;
-  margin-top: 0.38rem !important;
-  font-size: 0.86rem !important;
-  line-height: 1.48 !important;
+  margin-top: 0.48rem !important;
+  font-size: 0.9rem !important;
+  line-height: 1.56 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 {
-  margin-top: 0.58rem !important;
-  gap: 0.48rem !important;
+  margin-top: 0.76rem !important;
+  gap: 0.55rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 img,
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 > span:first-child {
-  width: 2rem !important;
-  height: 2rem !important;
+  width: 2.2rem !important;
+  height: 2.2rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:first-child {
-  font-size: 0.73rem !important;
+  font-size: 0.76rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:last-child {
-  font-size: 0.66rem !important;
+  font-size: 0.69rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap {
-  margin-top: 0.5rem !important;
+  margin-top: 0.7rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
-  gap: 0.78rem !important;
-  padding-top: 0.18rem !important;
-  padding-bottom: 0.7rem !important;
-  font-size: 0.69rem !important;
+  gap: 0.9rem !important;
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.95rem !important;
+  font-size: 0.72rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child svg {
-  width: 0.84rem !important;
-  height: 0.84rem !important;
+  width: 0.9rem !important;
+  height: 0.9rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
-  font-size: 0.69rem !important;
+  font-size: 0.72rem !important;
+}
+
+/* Card mode intentionally carries a richer media preview than Compact. */
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+  grid-template-columns: minmax(9rem, 11.5rem) minmax(0, 1fr) !important;
+  column-gap: 1.15rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child {
+  max-height: 11.5rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
+  height: 11.5rem !important;
 }
 
 /* Icon-only top actions: no surface, no panel sizing, no decorative ring. */
@@ -120,27 +135,41 @@
 
 @media (max-width: 639px) {
   .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
-    padding-top: 0.78rem !important;
-    padding-bottom: 0.35rem !important;
+    padding-top: 0.95rem !important;
+    padding-bottom: 0.46rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article h2 {
-    font-size: 1.08rem !important;
+    font-size: 1.12rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article h2 + div {
-    font-size: 0.81rem !important;
-    line-height: 1.44 !important;
+    font-size: 0.84rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+    grid-template-columns: initial !important;
+    column-gap: initial !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child {
+    max-height: 8.5rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
+    height: 8.5rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
-    gap: 0.68rem !important;
-    padding-top: 0.15rem !important;
-    padding-bottom: 0.62rem !important;
-    font-size: 0.66rem !important;
+    gap: 0.72rem !important;
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.75rem !important;
+    font-size: 0.68rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
-    font-size: 0.66rem !important;
+    font-size: 0.68rem !important;
   }
 }
