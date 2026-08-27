@@ -2,10 +2,22 @@
    Functionality stays in create-discussion-composer.tsx; this layer only reshapes the page variant. */
 
 @media (min-width: 1px) {
-  [data-create-composer-variant="page"] { background: var(--loombus-page-bg) !important; }
+  [data-create-composer-variant="page"] { background: transparent !important; }
   [data-create-composer-variant="page"] > section { max-width: 78rem !important; }
   [data-create-composer-variant="page"] form { gap: 1.25rem !important; }
   [data-create-composer-variant="page"] form > div:first-child { gap: 0 !important; }
+
+  /* Keep the page as one continuous Loombus surface. */
+  [data-create-composer-variant="page"] form > div:first-child,
+  [data-create-composer-variant="page"] form > div:first-child > section,
+  [data-create-composer-variant="page"] form > div:first-child > section > label,
+  [data-create-composer-variant="page"] form > aside,
+  [data-create-composer-variant="page"] form > aside > section,
+  [data-create-composer-variant="page"] form > aside > section > div {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
 
   [data-create-composer-variant="page"] [data-create-composer-header] {
     margin: 0 !important; padding: .65rem 0 .8rem !important;
@@ -38,7 +50,7 @@
   }
   [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section textarea {
     min-height: 20rem !important; border: 1px solid var(--loombus-border) !important; border-radius: .65rem !important;
-    background: color-mix(in srgb,var(--loombus-surface) 48%,transparent) !important; padding: 1rem 3rem 1rem 1rem !important; box-shadow: none !important;
+    background: transparent !important; padding: 1rem 3rem 1rem 1rem !important; box-shadow: none !important;
   }
   [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section input:focus,
   [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section textarea:focus { border-color: var(--loombus-gold) !important; box-shadow: none !important; }
@@ -105,19 +117,12 @@
   [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div.flex.flex-col > button:hover { color: var(--loombus-text) !important; background: transparent !important; }
 
   /* Selected framing: compact hierarchy, metadata reads like facts rather than a dense block. */
-  [data-create-composer-variant="page"] form > aside > section:nth-child(4) {
-    padding: .8rem 0 .85rem !important;
-  }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(4) { padding: .8rem 0 .85rem !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div:first-child { gap: 0 !important; }
-  [data-create-composer-variant="page"] form > aside > section:nth-child(4) > p.mt-3 {
-    margin-top: .55rem !important; font-size: .82rem !important; line-height: 1.25 !important;
-  }
-  [data-create-composer-variant="page"] form > aside > section:nth-child(4) > p.mt-2 {
-    margin-top: .35rem !important; font-size: .76rem !important; line-height: 1.45 !important;
-  }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(4) > p.mt-3 { margin-top: .55rem !important; font-size: .82rem !important; line-height: 1.25 !important; }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(4) > p.mt-2 { margin-top: .35rem !important; font-size: .76rem !important; line-height: 1.45 !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div.mt-4 {
-    margin-top: .65rem !important; display: grid !important; gap: 0 !important;
-    border-top: 1px solid var(--loombus-border) !important;
+    margin-top: .65rem !important; display: grid !important; gap: 0 !important; border-top: 1px solid var(--loombus-border) !important;
   }
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div.mt-4 > p {
     margin: 0 !important; padding: .35rem 0 !important; border-bottom: 1px solid color-mix(in srgb,var(--loombus-border) 62%,transparent) !important;
