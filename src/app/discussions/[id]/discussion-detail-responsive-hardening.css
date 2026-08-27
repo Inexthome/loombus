@@ -1,0 +1,54 @@
+/* Responsive hardening for the flat discussion-detail hierarchy. */
+
+/* The icon-first Join control owns a visual tooltip; keep it from being clipped by the opening section. */
+.discussion-v2-opening-card {
+  overflow: visible !important;
+}
+
+/* Keep every opening action reachable on narrow screens without forcing a second row. */
+.discussion-v2-opening-actions {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.discussion-v2-opening-actions::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tablet widths are too narrow to safely force six intelligence labels into equal columns. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .discussion-v2-ai-tabs {
+    overflow-x: auto !important;
+  }
+
+  .discussion-v2-ai-tabs button {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    padding-inline: 0.65rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .discussion-v2-ai-tabs {
+    overflow-x: visible !important;
+  }
+
+  .discussion-v2-ai-tabs button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .discussion-v2-opening-actions {
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Anchor the first-action tooltip inside the viewport instead of centering it past the left edge. */
+  .discussion-v2-opening-actions > .discussion-v2-button-primary:first-child::after {
+    left: 0;
+    transform: none;
+  }
+}
