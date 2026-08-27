@@ -50,6 +50,18 @@ export function DesktopMessagesPreviewTrayController() {
   }, []);
 
   useEffect(() => {
+    void loadConversations();
+  }, [loadConversations]);
+
+  useEffect(() => {
+    const button = document.querySelector<HTMLElement>(DESKTOP_MESSAGES_BUTTON_SELECTOR);
+    if (!button) return;
+    const unreadCount = conversations.filter((conversation) => conversation.hasUnread).length;
+    button.dataset.unreadCount = unreadCount > 99 ? "99+" : String(unreadCount);
+    button.setAttribute("aria-label", unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages");
+  }, [conversations]);
+
+  useEffect(() => {
     setOpen(false);
     setPosition(null);
   }, [pathname]);
@@ -111,7 +123,7 @@ export function DesktopMessagesPreviewTrayController() {
     }
 
     function handleMessagesChanged() {
-      if (open) void loadConversations();
+      void loadConversations();
     }
 
     document.addEventListener("click", handleDocumentClick, true);
