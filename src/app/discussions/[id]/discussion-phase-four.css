@@ -1,18 +1,24 @@
+.discussion-v2-opening-card {
+  order: -2;
+}
+
 .discussion-phase-four-nav {
+  order: -1;
   position: sticky;
   top: 4.25rem;
   z-index: 8;
   display: flex;
-  gap: 0.45rem;
+  gap: 1.2rem;
   overflow-x: auto;
-  padding: 0.55rem;
+  padding: 0;
   margin-bottom: 1rem;
-  border: 1px solid var(--loombus-border);
-  background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  background: color-mix(in srgb, var(--loombus-page-bg) 96%, transparent);
   backdrop-filter: blur(14px);
-  border-radius: 1.1rem;
+  border-radius: 0;
   scrollbar-width: none;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .discussion-phase-four-nav::-webkit-scrollbar {
@@ -21,12 +27,13 @@
 
 .discussion-phase-four-nav button {
   flex: 0 0 auto;
-  min-height: 2.35rem;
-  border: 1px solid transparent;
+  min-height: 2.6rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--loombus-text-muted);
-  border-radius: 999px;
-  padding: 0.5rem 0.8rem;
+  border-radius: 0;
+  padding: 0.65rem 0;
   font-size: 0.73rem;
   font-weight: 800;
   cursor: pointer;
@@ -34,8 +41,8 @@
 
 .discussion-phase-four-nav button:hover,
 .discussion-phase-four-nav button[aria-current="page"] {
-  border-color: rgba(203, 171, 91, 0.48);
-  background: rgba(203, 171, 91, 0.12);
+  border-bottom-color: var(--discussion-v2-gold, #CBAB5B);
+  background: transparent;
   color: var(--loombus-text);
 }
 
@@ -43,11 +50,12 @@
   scroll-margin-top: 8rem;
   display: grid;
   gap: 1rem;
-  padding: clamp(1rem, 2.5vw, 1.4rem);
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-surface);
-  border-radius: 1.35rem;
-  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.05);
+  padding: 1.35rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .discussion-phase-four-panel-heading {
@@ -56,7 +64,7 @@
 }
 
 .discussion-phase-four-panel-heading > span {
-  color: #b45309;
+  color: var(--discussion-v2-accent-text, #CBAB5B);
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -80,27 +88,30 @@
 
 .discussion-phase-four-list {
   display: grid;
-  gap: 0.65rem;
+  gap: 0;
+  border-top: 1px solid var(--loombus-border-muted);
 }
 
 .discussion-phase-four-discovery-card {
   width: 100%;
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-page-bg);
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent;
   color: var(--loombus-text);
-  border-radius: 1rem;
-  padding: 0.9rem 1rem;
+  border-radius: 0;
+  padding: 0.9rem 0;
   display: grid;
   gap: 0.38rem;
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  transition: color 160ms ease;
 }
 
 .discussion-phase-four-discovery-card:hover {
-  border-color: rgba(203, 171, 91, 0.52);
-  background: rgba(203, 171, 91, 0.06);
-  transform: translateY(-1px);
+  border-color: var(--loombus-border-muted);
+  background: transparent;
+  color: var(--loombus-text);
+  transform: none;
 }
 
 .discussion-phase-four-discovery-card span {
@@ -116,16 +127,17 @@
 }
 
 .discussion-phase-four-discovery-card small {
-  color: #b45309;
+  color: var(--discussion-v2-accent-text, #CBAB5B);
   font-size: 0.68rem;
   font-weight: 800;
 }
 
 .discussion-phase-four-empty {
   margin: 0;
-  border: 1px dashed var(--loombus-border);
-  border-radius: 1rem;
-  padding: 1rem;
+  border: 0;
+  border-top: 1px solid var(--loombus-border-muted);
+  border-radius: 0;
+  padding: 0.9rem 0 0;
   color: var(--loombus-text-muted);
   font-size: 0.78rem;
   line-height: 1.55;
@@ -134,11 +146,12 @@
 @media (max-width: 719px) {
   .discussion-phase-four-nav {
     top: 3.7rem;
-    margin-inline: -0.2rem;
+    margin-inline: 0;
+    gap: 1rem;
   }
 
   .discussion-phase-four-nav button {
     min-height: 2.6rem;
-    padding-inline: 0.9rem;
+    padding-inline: 0;
   }
 }
