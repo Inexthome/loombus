@@ -167,10 +167,15 @@
 }
 
 .actionSection {
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-page-bg);
-  border-radius: 1.25rem;
-  padding: 0.85rem;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+.actionSection + .actionSection {
+  border-top: 1px solid var(--loombus-border);
+  padding-top: 1rem;
 }
 
 .actionSection > h3 {
@@ -184,7 +189,7 @@
 
 .actionGrid {
   display: grid;
-  gap: 0.45rem;
+  gap: 0;
 }
 
 .actionGrid > button,
@@ -192,24 +197,29 @@
 .blockedState {
   width: 100%;
   border: 0;
-  background: var(--loombus-surface);
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent;
   color: var(--loombus-text-muted);
-  border-radius: 1rem;
-  padding: 0.8rem;
+  border-radius: 0;
+  padding: 0.8rem 0;
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  transition: color 160ms ease;
+}
+
+.actionGrid > :last-child {
+  border-bottom: 0;
 }
 
 .actionGrid > button:hover:not(:disabled),
 .actionGrid > a:hover {
-  background: var(--loombus-surface-muted);
+  background: transparent;
   color: var(--loombus-text);
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .actionGrid > button:disabled {
@@ -263,9 +273,10 @@
 
 .personSummary {
   margin-bottom: 0.65rem;
-  border-radius: 1rem;
-  background: var(--loombus-surface);
-  padding: 0.8rem;
+  border-radius: 0;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent;
+  padding: 0.8rem 0;
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -277,21 +288,27 @@
 
 .relatedList {
   display: grid;
-  gap: 0.45rem;
+  gap: 0;
 }
 
 .relatedList a {
-  border-radius: 1rem;
-  background: var(--loombus-surface);
+  border-radius: 0;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent;
   color: var(--loombus-text);
-  padding: 0.8rem;
+  padding: 0.8rem 0;
   display: grid;
   gap: 0.2rem;
   text-decoration: none;
 }
 
+.relatedList a:last-child {
+  border-bottom: 0;
+}
+
 .relatedList a:hover {
-  background: var(--loombus-surface-muted);
+  background: transparent;
+  color: var(--loombus-text);
 }
 
 .relatedList span {
@@ -310,6 +327,15 @@
 .relatedList small {
   color: var(--loombus-text-muted);
   font-size: 0.65rem;
+}
+
+:global(.discussion-audience-detail-badge) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
 }
 
 .formBody,
@@ -480,7 +506,7 @@
   }
 
   .actionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .editorGrid {
