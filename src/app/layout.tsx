@@ -7,6 +7,7 @@ import "./persistent-mobile-primary-dock.css";
 import "./persistent-quick-rail.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
+import "./create-flat-sections.css";
 import "./discussion-audience-controls.css";
 import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
