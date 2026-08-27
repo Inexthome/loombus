@@ -82,10 +82,7 @@ export function ViewTrendPanel({ range }: { range: RangeKey }) {
   }, [range]);
 
   const chart = useMemo(() => {
-    const max = Math.max(
-      1,
-      ...payload.points.map((point) => Math.max(point.knowledgeViews, point.regularViews))
-    );
+    const max = Math.max(1, ...payload.points.map((point) => point.totalViews));
     return {
       max,
       knowledge: polyline(payload.points.map((point) => point.knowledgeViews), max),
