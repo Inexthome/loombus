@@ -7,10 +7,7 @@ import { DiscussionsCreateComposerBridge } from "@/components/discussions-create
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import "./discussion-feed-media.css";
 import "./discussion-feed-refinements.css";
-import "./discussion-index-hierarchy.css";
-import "./discussion-index-metric-polish.css";
-import "./discussion-index-attachment-polish.css";
-import "./discussion-index-metadata-polish.css";
+import "./discussion-index-polish.css";
 import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
 
