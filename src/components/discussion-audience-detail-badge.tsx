@@ -14,6 +14,7 @@ import {
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import styles from "./discussion-audience-detail-badge.module.css";
 
 type AudienceType =
   | "public"
@@ -131,10 +132,7 @@ export function DiscussionAudienceDetailBadge() {
       : "";
 
   return createPortal(
-    <span
-      className="discussion-audience-detail-badge"
-      title={`Audience: ${LABELS[type]}${customBase}`}
-    >
+    <span className={styles.badge} title={`Audience: ${LABELS[type]}${customBase}`}>
       <Icon aria-hidden="true" size={14} />
       {LABELS[type]}
     </span>,
