@@ -80,8 +80,17 @@ jobs:
         with:
           version: latest
 
+      - name: Clean stale Supabase containers
+        run: |
+          supabase stop --no-backup || true
+          docker ps -aq --filter "name=supabase_" | xargs -r docker rm -f || true
+
       - name: Start local stack (applies supabase/migrations from empty)
         run: supabase start
+
+      - name: Stop local stack
+        if: always()
+        run: supabase stop --no-backup || true
 
   codeql:
     name: CodeQL analysis
