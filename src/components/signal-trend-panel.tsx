@@ -83,10 +83,7 @@ export function SignalTrendPanel({ range }: { range: RangeKey }) {
   }, [range]);
 
   const chart = useMemo(() => {
-    const max = Math.max(
-      1,
-      ...payload.points.map((point) => Math.max(point.knowledgeSignal, point.regularSignal))
-    );
+    const max = Math.max(1, ...payload.points.map((point) => point.signalActions));
     return {
       max,
       knowledge: polyline(payload.points.map((point) => point.knowledgeSignal), max),
