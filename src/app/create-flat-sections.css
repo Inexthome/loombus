@@ -54,7 +54,6 @@
     border-radius: 0 !important; background: transparent !important; padding: .65rem 0 !important;
   }
 
-  /* One deliberate compact action row beneath the composer. */
   [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child {
     display: flex !important; justify-content: flex-end !important; align-items: center !important; gap: 0 !important;
     margin-top: 0 !important; border: 0 !important; border-bottom: 1px solid var(--loombus-border) !important;
@@ -70,10 +69,8 @@
   [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button[type="submit"] svg { display: none !important; }
   [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button:hover { color: var(--loombus-text) !important; }
 
-  /* Right rail: one continuous flat rail, with sections separated only by dividers. */
   [data-create-composer-variant="page"] form > aside {
-    margin: 0 !important; border-left: 1px solid var(--loombus-border) !important; padding-left: 1.5rem !important;
-    background: transparent !important;
+    margin: 0 !important; border-left: 1px solid var(--loombus-border) !important; padding-left: 1.5rem !important; background: transparent !important;
   }
   [data-create-composer-variant="page"] form > aside > section {
     margin: 0 !important; border: 0 !important; border-bottom: 1px solid var(--loombus-border) !important;
@@ -90,15 +87,21 @@
   [data-create-composer-variant="page"] form > aside svg { display: none !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(2) > div,
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div:first-child { gap: 0 !important; }
-  [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div { gap: 0 !important; }
 
-  /* Remove inherited button/strip fills from Copy / Review / Publish. */
-  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button {
-    min-height: 2.45rem !important; width: 100% !important; border: 0 !important; border-top: 1px solid var(--loombus-border) !important;
-    border-radius: 0 !important; background: transparent !important; padding: .55rem 0 !important; color: var(--loombus-text-muted) !important;
-    text-align: left !important; box-shadow: none !important;
+  /* Draft actions are compact text controls, not three stacked menu rows. */
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) {
+    padding: .65rem 0 .75rem !important;
   }
-  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button:first-child { border-top: 0 !important; }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div {
+    display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 0 !important;
+  }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button {
+    min-height: 1.9rem !important; width: auto !important; border: 0 !important; border-radius: 0 !important;
+    background: transparent !important; padding: 0 .65rem !important; color: var(--loombus-text-muted) !important;
+    font-size: .74rem !important; font-weight: 700 !important; text-align: left !important; box-shadow: none !important;
+  }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button:first-child { padding-left: 0 !important; }
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button + button { border-left: 1px solid var(--loombus-border) !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(3) button[type="submit"] { color: var(--loombus-gold) !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(3) button:hover { color: var(--loombus-text) !important; background: transparent !important; }
   [data-create-composer-variant="page"] form > aside .h-2 { height: 2px !important; border-radius: 0 !important; }
