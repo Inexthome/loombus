@@ -1,15 +1,27 @@
-/* Final dedicated /create proportion pass. Presentation only. */
+/* Dedicated /create document-column treatment. Presentation only. */
 
-/* Give the authoring surface more room and reduce the utility rail footprint. */
+main[data-create-composer-variant="page"] {
+  background: var(--loombus-page-bg) !important;
+}
+
+/* Match /discussions/[id]: one bounded document column plus a quiet utility rail. */
 @media (min-width: 1024px) {
   main[data-create-composer-variant="page"] form {
     grid-template-columns: minmax(0, 1fr) 15.5rem !important;
-    gap: 1.5rem !important;
+    gap: 2rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child {
+    border-left: 1px solid var(--loombus-border-muted) !important;
+    border-right: 1px solid var(--loombus-border-muted) !important;
+    padding-inline: 1.5rem !important;
   }
 }
 
-/* Tighten the header so it reads as a workspace bar instead of a hero band. */
+/* Header is part of the document column, not a separate hero band. */
 main[data-create-composer-variant="page"] [data-create-composer-header] {
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-page-bg) !important;
   padding-top: 0.2rem !important;
   padding-bottom: 0.65rem !important;
 }
@@ -19,15 +31,32 @@ main[data-create-composer-variant="page"] [data-create-composer-header] h1 {
   line-height: 1.15 !important;
 }
 
-/* Classification stays metadata-like and no longer reads as three equal primary controls. */
+main[data-create-composer-variant="page"] [data-create-composer-header] button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Topic / Mode / Add acts like the detail-page metadata row. */
 main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.05fr) auto !important;
+  gap: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-page-bg) !important;
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button {
   min-height: 2.55rem !important;
-  padding-top: 0.4rem !important;
-  padding-bottom: 0.4rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.4rem 0.35rem !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button + button {
+  border-left: 1px solid var(--loombus-border-muted) !important;
+  padding-left: 0.9rem !important;
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button:last-child {
@@ -35,37 +64,37 @@ main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid
   text-align: right !important;
 }
 
-/* Keep Title / Purpose / Body as one continuous writing surface. */
-main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) {
-  border: 0 !important;
+/* Authoring content is the document itself. Force page paint to defeat legacy surface classes. */
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid),
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) > label,
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) input,
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) textarea {
+  border-left: 0 !important;
+  border-right: 0 !important;
   border-radius: 0 !important;
-  background: transparent !important;
+  background: var(--loombus-page-bg) !important;
   box-shadow: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  overflow: visible !important;
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) > label {
-  border-left: 0 !important;
-  border-right: 0 !important;
   border-top: 0 !important;
   border-bottom: 1px solid var(--loombus-border-muted) !important;
-  background: transparent !important;
-  padding-top: 0.72rem !important;
-  padding-bottom: 0.72rem !important;
-  box-shadow: none !important;
+  padding: 0.72rem 0 !important;
 }
 
-main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) input,
-main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) textarea {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+main[data-create-composer-variant="page"] form > div:first-child > section:not(.grid) > label:last-child {
+  border-bottom-color: var(--loombus-border) !important;
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > section input {
   margin-top: 0.22rem !important;
-  padding-top: 0.18rem !important;
-  padding-bottom: 0.18rem !important;
+  padding: 0.18rem 0 !important;
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > section > label > p {
@@ -73,6 +102,7 @@ main[data-create-composer-variant="page"] form > div:first-child > section > lab
   line-height: 1.45 !important;
 }
 
+/* Keep #1118 editor geometry exactly. */
 main[data-create-composer-variant="page"] form > div:first-child > section textarea {
   height: 14rem;
   min-height: 13rem !important;
@@ -81,7 +111,7 @@ main[data-create-composer-variant="page"] form > div:first-child > section texta
   padding-bottom: 0.3rem !important;
 }
 
-/* Guidance remains available but reads as a quiet utility rather than a decorative CTA. */
+/* Guidance is a quiet utility at the writing edge. */
 main[data-create-composer-variant="page"] form > div:first-child > section label:last-child > button {
   right: 0 !important;
   bottom: 2.5rem !important;
@@ -98,22 +128,36 @@ main[data-create-composer-variant="page"] form > div:first-child > section label
   height: 1rem !important;
 }
 
-/* Bring the action row back into the writing flow. */
+/* Footer remains the final action row of the same document column. */
 main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] {
-  margin-top: -0.15rem !important;
-  border-top: 1px solid var(--loombus-border-muted) !important;
-  padding-top: 0.38rem !important;
+  margin-top: 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: var(--loombus-page-bg) !important;
+  padding: 0.38rem 0 0 !important;
+  box-shadow: none !important;
   min-height: 2.75rem !important;
 }
 
-/* Utility rail: quieter, denser, and clearly secondary to authoring. */
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Utility rail mirrors the detail-page side rail: typography + rules, no panel surface. */
 main[data-create-composer-variant="page"] form > aside {
   font-size: 0.92rem !important;
 }
 
 main[data-create-composer-variant="page"] form > aside > section {
-  border-top-color: var(--loombus-border-muted) !important;
-  background: transparent !important;
+  margin: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: var(--loombus-page-bg) !important;
   padding: 0.62rem 0 0.68rem !important;
   box-shadow: none !important;
 }
@@ -132,7 +176,6 @@ main[data-create-composer-variant="page"] form > aside > section div p {
   line-height: 1.35 !important;
 }
 
-/* Readiness becomes a compact checklist rather than a dashboard. */
 main[data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 {
   margin-top: 0.55rem !important;
 }
@@ -154,7 +197,6 @@ main[data-create-composer-variant="page"] form > aside > section:first-child .mt
   line-height: 1.28 !important;
 }
 
-/* The completion sentence is enough; remove the dashboard-style progress bar. */
 main[data-create-composer-variant="page"] form > aside > section:first-child .h-2.overflow-hidden.rounded-full {
   display: none !important;
 }
@@ -164,13 +206,11 @@ main[data-create-composer-variant="page"] form > aside > section:first-child .h-
   font-size: 0.68rem !important;
 }
 
-/* Private draft is status metadata, not a standalone card experience. */
 main[data-create-composer-variant="page"] form > aside > section:nth-child(2) p {
   margin-top: 0.28rem !important;
   font-size: 0.7rem !important;
 }
 
-/* Selected framing stays as a minimal mode reminder. */
 main[data-create-composer-variant="page"] form > aside > section:last-child > p.mt-3 {
   margin-top: 0.34rem !important;
   font-size: 0.76rem !important;
@@ -184,6 +224,14 @@ main[data-create-composer-variant="page"] form > aside > section:last-child > p.
 
 main[data-create-composer-variant="page"] form > aside > section:last-child > .mt-4.space-y-2 {
   display: none !important;
+}
+
+@media (max-width: 1023px) {
+  main[data-create-composer-variant="page"] form > div:first-child {
+    border-left: 0 !important;
+    border-right: 0 !important;
+    padding-inline: 0 !important;
+  }
 }
 
 @media (max-width: 639px) {
