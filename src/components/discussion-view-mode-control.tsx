@@ -45,10 +45,36 @@ export function DiscussionViewModeControl() {
       setPreferenceReady(true);
     }
 
-    const heading = Array.from(document.querySelectorAll<HTMLHeadingElement>("h1")).find(
-      (candidate) => candidate.textContent?.trim() === "Discussions"
-    );
-    setHost(heading?.parentElement ?? null);
+    let cancelled = false;
+    let timer = 0;
+    let mount: HTMLDivElement | null = null;
+
+    function locateFeed() {
+      if (cancelled) return;
+
+      const feed = document.querySelector<HTMLElement>(
+        '.discussion-feed-route main section.min-w-0 > .space-y-5'
+      );
+
+      if (!feed?.parentElement) {
+        timer = window.setTimeout(locateFeed, 120);
+        return;
+      }
+
+      mount = document.createElement("div");
+      mount.dataset.discussionViewControlSlot = "true";
+      feed.parentElement.insertBefore(mount, feed);
+      setHost(mount);
+    }
+
+    locateFeed();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      setHost(null);
+      mount?.remove();
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -143,9 +169,8 @@ export function DiscussionViewModeControl() {
           }
         }}
       >
-        {viewMode === "card" ? <LayoutList aria-hidden="true" size={16} /> : <Rows3 aria-hidden="true" size={16} />}
         <span>{viewLabel}</span>
-        <ChevronDown aria-hidden="true" size={14} />
+        <ChevronDown aria-hidden="true" size={13} />
       </button>
 
       {menuOpen ? (
@@ -164,7 +189,7 @@ export function DiscussionViewModeControl() {
             className={viewMode === "card" ? "is-selected" : undefined}
             onClick={() => selectView("card")}
           >
-            <LayoutList aria-hidden="true" size={17} />
+            <LayoutList aria-hidden="true" size={16} />
             <span><strong>Card</strong><small>More context and media</small></span>
           </button>
           <button
@@ -175,7 +200,7 @@ export function DiscussionViewModeControl() {
             className={viewMode === "compact" ? "is-selected" : undefined}
             onClick={() => selectView("compact")}
           >
-            <Rows3 aria-hidden="true" size={17} />
+            <Rows3 aria-hidden="true" size={16} />
             <span><strong>Compact</strong><small>More discussions at once</small></span>
           </button>
         </div>

@@ -1,0 +1,70 @@
+/* Relocated Card / Compact selector: visible at the feed edge, visually quiet. */
+
+[data-discussion-view-control-slot="true"] {
+  position: relative;
+  background: transparent !important;
+}
+
+.discussion-view-control {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.45rem !important;
+}
+
+.discussion-view-trigger {
+  min-height: auto !important;
+  gap: 0.25rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.2rem 0 !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 760 !important;
+}
+
+.discussion-view-trigger:hover,
+.discussion-view-trigger[aria-expanded="true"] {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-view-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 40;
+  width: min(17rem, calc(100vw - 2rem));
+  overflow: visible !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: var(--loombus-page-bg) !important;
+  box-shadow: none !important;
+}
+
+.discussion-view-menu button {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.72rem 0 !important;
+}
+
+.discussion-view-menu button:hover,
+.discussion-view-menu button.is-selected {
+  background: transparent !important;
+}
+
+.discussion-view-menu button.is-selected {
+  color: var(--loombus-gold) !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-view-control {
+    justify-content: flex-end !important;
+    margin-bottom: 0.35rem !important;
+  }
+}
