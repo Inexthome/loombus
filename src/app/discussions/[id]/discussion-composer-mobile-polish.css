@@ -1,0 +1,140 @@
+/* Composer and mobile action dock polish for the flat discussion-detail document. */
+
+.discussion-v2-composer-card form {
+  gap: 0.85rem !important;
+}
+
+.discussion-v2-composer-heading {
+  gap: 0.75rem !important;
+}
+
+.discussion-v2-composer-heading .discussion-v2-shortcut {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+.discussion-v2-composer-reference,
+.discussion-v2-reply-suggestions {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.discussion-v2-composer-reference {
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.discussion-v2-helper-row {
+  gap: 0.85rem !important;
+  padding-bottom: 0.3rem !important;
+  scrollbar-width: none;
+}
+
+.discussion-v2-helper-row::-webkit-scrollbar {
+  display: none;
+}
+
+.discussion-v2-helper-group {
+  gap: 0.45rem !important;
+}
+
+.discussion-v2-helper-group button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0 !important;
+}
+
+.discussion-v2-helper-group button:hover {
+  background: transparent !important;
+}
+
+.discussion-v2-composer-card textarea {
+  min-height: 7rem !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.85rem 0 !important;
+}
+
+.discussion-v2-composer-card textarea:focus {
+  border-top-color: var(--loombus-gold) !important;
+  border-bottom-color: var(--loombus-gold) !important;
+  box-shadow: none !important;
+}
+
+.discussion-v2-composer-footer {
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.8rem;
+  gap: 0.6rem !important;
+}
+
+.discussion-v2-composer-footer .discussion-v2-button:not(.discussion-v2-button-primary) {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Keep the mobile dock compact and reserve enough page space so it never covers the last reply/content. */
+@media (max-width: 1023px) {
+  .discussion-v2-page {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .discussion-v2-mobile-bar {
+    left: max(0.75rem, env(safe-area-inset-left)) !important;
+    right: max(0.75rem, env(safe-area-inset-right)) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: 28rem;
+    margin-inline: auto;
+    bottom: max(0.65rem, env(safe-area-inset-bottom)) !important;
+    border-radius: 1.15rem !important;
+    padding: 0.35rem !important;
+  }
+
+  .discussion-v2-mobile-bar button {
+    min-width: 2.55rem !important;
+    min-height: 2.55rem !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .discussion-v2-composer-heading h2 {
+    font-size: clamp(1.25rem, 7vw, 1.7rem) !important;
+  }
+
+  .discussion-v2-composer-card textarea {
+    min-height: 6.25rem !important;
+  }
+
+  .discussion-v2-composer-footer {
+    align-items: center !important;
+  }
+
+  .discussion-v2-composer-identity {
+    min-width: 0 !important;
+    flex-basis: 100%;
+  }
+
+  .discussion-v2-mobile-bar {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+  }
+
+  .discussion-v2-mobile-bar button:first-child {
+    min-width: 0 !important;
+  }
+}
