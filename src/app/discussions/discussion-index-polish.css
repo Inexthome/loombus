@@ -1,0 +1,298 @@
+/* Consolidated discussion index polish. Preserve section order to keep the existing cascade intact. */
+
+/* Hierarchy */
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div:first-child {
+  margin-bottom: 1.1rem !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div:first-child p {
+  margin-top: 0.45rem !important;
+  max-width: 42rem;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-4 input[type="search"] {
+  height: 3rem !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 2.35rem !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-4 label > svg {
+  left: 0 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-4 > button {
+  width: 3rem !important;
+  height: 3rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-4 > button:hover {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 {
+  gap: 1rem !important;
+  margin-bottom: 1.4rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  padding-bottom: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 > button {
+  min-height: 2.55rem;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.55rem 0 !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 > button:hover {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 > button[class*="bg-[color:var(--loombus-surface)]"] {
+  border-bottom-color: var(--loombus-gold) !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main section.min-w-0 > section {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 1rem 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section + section {
+  margin-top: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside .space-y-5 {
+  gap: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section button {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section button:hover {
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section button > span:first-child > span:first-child {
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section a.rounded-full,
+.discussion-feed-route[data-discussion-view] main > div > aside section a.rounded-2xl {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section button.p-4,
+.discussion-feed-route[data-discussion-view] main > div > aside section p.rounded-2xl {
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 {
+    gap: 0.9rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view] main section.min-w-0 > div.mb-7 > button {
+    font-size: 0.78rem !important;
+  }
+}
+
+/* Metrics */
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text) !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child span.inline-flex {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside a.rounded-full {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section > div.space-y-4 > * + * {
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.75rem;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section > div.space-y-4 {
+  gap: 0.75rem !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+    gap: 0.8rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+    margin-left: auto !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+/* Attachments */
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted);
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > * {
+  min-width: 0;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > *:last-child {
+  border-bottom: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
+  border-radius: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > a:last-child {
+  min-height: 0 !important;
+  padding: 0.85rem 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > a:last-child > span:first-child {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] span.border-t,
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] a.border-t {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] span.border-t,
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] a.border-t,
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > a:last-child {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}
+
+/* Metadata */
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
+  align-items: center;
+  gap: 0.65rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span:first-child {
+  color: var(--loombus-gold) !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span:nth-child(2) {
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap {
+  gap: 0.5rem 0.75rem !important;
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.8rem;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
+    gap: 0.5rem 0.6rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span,
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
+    font-size: 0.72rem !important;
+  }
+}
