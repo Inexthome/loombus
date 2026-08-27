@@ -155,6 +155,7 @@
 }
 
 @media (max-width: 639px) {
+  /* Mobile keeps the original Card/Compact distinction instead of collapsing Card back to a dense row. */
   .discussion-feed-route[data-discussion-view="card"] main article {
     display: flex !important;
     min-height: 14.5rem !important;
