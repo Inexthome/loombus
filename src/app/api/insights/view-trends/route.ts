@@ -110,14 +110,27 @@ export async function GET(request: NextRequest) {
     ? (requestedRange as RangeKey)
     : "30d";
 
-  const { data: discussions, error: discussionsError } = await service
-    .from("discussions")
-    .select("id")
-    .eq("user_id", user.id)
-    .is("deleted_at", null);
+  const [{ data: discussions, error: discussionsError }, { data: blockRows, error: blocksError }] =
+    await Promise.all([
+      service
+        .from("discussions")
+        .select("id")
+        .eq("user_id", user.id)
+        .is("deleted_at", null),
+      service
+        .from("user_blocks")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`),
+    ]);
 
   if (discussionsError) return jsonError(discussionsError.message, 500);
+  if (blocksError) return jsonError(blocksError.message, 500);
 
+  const blockedUserIds = new Set(
+    (blockRows ?? []).map((block) =>
+      block.blocker_id === user.id ? block.blocked_id : block.blocker_id
+    )
+  );
   const ids = (discussions ?? []).map((discussion) => discussion.id);
   if (!ids.length) {
     return NextResponse.json(
@@ -131,7 +144,7 @@ export async function GET(request: NextRequest) {
 
   let viewsQuery = service
     .from("discussion_views")
-    .select("discussion_id, viewed_at")
+    .select("discussion_id, viewer_id, viewed_at")
     .in("discussion_id", ids)
     .neq("viewer_id", user.id)
     .order("viewed_at", { ascending: true });
@@ -150,7 +163,9 @@ export async function GET(request: NextRequest) {
   const firstError = viewsResult.error || promotionsResult.error;
   if (firstError) return jsonError(firstError.message, 500);
 
-  const views = viewsResult.data ?? [];
+  const views = (viewsResult.data ?? []).filter(
+    (view) => !view.viewer_id || !blockedUserIds.has(view.viewer_id)
+  );
   const knowledgeIds = new Set((promotionsResult.data ?? []).map((row) => row.discussion_id));
   const mode = config.mode;
 

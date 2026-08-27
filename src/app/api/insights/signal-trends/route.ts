@@ -114,14 +114,27 @@ export async function GET(request: NextRequest) {
     ? (requestedRange as RangeKey)
     : "30d";
 
-  const { data: discussions, error: discussionsError } = await service
-    .from("discussions")
-    .select("id")
-    .eq("user_id", user.id)
-    .is("deleted_at", null);
+  const [{ data: discussions, error: discussionsError }, { data: blockRows, error: blocksError }] =
+    await Promise.all([
+      service
+        .from("discussions")
+        .select("id")
+        .eq("user_id", user.id)
+        .is("deleted_at", null),
+      service
+        .from("user_blocks")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`),
+    ]);
 
   if (discussionsError) return jsonError(discussionsError.message, 500);
+  if (blocksError) return jsonError(blocksError.message, 500);
 
+  const blockedUserIds = new Set(
+    (blockRows ?? []).map((block) =>
+      block.blocker_id === user.id ? block.blocked_id : block.blocker_id
+    )
+  );
   const ids = (discussions ?? []).map((discussion) => discussion.id);
   const bucket = range === "90d" ? "week" : range === "all" ? "month" : "day";
   if (!ids.length) {
@@ -167,8 +180,12 @@ export async function GET(request: NextRequest) {
   const firstError = repliesResult.error || savesResult.error || promotionsResult.error;
   if (firstError) return jsonError(firstError.message, 500);
 
-  const replies = repliesResult.data ?? [];
-  const saves = savesResult.data ?? [];
+  const replies = (repliesResult.data ?? []).filter(
+    (reply) => !reply.user_id || !blockedUserIds.has(reply.user_id)
+  );
+  const saves = (savesResult.data ?? []).filter(
+    (save) => !save.user_id || !blockedUserIds.has(save.user_id)
+  );
   const knowledgeIds = new Set((promotionsResult.data ?? []).map((row) => row.discussion_id));
   const mode = config.mode;
   const events = [
