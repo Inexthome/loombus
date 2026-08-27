@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ChevronRight, Eye, Plus, Sparkles } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
@@ -141,19 +141,16 @@ export default function HomeSimpleClient() {
       href: "/notifications",
       title: "Recent activity",
       detail: "Replies, follows, and updates waiting for your attention.",
-      icon: Sparkles,
     },
     {
       href: "/my-discussions",
       title: "Your discussions",
       detail: "Revisit conversations you started and see what changed.",
-      icon: Eye,
     },
     {
       href: "/saved",
       title: "Continue your signal",
       detail: "Return to discussions and ideas you saved for later.",
-      icon: ChevronRight,
     },
   ];
 
@@ -169,7 +166,6 @@ export default function HomeSimpleClient() {
           </div>
 
           <Link href="/create" className="home-simple-create">
-            <Plus className="h-4 w-4" />
             Create discussion
           </Link>
         </header>
@@ -177,10 +173,18 @@ export default function HomeSimpleClient() {
         {notice ? <div className="home-simple-notice">{notice}</div> : null}
 
         {!dobConfirmed ? (
-          <section className="home-simple-age-gate">
+          <section
+            className="home-simple-age-gate border-y border-[var(--loombus-border)] py-5"
+            aria-labelledby="home-age-title"
+          >
             <div>
-              <strong>Confirm your date of birth</strong>
-              <p>This information is stored separately from your public profile.</p>
+              <p className="home-simple-eyebrow">Account requirement</p>
+              <h2 id="home-age-title" className="mt-2 text-xl font-black sm:text-2xl">
+                Confirm your date of birth
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
+                This information is stored separately from your public profile.
+              </p>
             </div>
             <DateOfBirthSelect
               value={dob}
@@ -192,6 +196,7 @@ export default function HomeSimpleClient() {
             />
             <button
               type="button"
+              className="home-simple-age-action"
               onClick={() => void confirmDob()}
               disabled={dobSaving}
             >
@@ -209,16 +214,12 @@ export default function HomeSimpleClient() {
           </div>
 
           <div>
-            {homeRows.map(({ href, title, detail, icon: Icon }) => (
+            {homeRows.map(({ href, title, detail }) => (
               <Link
                 key={href}
                 href={href}
                 className="group flex items-center gap-4 border-b border-[var(--loombus-border)] py-5 transition"
               >
-                <Icon
-                  className="size-5 shrink-0 text-[var(--loombus-gold)]"
-                  aria-hidden="true"
-                />
                 <div className="min-w-0 flex-1">
                   <strong className="block text-base font-black">{title}</strong>
                   <span className="mt-1 block text-sm leading-6 text-[var(--loombus-text-muted)]">
@@ -247,10 +248,9 @@ export default function HomeSimpleClient() {
             </div>
             <Link
               href="/insights"
-              className="inline-flex items-center gap-2 py-2 text-sm font-black text-[var(--loombus-gold)]"
+              className="inline-flex items-center py-2 text-sm font-black text-[var(--loombus-gold)]"
             >
               Open Insights
-              <BarChart3 className="size-4" aria-hidden="true" />
             </Link>
           </div>
         </section>
