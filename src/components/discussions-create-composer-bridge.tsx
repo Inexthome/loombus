@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Check,
-  PencilLine,
-  Plus,
-  SlidersHorizontal,
-  Sparkles,
-} from "lucide-react";
+import { Check, PencilLine, SlidersHorizontal } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { type RefObject, useEffect, useRef, useState } from "react";
@@ -37,28 +31,12 @@ function CreateTrigger({
       ref={buttonRef}
       type="button"
       onClick={onOpen}
-      className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-3 text-left shadow-sm transition hover:border-amber-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200/60"
+      className="inline-flex size-11 items-center justify-center bg-transparent text-[color:var(--loombus-gold)] focus-visible:outline-none"
+      aria-label="Start a discussion"
       aria-haspopup="dialog"
+      title="Start a discussion"
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-50 text-[#9a701c] transition group-hover:bg-amber-100 dark:bg-amber-400/10 dark:text-[#d6a84f]">
-        <PencilLine aria-hidden="true" className="size-5" strokeWidth={2.1} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <strong className="block truncate text-sm font-semibold text-[color:var(--loombus-text)] sm:text-base">
-          Start a discussion, ask a question, or share an idea…
-        </strong>
-        <span className="hidden truncate text-xs font-medium text-[color:var(--loombus-text-muted)] sm:block">
-          Choose a topic and discussion mode when the composer opens.
-        </span>
-      </span>
-      <span className="hidden shrink-0 items-center gap-2 sm:flex">
-        <span className="grid size-9 place-items-center rounded-full border border-[color:var(--loombus-border)] text-[color:var(--loombus-text-muted)]">
-          <Sparkles aria-hidden="true" className="size-4" />
-        </span>
-        <span className="grid size-9 place-items-center rounded-full bg-[color:var(--loombus-primary-bg)] text-[color:var(--loombus-primary-text)]">
-          <Plus aria-hidden="true" className="size-4" />
-        </span>
-      </span>
+      <PencilLine aria-hidden="true" className="size-5" strokeWidth={2.1} />
     </button>
   );
 }
@@ -81,13 +59,13 @@ function FilterControl({
       <button
         type="button"
         onClick={onToggle}
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-subtle)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200/60"
+        className="inline-flex size-11 items-center justify-center bg-transparent text-[color:var(--loombus-text-muted)] focus-visible:outline-none"
         aria-label="Filter discussions"
         aria-haspopup="menu"
         aria-expanded={open}
         title="Filter discussions"
       >
-        <SlidersHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+        <SlidersHorizontal aria-hidden="true" className="size-5" strokeWidth={2.1} />
       </button>
 
       {open ? (
@@ -288,7 +266,7 @@ export function DiscussionsCreateComposerBridge() {
 
       composerMount = document.createElement("div");
       composerMount.dataset.discussionsCreateTriggerSlot = "true";
-      composerMount.className = "min-w-0 flex-1";
+      composerMount.className = "shrink-0";
       searchLabel.insertAdjacentElement("afterend", composerMount);
 
       filterMount = document.createElement("div");
