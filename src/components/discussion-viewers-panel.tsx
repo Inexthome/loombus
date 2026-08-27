@@ -97,7 +97,7 @@ export function DiscussionViewersPanel() {
         </div>
 
         {viewers.length ? (
-          <div className="mt-4 grid border-t border-[var(--loombus-border-muted)] sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-x-4 border-t border-[var(--loombus-border-muted)] sm:grid-cols-2 xl:grid-cols-3">
             {viewers.map((viewer, index) => {
               const profile = viewer.profile;
               const name =
@@ -111,7 +111,7 @@ export function DiscussionViewersPanel() {
                 <Link
                   key={profile?.id ?? `${viewer.viewedAt}-${index}`}
                   href={href}
-                  className="flex min-w-0 items-center gap-3 border-b border-[var(--loombus-border-muted)] py-3 pr-4 text-inherit transition hover:text-[var(--loombus-gold)] sm:odd:mr-4 xl:[&:nth-child(3n+1)]:mr-4 xl:[&:nth-child(3n+2)]:mr-4"
+                  className="flex min-w-0 items-center gap-3 border-b border-[var(--loombus-border-muted)] py-3 text-inherit transition hover:text-[var(--loombus-gold)]"
                 >
                   <ProfileAvatar profile={profile} size="sm" />
                   <div className="min-w-0">
