@@ -1,0 +1,12 @@
+/*
+ * The redesigned desktop rail keeps a 58px collapsed lane visible. At tablet
+ * widths that lane otherwise sits on top of page padding and can cover the
+ * first characters/controls of responsive screens. Reserve the lane once at
+ * the app shell; the expanded 244px rail still overlays without reflowing the
+ * page.
+ */
+@media (min-width: 768px) {
+  body[data-loombus-desktop-rail] .loombus-desktop-flat-topbar ~ div.min-h-screen {
+    padding-left: 58px;
+  }
+}
