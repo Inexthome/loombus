@@ -23,6 +23,7 @@ import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
+import { DesktopMessagesPreviewTrayController } from "@/components/desktop-messages-preview-tray-controller";
 import { DesktopNotificationsTrayController } from "@/components/desktop-notifications-tray-controller";
 import { DesktopNavigationShell } from "@/components/desktop-navigation-shell";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
@@ -88,6 +89,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         ` }} />
         <AppChromeBoundary>
           <DesktopNavigationShell />
+          <DesktopMessagesPreviewTrayController />
           <DesktopNotificationsTrayController />
           <MobileNavigationShell />
           <PersistentMobilePrimaryDock />
