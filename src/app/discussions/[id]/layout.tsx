@@ -10,6 +10,7 @@ import "./discussion-phase-four.css";
 import "./discussion-phase-five.css";
 import "./discussion-reply-pagination.css";
 import "./discussion-detail-polish.css";
+import "./discussion-mobile-action-bar.css";
 
 export default function DiscussionDetailLayout({
   children,

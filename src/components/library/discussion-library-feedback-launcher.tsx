@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Brain, CheckCircle2, FlaskConical, MessageCircle } from "lucide-react";
+import { BookOpen, Brain, CheckCircle2, ChevronDown, FlaskConical, MessageCircle } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { libraryReaderHref } from "@/lib/library/passage-context";
 import { supabase } from "@/lib/supabase/client";
 
@@ -24,10 +25,91 @@ type PassageContext = PassageLink & {
   evidenceSaved: boolean;
 };
 
+const INLINE_HOST_ATTR = "data-discussion-library-feedback-inline";
+const MORE_ACTION_SELECTOR = 'button[aria-label="Open Discussion actions"]';
+
 export function DiscussionLibraryFeedbackLauncher() {
   const params = useParams<{ id: string }>();
   const discussionId = params?.id;
   const [passage, setPassage] = useState<PassageContext | null>(null);
+  const [inlineHost, setInlineHost] = useState<HTMLElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!discussionId) return;
+
+    let cancelled = false;
+    let observer: MutationObserver | null = null;
+
+    const mountInlineHost = () => {
+      if (cancelled) return { mounted: false, positionedAfterMore: false };
+
+      const opening = document.querySelector<HTMLElement>(".discussion-v2-opening-card");
+      if (!opening) return { mounted: false, positionedAfterMore: false };
+
+      const openingActions = opening.querySelector<HTMLElement>(".discussion-v2-opening-actions");
+      if (!openingActions) return { mounted: false, positionedAfterMore: false };
+
+      let host = openingActions.querySelector<HTMLElement>(`:scope > [${INLINE_HOST_ATTR}='true']`);
+      if (!host) {
+        host = document.createElement("div");
+        host.setAttribute(INLINE_HOST_ATTR, "true");
+        host.style.position = "relative";
+        host.style.flex = "0 0 auto";
+        openingActions.append(host);
+      }
+
+      const moreAction = openingActions.querySelector<HTMLElement>(MORE_ACTION_SELECTOR);
+      if (moreAction && moreAction.nextElementSibling !== host) {
+        moreAction.insertAdjacentElement("afterend", host);
+      }
+
+      setInlineHost(host);
+      return { mounted: true, positionedAfterMore: Boolean(moreAction) };
+    };
+
+    const initial = mountInlineHost();
+    if (!initial.positionedAfterMore) {
+      observer = new MutationObserver(() => {
+        const state = mountInlineHost();
+        if (state.positionedAfterMore || document.querySelector(".discussion-v2-not-found")) {
+          observer?.disconnect();
+          observer = null;
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      setMenuOpen(false);
+      document
+        .querySelectorAll<HTMLElement>(`[${INLINE_HOST_ATTR}='true']`)
+        .forEach((node) => node.remove());
+    };
+  }, [discussionId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!discussionId) return;
@@ -85,48 +167,104 @@ export function DiscussionLibraryFeedbackLauncher() {
     };
   }, [discussionId]);
 
-  if (!discussionId) return null;
+  if (!discussionId || !inlineHost) return null;
 
-  return (
-    <div className="fixed bottom-24 right-4 z-40 flex max-w-sm flex-col items-end gap-2 md:bottom-6 md:right-6">
-      {passage ? (
-        <section className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-[var(--loombus-text)] shadow-xl">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Library source</p>
-              <p className="mt-1 line-clamp-1 text-sm font-black">{passage.publicationTitle}</p>
-              <p className="mt-0.5 line-clamp-1 text-xs text-[var(--loombus-text-subtle)]">{passage.authorName ? `${passage.authorName} · ` : ""}{passage.sectionTitle ?? "Current chapter"}</p>
-            </div>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--loombus-gold-surface)] px-2.5 py-1 text-[10px] font-black text-[var(--loombus-gold)]">
-              {passage.evidenceSaved ? <CheckCircle2 className="size-3" /> : <FlaskConical className="size-3" />}
-              {passage.evidenceSaved ? "Evidence saved" : "Needs evidence"}
-            </span>
+  return createPortal(
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        className="discussion-v2-button inline-flex items-center gap-1.5"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <Brain aria-hidden="true" size={15} />
+        Knowledge
+        <ChevronDown aria-hidden="true" size={14} />
+      </button>
+
+      {menuOpen ? (
+        <div
+          role="menu"
+          aria-label="Library and knowledge actions"
+          className="absolute right-0 top-[calc(100%+0.45rem)] z-50 w-[min(22rem,calc(100vw-2rem))] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 text-[var(--loombus-text)] shadow-xl"
+        >
+          <div className="grid">
+            <Link
+              href={`/library/research/from-reply?discussionId=${encodeURIComponent(discussionId)}`}
+              role="menuitem"
+              className="flex min-h-11 items-start gap-3 border-b border-[var(--loombus-border-muted)] px-2 py-2 text-left hover:bg-[var(--loombus-page-bg)]"
+              onClick={() => setMenuOpen(false)}
+            >
+              <MessageCircle className="mt-0.5 size-4 shrink-0 text-[var(--loombus-gold)]" />
+              <span className="grid gap-0.5">
+                <strong className="text-xs">From Reply</strong>
+                <span className="text-[11px] leading-4 text-[var(--loombus-text-muted)]">Build private Library knowledge from a reply in this discussion.</span>
+              </span>
+            </Link>
+            <Link
+              href={`/library/research/from-discussion?discussionId=${encodeURIComponent(discussionId)}`}
+              role="menuitem"
+              className="flex min-h-11 items-start gap-3 px-2 py-2 text-left hover:bg-[var(--loombus-page-bg)]"
+              onClick={() => setMenuOpen(false)}
+            >
+              <Brain className="mt-0.5 size-4 shrink-0 text-[var(--loombus-gold)]" />
+              <span className="grid gap-0.5">
+                <strong className="text-xs">Build Knowledge</strong>
+                <span className="text-[11px] leading-4 text-[var(--loombus-text-muted)]">Build private Library knowledge from the opening post.</span>
+              </span>
+            </Link>
           </div>
-          <blockquote className="mt-3 line-clamp-3 border-l-2 border-[var(--loombus-gold)] pl-3 text-xs leading-5 text-[var(--loombus-text-muted)]">“{passage.selected_text}”</blockquote>
-          <p className="mt-2 text-[10px] text-[var(--loombus-text-subtle)]">Verified characters {passage.start_offset}–{passage.end_offset}</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link href={libraryReaderHref(passage.publication_id, { locator: passage.locator, startOffset: passage.start_offset, endOffset: passage.end_offset, textSha256: passage.text_sha256 })} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-xs font-black hover:border-[var(--loombus-gold)]"><BookOpen className="size-3.5 text-[var(--loombus-gold)]" />Open exact source</Link>
-            <Link href="/library/research" className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-xs font-black hover:border-[var(--loombus-gold)]"><FlaskConical className="size-3.5 text-[var(--loombus-gold)]" />{passage.evidenceSaved ? "View evidence" : "Investigate"}</Link>
-          </div>
-        </section>
+
+          {passage ? (
+            <section className="mt-2 border-t border-[var(--loombus-border)] px-2 pt-3" aria-label="Library source">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--loombus-gold)]">Library source</p>
+                  <p className="mt-1 text-xs font-black">{passage.publicationTitle}</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--loombus-text-subtle)]">
+                    {passage.authorName ? `${passage.authorName} · ` : ""}
+                    {passage.sectionTitle ?? "Current chapter"}
+                  </p>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-black text-[var(--loombus-gold)]">
+                  {passage.evidenceSaved ? <CheckCircle2 className="size-3" /> : <FlaskConical className="size-3" />}
+                  {passage.evidenceSaved ? "Evidence saved" : "Needs evidence"}
+                </span>
+              </div>
+
+              <blockquote className="mt-2 line-clamp-3 border-l-2 border-[var(--loombus-gold)] pl-2 text-[11px] leading-4 text-[var(--loombus-text-muted)]">
+                “{passage.selected_text}”
+              </blockquote>
+
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-[var(--loombus-border-muted)] pt-2">
+                <Link
+                  href={libraryReaderHref(passage.publication_id, {
+                    locator: passage.locator,
+                    startOffset: passage.start_offset,
+                    endOffset: passage.end_offset,
+                    textSha256: passage.text_sha256,
+                  })}
+                  className="inline-flex min-h-9 items-center gap-1.5 text-[11px] font-black hover:text-[var(--loombus-gold)]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <BookOpen className="size-3.5 text-[var(--loombus-gold)]" />
+                  Open exact source
+                </Link>
+                <Link
+                  href="/library/research"
+                  className="inline-flex min-h-9 items-center gap-1.5 text-[11px] font-black hover:text-[var(--loombus-gold)]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <FlaskConical className="size-3.5 text-[var(--loombus-gold)]" />
+                  {passage.evidenceSaved ? "View evidence" : "Investigate"}
+                </Link>
+              </div>
+            </section>
+          ) : null}
+        </div>
       ) : null}
-
-      <Link
-        href={`/library/research/from-reply?discussionId=${encodeURIComponent(discussionId)}`}
-        className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2.5 text-sm font-black text-[var(--loombus-gold)] shadow-lg"
-        aria-label="Build private Library knowledge from a reply in this discussion"
-      >
-        <MessageCircle className="size-4" />
-        From Reply
-      </Link>
-      <Link
-        href={`/library/research/from-discussion?discussionId=${encodeURIComponent(discussionId)}`}
-        className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2.5 text-sm font-black text-[var(--loombus-gold)] shadow-lg"
-        aria-label="Build private Library knowledge from this discussion opening post"
-      >
-        <Brain className="size-4" />
-        Build Knowledge
-      </Link>
-    </div>
+    </div>,
+    inlineHost
   );
 }
