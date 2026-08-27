@@ -37,16 +37,13 @@ export function DiscussionLibraryFeedbackLauncher() {
     if (!discussionId) return;
 
     let cancelled = false;
-    let frame = 0;
+    let observer: MutationObserver | null = null;
 
     const mountInlineHost = () => {
-      if (cancelled) return;
+      if (cancelled) return false;
 
       const opening = document.querySelector<HTMLElement>(".discussion-v2-opening-card");
-      if (!opening) {
-        frame = window.requestAnimationFrame(mountInlineHost);
-        return;
-      }
+      if (!opening) return false;
 
       let host = opening.querySelector<HTMLElement>(`:scope > [${INLINE_HOST_ATTR}='true']`);
       if (!host) {
@@ -61,14 +58,22 @@ export function DiscussionLibraryFeedbackLauncher() {
       }
 
       setInlineHost(host);
+      return true;
     };
 
-    frame = window.requestAnimationFrame(mountInlineHost);
+    if (!mountInlineHost()) {
+      observer = new MutationObserver(() => {
+        if (mountInlineHost() || document.querySelector(".discussion-v2-not-found")) {
+          observer?.disconnect();
+          observer = null;
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     return () => {
       cancelled = true;
-      if (frame) window.cancelAnimationFrame(frame);
-      setInlineHost(null);
+      observer?.disconnect();
       document
         .querySelectorAll<HTMLElement>(`[${INLINE_HOST_ATTR}='true']`)
         .forEach((node) => node.remove());
@@ -134,7 +139,10 @@ export function DiscussionLibraryFeedbackLauncher() {
   if (!discussionId || !inlineHost) return null;
 
   return createPortal(
-    <section className="mt-4 border-t border-[var(--loombus-border-muted)] pt-3 text-[var(--loombus-text)]" aria-label="Library and knowledge actions">
+    <section
+      className="mt-4 border-t border-[var(--loombus-border-muted)] pt-3 text-[var(--loombus-text)]"
+      aria-label="Library and knowledge actions"
+    >
       {passage ? (
         <div className="border-b border-[var(--loombus-border-muted)] pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
