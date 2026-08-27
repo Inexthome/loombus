@@ -1,0 +1,144 @@
+/* Final /create refinement: bring the dedicated page closer to the restrained /insights system. */
+
+/* Classification reads as metadata, not three equal CTA buttons. */
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 {
+  border-top: 0 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button {
+  min-height: 2.8rem !important;
+  border-right: 0 !important;
+  padding: 0.55rem 0.35rem !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.76rem !important;
+  font-weight: 720 !important;
+  text-align: left !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button + button {
+  border-left: 1px solid var(--loombus-border-muted) !important;
+  padding-left: 0.9rem !important;
+}
+
+/* Clearer text hierarchy: labels stay strong, helpers and controls recede. */
+main[data-create-composer-variant="page"] [data-create-composer-header] h1 {
+  font-weight: 800 !important;
+}
+
+main[data-create-composer-variant="page"] [data-create-composer-header] button {
+  font-weight: 700 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section > label > span,
+main[data-create-composer-variant="page"] form > div:first-child > section > label > div > span:first-child {
+  font-weight: 760 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section > label > p,
+main[data-create-composer-variant="page"] form > div:first-child > section > label > div > span:last-child {
+  color: var(--loombus-text-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* Restrain the footer actions; Publish is a gold text action, not a CTA block. */
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] {
+  grid-template-columns: auto auto 1fr !important;
+  align-items: center !important;
+  gap: 1.15rem !important;
+  padding-top: 0.7rem !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button {
+  min-height: 2.75rem !important;
+  width: auto !important;
+  justify-self: start !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 720 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button[type="submit"] {
+  justify-self: end !important;
+  color: var(--loombus-gold) !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button[type="submit"] svg {
+  display: none !important;
+}
+
+/* Desktop rail becomes typography + dividers with minimal ornament. */
+main[data-create-composer-variant="page"] form > aside > section {
+  padding: 0.95rem 0 1.05rem !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section h2 {
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section > p,
+main[data-create-composer-variant="page"] form > aside > section div p {
+  font-weight: 500 !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section > svg,
+main[data-create-composer-variant="page"] form > aside > section > div:first-child > svg {
+  display: none !important;
+}
+
+/* Readiness steps become simple ordinal text rather than badge-like circles. */
+main[data-create-composer-variant="page"] form > aside > section:first-child .grid.size-8 {
+  display: inline-flex !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 1.3rem !important;
+  place-items: initial !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-gold) !important;
+  font-size: 0.7rem !important;
+  font-weight: 800 !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 {
+  margin-top: 1rem !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 > div {
+  gap: 0.55rem !important;
+  padding: 0.55rem 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 > div:first-child {
+  border-top: 0 !important;
+}
+
+/* Mobile keeps 44px+ touch targets without reintroducing large controls. */
+@media (max-width: 639px) {
+  main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button {
+    min-height: 2.75rem !important;
+    padding: 0.5rem 0.3rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button + button {
+    padding-left: 0.65rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] {
+    grid-template-columns: auto auto 1fr !important;
+    gap: 0.85rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button {
+    min-height: 2.75rem !important;
+    padding: 0 !important;
+  }
+}
