@@ -1,0 +1,92 @@
+/* Card-mode density pass for the Discussion Weave feed. */
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
+  padding-top: 0.9rem !important;
+  padding-bottom: 0.42rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
+  margin-bottom: 0.32rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article h2 {
+  font-size: clamp(1.12rem, 1.65vw, 1.38rem) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.022em !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article h2 + div {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  margin-top: 0.38rem !important;
+  font-size: 0.86rem !important;
+  line-height: 1.48 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 {
+  margin-top: 0.58rem !important;
+  gap: 0.48rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 img,
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 > span:first-child {
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:first-child {
+  font-size: 0.73rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:last-child {
+  font-size: 0.66rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap {
+  margin-top: 0.5rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+  gap: 0.78rem !important;
+  padding-top: 0.18rem !important;
+  padding-bottom: 0.7rem !important;
+  font-size: 0.69rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child svg {
+  width: 0.84rem !important;
+  height: 0.84rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+  font-size: 0.69rem !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
+    padding-top: 0.78rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article h2 {
+    font-size: 1.08rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article h2 + div {
+    font-size: 0.81rem !important;
+    line-height: 1.44 !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+    gap: 0.68rem !important;
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.62rem !important;
+    font-size: 0.66rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+    font-size: 0.66rem !important;
+  }
+}
