@@ -13,12 +13,6 @@ import "./discussion-index-attachment-polish.css";
 import "./discussion-index-metadata-polish.css";
 import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
-import "./[id]/discussion-detail-flat.css";
-import "./[id]/discussion-detail-responsive-hardening.css";
-import "./[id]/discussion-intelligence-output-polish.css";
-import "./[id]/discussion-composer-mobile-polish.css";
-import "./[id]/discussion-replies-flat-polish.css";
-import "./[id]/discussion-opening-metadata-polish.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
