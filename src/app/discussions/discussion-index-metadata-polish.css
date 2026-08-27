@@ -1,0 +1,48 @@
+/* Flatten residual metadata pills in Card mode without changing Compact presentation. */
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
+  align-items: center;
+  gap: 0.65rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span:first-child {
+  color: var(--loombus-gold) !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span:nth-child(2) {
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap {
+  gap: 0.5rem 0.75rem !important;
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.8rem;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
+    gap: 0.5rem 0.6rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span,
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
+    font-size: 0.72rem !important;
+  }
+}
