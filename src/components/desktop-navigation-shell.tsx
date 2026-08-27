@@ -107,14 +107,25 @@ export function DesktopNavigationShell() {
     setAccountOpen(false);
     setAskOpen(false);
     setAskQuery("");
+    setRailOpen(false);
   }, [pathname]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!askRef.current?.contains(event.target as Node)) setAskOpen(false);
+      const target = event.target as Element | null;
+      if (!askRef.current?.contains(target as Node)) setAskOpen(false);
+
+      if (railOpen) {
+        const rail = document.querySelector<HTMLElement>(".loombus-desktop-left-rail");
+        const toggle = target?.closest(".loombus-desktop-rail-toggle, .loombus-desktop-rail-collapsed-toggle");
+        if (!rail?.contains(target as Node) && !toggle) setRailOpen(false);
+      }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setAskOpen(false);
+      if (event.key === "Escape") {
+        setAskOpen(false);
+        if (railOpen) setRailOpen(false);
+      }
     }
     window.addEventListener("mousedown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
@@ -122,7 +133,7 @@ export function DesktopNavigationShell() {
       window.removeEventListener("mousedown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [railOpen]);
 
   useEffect(() => {
     const cleanQuery = askQuery.trim().replace(/[,%()]/g, "");
