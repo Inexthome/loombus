@@ -26,9 +26,11 @@ type AudienceType =
   | "only_me"
   | "custom";
 
+type AudienceBase = "public" | "followers" | "connections";
+
 type AudienceRow = {
-  audience_type: AudienceType | null;
-  audience_base: "public" | "followers" | "connections" | null;
+  audience_type: string | null;
+  audience_base: string | null;
 };
 
 const LABELS: Record<AudienceType, string> = {
@@ -52,6 +54,19 @@ const ICONS: Record<AudienceType, typeof Globe2> = {
   only_me: LockKeyhole,
   custom: SlidersHorizontal,
 };
+
+const AUDIENCE_TYPES = new Set<AudienceType>(Object.keys(LABELS) as AudienceType[]);
+const AUDIENCE_BASES = new Set<AudienceBase>(["public", "followers", "connections"]);
+
+function normalizeAudienceType(value: unknown): AudienceType {
+  const normalized = String(value ?? "").trim() as AudienceType;
+  return AUDIENCE_TYPES.has(normalized) ? normalized : "public";
+}
+
+function normalizeAudienceBase(value: unknown): AudienceBase | null {
+  const normalized = String(value ?? "").trim() as AudienceBase;
+  return AUDIENCE_BASES.has(normalized) ? normalized : null;
+}
 
 function createAudienceBadgeSlot() {
   const topicRow = document.querySelector<HTMLElement>(
@@ -124,12 +139,10 @@ export function DiscussionAudienceDetailBadge() {
 
   if (!portalTarget || !audience) return null;
 
-  const type = audience.audience_type ?? "public";
+  const type = normalizeAudienceType(audience.audience_type);
+  const base = normalizeAudienceBase(audience.audience_base);
   const Icon = ICONS[type];
-  const customBase =
-    type === "custom" && audience.audience_base
-      ? ` · ${LABELS[audience.audience_base]}`
-      : "";
+  const customBase = type === "custom" && base ? ` · ${LABELS[base]}` : "";
 
   return createPortal(
     <span className={styles.badge} title={`Audience: ${LABELS[type]}${customBase}`}>
