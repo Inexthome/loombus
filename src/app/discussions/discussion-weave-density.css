@@ -64,6 +64,60 @@
   font-size: 0.69rem !important;
 }
 
+/* Icon-only top actions: no surface, no panel sizing, no decorative ring. */
+.discussion-feed-route main section.min-w-0 > div.mb-4 {
+  justify-content: flex-start !important;
+  gap: 0.65rem !important;
+  margin-bottom: 0.8rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route [data-discussions-create-trigger-slot="true"],
+.discussion-feed-route [data-discussions-filter-slot="true"],
+.discussion-feed-route [data-discussions-filter-slot="true"] > div {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route [data-discussions-create-trigger-slot="true"]::before {
+  display: none !important;
+}
+
+.discussion-feed-route [data-discussions-create-trigger-slot="true"] > button,
+.discussion-feed-route [data-discussions-filter-slot="true"] > div > button {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route [data-discussions-create-trigger-slot="true"] > button:hover,
+.discussion-feed-route [data-discussions-create-trigger-slot="true"] > button:focus-visible,
+.discussion-feed-route [data-discussions-filter-slot="true"] > div > button:hover,
+.discussion-feed-route [data-discussions-filter-slot="true"] > div > button:focus-visible,
+.discussion-feed-route [data-discussions-filter-slot="true"] > div > button[aria-expanded="true"] {
+  border: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route [data-discussions-create-trigger-slot="true"] > button svg,
+.discussion-feed-route [data-discussions-filter-slot="true"] > div > button svg {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+}
+
 @media (max-width: 639px) {
   .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
     padding-top: 0.78rem !important;
