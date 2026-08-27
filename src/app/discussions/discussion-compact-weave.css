@@ -1,0 +1,267 @@
+/* Compact mode is the dense form of the same Discussion Weave system. */
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 {
+  position: relative;
+  display: grid !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 0.34rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--loombus-border) 84%, transparent);
+  pointer-events: none;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article {
+  position: relative;
+  z-index: auto !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: var(--loombus-page-bg) !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article::before {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  left: 0.12rem;
+  top: 0.9rem;
+  width: 0.44rem;
+  height: 0.44rem;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
+  border-radius: 999px;
+  background: var(--loombus-page-bg);
+  pointer-events: none;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article:hover {
+  background: var(--loombus-page-bg) !important;
+  border-bottom-color: color-mix(in srgb, var(--loombus-gold) 34%, var(--loombus-border)) !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article:hover::after {
+  background: var(--loombus-gold);
+  border-color: var(--loombus-gold);
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div,
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child,
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child,
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child,
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] {
+  background: var(--loombus-page-bg) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child {
+  padding: 0.72rem 0.2rem 0.32rem 1.35rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child > div:first-child {
+  margin-bottom: 0.22rem !important;
+  gap: 0.28rem 0.5rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child > div:first-child span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 0.64rem !important;
+  font-weight: 720 !important;
+  line-height: 1.25 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a:first-child > div:first-child span:first-child {
+  color: var(--loombus-gold) !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article h2 {
+  font-size: 1rem !important;
+  line-height: 1.22 !important;
+  letter-spacing: -0.015em !important;
+  font-weight: 720 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article h2 + div {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 1 !important;
+  margin-top: 0.22rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1.38 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+/* Media remains visible as a tiny orientation cue rather than disappearing. */
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+  display: grid !important;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  grid-template-areas:
+    "media copy"
+    "media author";
+  column-gap: 0.72rem;
+  align-items: start;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a:first-child {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] {
+  grid-area: media;
+  display: block !important;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0.35rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > * {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child {
+  display: block !important;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] img,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] video {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child > span,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child > a {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 {
+  margin-top: 0.38rem !important;
+  gap: 0.4rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a.mt-5 {
+  grid-area: author;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 img,
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 > span:first-child {
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 > div {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.35rem;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 p:first-child {
+  font-size: 0.69rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > a.mt-5 p:last-child {
+  font-size: 0.62rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child > div.mt-4.flex.flex-wrap {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child {
+  min-height: 0 !important;
+  gap: 0.68rem !important;
+  border-top: 0 !important;
+  padding: 0.16rem 0.2rem 0.56rem 1.35rem !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child svg {
+  width: 0.78rem !important;
+  height: 0.78rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child > span:last-child {
+  margin-left: auto !important;
+  color: var(--loombus-text) !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:last-child > span:last-child::before {
+  content: "";
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: var(--loombus-gold);
+  opacity: 0.72;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5::before {
+    left: 0.25rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main section.min-w-0 > .space-y-5 > article::after {
+    left: 0.03rem;
+    top: 0.82rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article > div:first-child {
+    padding-left: 1.05rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    column-gap: 0.58rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article h2 + div {
+    display: none !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article > div:last-child {
+    padding-left: 1.05rem !important;
+  }
+}
