@@ -9,12 +9,7 @@ import "./discussion-focused-thread.css";
 import "./discussion-phase-four.css";
 import "./discussion-phase-five.css";
 import "./discussion-reply-pagination.css";
-import "./discussion-detail-flat.css";
-import "./discussion-detail-responsive-hardening.css";
-import "./discussion-intelligence-output-polish.css";
-import "./discussion-composer-mobile-polish.css";
-import "./discussion-replies-flat-polish.css";
-import "./discussion-opening-metadata-polish.css";
+import "./discussion-detail-polish.css";
 
 export default function DiscussionDetailLayout({
   children,
