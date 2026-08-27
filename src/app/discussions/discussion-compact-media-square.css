@@ -1,0 +1,117 @@
+/* Final Compact-mode media constraint: attachment previews are always small squares. */
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+  display: grid !important;
+  grid-template-columns: 3.75rem minmax(0, 1fr) !important;
+  grid-template-areas:
+    "media copy"
+    "media author" !important;
+  column-gap: 0.75rem !important;
+  row-gap: 0 !important;
+  align-items: start !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a:first-child {
+  grid-area: copy !important;
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  justify-self: stretch !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a.mt-5 {
+  grid-area: author !important;
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0.38rem 0 0 !important;
+  padding: 0 !important;
+  justify-self: start !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] {
+  grid-area: media !important;
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+  justify-self: start !important;
+  align-self: start !important;
+  width: 3.75rem !important;
+  min-width: 3.75rem !important;
+  max-width: 3.75rem !important;
+  height: 3.75rem !important;
+  min-height: 3.75rem !important;
+  max-height: 3.75rem !important;
+  aspect-ratio: 1 / 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child {
+  position: relative !important;
+  display: block !important;
+  width: 3.75rem !important;
+  min-width: 3.75rem !important;
+  max-width: 3.75rem !important;
+  height: 3.75rem !important;
+  min-height: 3.75rem !important;
+  max-height: 3.75rem !important;
+  aspect-ratio: 1 / 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child > * {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] img,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] video,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] picture,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] canvas {
+  display: block !important;
+  width: 3.75rem !important;
+  min-width: 3.75rem !important;
+  max-width: 3.75rem !important;
+  height: 3.75rem !important;
+  min-height: 3.75rem !important;
+  max-height: 3.75rem !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Compact media is only an orientation cue; playback/sound overlays belong on the detail view. */
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] button,
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] [class*="absolute"],
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] [aria-label*="sound" i],
+.discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] [title*="sound" i] {
+  display: none !important;
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="compact"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+    grid-template-columns: 3.25rem minmax(0, 1fr) !important;
+    column-gap: 0.6rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"],
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] > :first-child,
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] img,
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] video,
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] picture,
+  .discussion-feed-route[data-discussion-view="compact"] main article section[aria-label="Discussion attachments"] canvas {
+    width: 3.25rem !important;
+    min-width: 3.25rem !important;
+    max-width: 3.25rem !important;
+    height: 3.25rem !important;
+    min-height: 3.25rem !important;
+    max-height: 3.25rem !important;
+  }
+}

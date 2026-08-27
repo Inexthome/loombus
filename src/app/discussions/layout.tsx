@@ -15,6 +15,8 @@ import "./discussion-weave-feed.css";
 import "./discussion-weave-page-surface.css";
 import "./discussion-weave-density.css";
 import "./discussion-view-relocation.css";
+import "./discussion-compact-weave.css";
+import "./discussion-compact-media-square.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
