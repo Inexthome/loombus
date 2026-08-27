@@ -33,16 +33,18 @@
 }
 
 .discussion-thread-focus-banner {
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-surface);
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+  background: transparent;
   color: var(--loombus-text);
-  border-radius: 1.35rem;
-  padding: 1rem;
+  border-radius: 0;
+  padding: 1rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   scroll-margin-top: 7rem;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.07);
+  box-shadow: none;
 }
 
 .discussion-thread-focus-main {
@@ -64,7 +66,7 @@
   border: 0;
   background: transparent;
   color: var(--loombus-text-muted);
-  padding: 0.2rem 0.25rem;
+  padding: 0.2rem 0;
   font-size: 0.68rem;
   font-weight: 800;
   white-space: nowrap;
@@ -116,29 +118,30 @@
 .discussion-thread-focus-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.8rem;
 }
 
 .discussion-thread-focus-actions button {
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-page-bg);
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  background: transparent;
   color: var(--loombus-text-muted);
-  border-radius: 999px;
-  min-height: 2.35rem;
-  padding: 0.55rem 0.8rem;
+  border-radius: 0;
+  min-height: 2.2rem;
+  padding: 0.4rem 0;
   font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
 }
 
 .discussion-thread-focus-actions button:hover {
-  border-color: rgba(180, 83, 9, 0.4);
+  border-bottom-color: rgba(180, 83, 9, 0.45);
   color: #b45309;
 }
 
 .discussion-thread-focus-actions .discussion-thread-primary-action {
   border-color: rgba(180, 83, 9, 0.42);
-  background: rgba(180, 83, 9, 0.1);
+  background: transparent;
   color: #b45309;
 }
 
@@ -147,7 +150,7 @@
 }
 
 .discussion-thread-context-label {
-  margin: 0 0 0.45rem 0.2rem;
+  margin: 0 0 0.45rem;
   color: #b45309;
   font-size: 0.68rem;
   font-weight: 850;
@@ -156,8 +159,9 @@
 }
 
 .discussion-thread-focused-list > [data-thread-context="true"] > .discussion-v2-reply-card {
-  border-color: rgba(180, 83, 9, 0.38);
-  box-shadow: 0 20px 60px rgba(180, 83, 9, 0.08);
+  border-color: var(--loombus-border) !important;
+  border-left: 2px solid rgba(180, 83, 9, 0.55) !important;
+  box-shadow: none !important;
 }
 
 .discussion-thread-focused-list > [data-thread-context="true"] > .discussion-v2-reply-card > .discussion-v2-reference-card {
@@ -188,7 +192,7 @@
 
 .discussion-thread-responses-heading {
   order: -2;
-  padding: 0.45rem 0.25rem 0.1rem;
+  padding: 0.55rem 0 0.15rem;
 }
 
 .discussion-thread-responses-heading > div {
@@ -216,7 +220,7 @@
 }
 
 .discussion-thread-focused-list > [data-thread-child="true"] > .discussion-v2-reply-card {
-  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.07);
+  box-shadow: none !important;
 }
 
 .discussion-thread-focused-list > [data-thread-child="true"] > .discussion-v2-reply-card > .discussion-v2-reference-card {
@@ -225,26 +229,33 @@
 
 @media (max-width: 719px) {
   .discussion-thread-focus-banner {
-    padding: 0.9rem;
+    padding: 0.9rem 0;
   }
 
   .discussion-thread-focus-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .discussion-thread-focus-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .discussion-thread-focus-actions button {
+    flex: 0 0 auto;
     min-width: 0;
   }
 
   .discussion-thread-focus-actions .discussion-thread-primary-action {
-    grid-column: 1 / -1;
+    order: -1;
   }
 }
 
 @media (min-width: 720px) {
   .discussion-thread-focus-banner {
-    padding: 1rem 1.15rem;
+    padding: 1rem 0;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
