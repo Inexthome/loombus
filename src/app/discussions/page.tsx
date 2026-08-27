@@ -180,10 +180,8 @@ function getDiscussionModeLabel(discussion: Discussion) {
 function getSignalScore(
   discussionId: string,
   replyCounts: Record<string, number>,
-  bookmarkCounts: Record<string, number>,
-  viewCounts: Record<string, number>
+  bookmarkCounts: Record<string, number>
 ) {
-  void viewCounts;
   return (
     (replyCounts[discussionId] ?? 0) +
     (bookmarkCounts[discussionId] ?? 0)
@@ -605,8 +603,7 @@ export default function DiscussionsPage() {
       current.signals += getSignalScore(
         discussion.id,
         replyCounts,
-        bookmarkCounts,
-        viewCounts
+        bookmarkCounts
       );
       map.set(topic, current);
     }
@@ -618,7 +615,7 @@ export default function DiscussionsPage() {
 
       return b.signals - a.signals;
     });
-  }, [discussions, replyCounts, bookmarkCounts, viewCounts]);
+  }, [discussions, replyCounts, bookmarkCounts]);
 
   const visibleTopics = topicStats.slice(0, MAX_SIDE_TOPICS);
   const trendingTopics = [...topicStats]
@@ -641,8 +638,7 @@ export default function DiscussionsPage() {
       current.signals += getSignalScore(
         discussion.id,
         replyCounts,
-        bookmarkCounts,
-        viewCounts
+        bookmarkCounts
       );
       map.set(discussion.user_id, current);
     }
@@ -650,7 +646,7 @@ export default function DiscussionsPage() {
     return [...map.values()]
       .sort((a, b) => b.signals - a.signals || b.discussions - a.discussions)
       .slice(0, MAX_TOP_CONTRIBUTORS);
-  }, [discussions, profiles, replyCounts, bookmarkCounts, viewCounts]);
+  }, [discussions, profiles, replyCounts, bookmarkCounts]);
 
   const savedFolderStats = useMemo(() => {
     const map = new Map<string, number>();
@@ -862,8 +858,7 @@ export default function DiscussionsPage() {
               const signalScore = getSignalScore(
                 discussion.id,
                 replyCounts,
-                bookmarkCounts,
-                viewCounts
+                bookmarkCounts
               );
 
               return (
