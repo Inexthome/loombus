@@ -64,6 +64,23 @@
   font-size: 0.72rem !important;
 }
 
+/* Restore the original Loombus Card-mode proportions while keeping the flat weave surface. */
+@media (min-width: 640px) {
+  .discussion-feed-route[data-discussion-view="card"] main article {
+    display: flex !important;
+    min-height: 16rem !important;
+    flex-direction: column !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
+    flex: 1 1 auto !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+    flex: 0 0 auto !important;
+  }
+}
+
 /* Card mode intentionally carries a richer media preview than Compact. */
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
   grid-template-columns: minmax(9rem, 11.5rem) minmax(0, 1fr) !important;
