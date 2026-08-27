@@ -180,10 +180,8 @@ function getDiscussionModeLabel(discussion: Discussion) {
 function getSignalScore(
   discussionId: string,
   replyCounts: Record<string, number>,
-  bookmarkCounts: Record<string, number>,
-  viewCounts: Record<string, number>
+  bookmarkCounts: Record<string, number>
 ) {
-  void viewCounts;
   return (
     (replyCounts[discussionId] ?? 0) +
     (bookmarkCounts[discussionId] ?? 0)
@@ -358,9 +356,11 @@ export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [signalReplyCounts, setSignalReplyCounts] = useState<Record<string, number>>({});
   const [latestReplyDates, setLatestReplyDates] = useState<Record<string, string>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
+  const [signalBookmarkCounts, setSignalBookmarkCounts] = useState<Record<string, number>>({});
   const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
   const [discussionAttachments, setDiscussionAttachments] = useState<
     Record<string, DiscussionAttachment[]>
@@ -434,6 +434,9 @@ export default function DiscussionsPage() {
       );
 
       const discussionIds = visibleDiscussions.map((discussion) => discussion.id);
+      const discussionOwnerIds = new Map(
+        visibleDiscussions.map((discussion) => [discussion.id, discussion.user_id])
+      );
       const userIds = [...new Set(visibleDiscussions.map((discussion) => discussion.user_id))];
 
       if (userIds.length > 0) {
@@ -490,6 +493,7 @@ export default function DiscussionsPage() {
         ]);
 
         const counts: Record<string, number> = {};
+        const eligibleReplies: Record<string, number> = {};
         const latestReplies: Record<string, string> = {};
 
         for (const reply of replyResponse.data ?? []) {
@@ -498,6 +502,11 @@ export default function DiscussionsPage() {
           }
 
           counts[reply.discussion_id] = (counts[reply.discussion_id] ?? 0) + 1;
+
+          if (reply.user_id !== discussionOwnerIds.get(reply.discussion_id)) {
+            eligibleReplies[reply.discussion_id] =
+              (eligibleReplies[reply.discussion_id] ?? 0) + 1;
+          }
 
           const existingLatest = latestReplies[reply.discussion_id];
           if (
@@ -514,9 +523,15 @@ export default function DiscussionsPage() {
         }
 
         const bookmarks: Record<string, number> = {};
+        const eligibleBookmarks: Record<string, number> = {};
         for (const bookmark of bookmarkResponse.data ?? []) {
           bookmarks[bookmark.discussion_id] =
             (bookmarks[bookmark.discussion_id] ?? 0) + 1;
+
+          if (bookmark.user_id !== discussionOwnerIds.get(bookmark.discussion_id)) {
+            eligibleBookmarks[bookmark.discussion_id] =
+              (eligibleBookmarks[bookmark.discussion_id] ?? 0) + 1;
+          }
 
           if (viewerId && bookmark.user_id === viewerId) {
             viewerSavedDiscussionIds.add(bookmark.discussion_id);
@@ -542,18 +557,22 @@ export default function DiscussionsPage() {
 
         if (isMounted) {
           setReplyCounts(counts);
+          setSignalReplyCounts(eligibleReplies);
           setLatestReplyDates(latestReplies);
           setViewCounts(views);
           setBookmarkCounts(bookmarks);
+          setSignalBookmarkCounts(eligibleBookmarks);
           setDiscussionTags(tagMap);
           setDiscussionAttachments(attachmentMap);
           setSavedDiscussionIds(viewerSavedDiscussionIds);
         }
       } else if (isMounted) {
         setReplyCounts({});
+        setSignalReplyCounts({});
         setLatestReplyDates({});
         setViewCounts({});
         setBookmarkCounts({});
+        setSignalBookmarkCounts({});
         setDiscussionTags({});
         setDiscussionAttachments({});
         setSavedDiscussionIds(new Set());
@@ -604,9 +623,8 @@ export default function DiscussionsPage() {
       current.count += 1;
       current.signals += getSignalScore(
         discussion.id,
-        replyCounts,
-        bookmarkCounts,
-        viewCounts
+        signalReplyCounts,
+        signalBookmarkCounts
       );
       map.set(topic, current);
     }
@@ -618,7 +636,7 @@ export default function DiscussionsPage() {
 
       return b.signals - a.signals;
     });
-  }, [discussions, replyCounts, bookmarkCounts, viewCounts]);
+  }, [discussions, signalReplyCounts, signalBookmarkCounts]);
 
   const visibleTopics = topicStats.slice(0, MAX_SIDE_TOPICS);
   const trendingTopics = [...topicStats]
@@ -640,9 +658,8 @@ export default function DiscussionsPage() {
       current.discussions += 1;
       current.signals += getSignalScore(
         discussion.id,
-        replyCounts,
-        bookmarkCounts,
-        viewCounts
+        signalReplyCounts,
+        signalBookmarkCounts
       );
       map.set(discussion.user_id, current);
     }
@@ -650,7 +667,7 @@ export default function DiscussionsPage() {
     return [...map.values()]
       .sort((a, b) => b.signals - a.signals || b.discussions - a.discussions)
       .slice(0, MAX_TOP_CONTRIBUTORS);
-  }, [discussions, profiles, replyCounts, bookmarkCounts, viewCounts]);
+  }, [discussions, profiles, signalReplyCounts, signalBookmarkCounts]);
 
   const savedFolderStats = useMemo(() => {
     const map = new Map<string, number>();
@@ -861,9 +878,8 @@ export default function DiscussionsPage() {
               const attachments = discussionAttachments[discussion.id] ?? [];
               const signalScore = getSignalScore(
                 discussion.id,
-                replyCounts,
-                bookmarkCounts,
-                viewCounts
+                signalReplyCounts,
+                signalBookmarkCounts
               );
 
               return (
