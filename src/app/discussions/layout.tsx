@@ -14,6 +14,7 @@ import "./discussions-create-modal.css";
 import "./[id]/discussion-detail-flat.css";
 import "./[id]/discussion-detail-responsive-hardening.css";
 import "./[id]/discussion-intelligence-output-polish.css";
+import "./[id]/discussion-composer-mobile-polish.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
