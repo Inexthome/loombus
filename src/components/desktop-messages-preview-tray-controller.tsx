@@ -13,7 +13,7 @@ import {
 } from "@/app/messages/messages-v2-model";
 
 const DESKTOP_MESSAGES_BUTTON_SELECTOR =
-  '.loombus-desktop-flat-topbar [aria-label="Messages"]';
+  '.loombus-desktop-flat-topbar [aria-label^="Messages"]';
 
 type TrayPosition = {
   top: number;
