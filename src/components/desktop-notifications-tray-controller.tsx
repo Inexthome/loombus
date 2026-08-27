@@ -2,23 +2,17 @@
 
 import { supabase } from "@/lib/supabase/client";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DesktopNotificationsTray } from "./desktop-notifications-tray";
 
 const DESKTOP_NOTIFICATION_BUTTON_SELECTOR =
-  '.loombus-desktop-top-navbar button[aria-label="Notifications"]';
+  '.loombus-desktop-flat-topbar [aria-label^="Notifications"]';
 
 type TrayPosition = {
   top: number;
   right: number;
 };
 
-/**
- * Owns the desktop notification-bell interaction while the top navigation
- * remains responsible for its unread badge. Keeping the tray controller
- * separate lets the full-page and compact notification experiences evolve
- * without expanding the already-large navigation component.
- */
 export function DesktopNotificationsTrayController() {
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
@@ -26,26 +20,53 @@ export function DesktopNotificationsTrayController() {
   const [position, setPosition] = useState<TrayPosition | null>(null);
   const trayRef = useRef<HTMLDivElement | null>(null);
 
+  const syncUnreadBadge = useCallback(async (targetUserId: string | null) => {
+    const button = document.querySelector<HTMLElement>(DESKTOP_NOTIFICATION_BUTTON_SELECTOR);
+    if (!button || !targetUserId) return;
+    const { count } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", targetUserId)
+      .is("read_at", null);
+    const unreadCount = count ?? 0;
+    button.dataset.unreadCount = unreadCount > 99 ? "99+" : String(unreadCount);
+    button.setAttribute("aria-label", unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications");
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
     async function loadUser() {
       const { data } = await supabase.auth.getUser();
-      if (mounted) setUserId(data.user?.id ?? null);
+      if (!mounted) return;
+      const nextUserId = data.user?.id ?? null;
+      setUserId(nextUserId);
+      void syncUnreadBadge(nextUserId);
     }
 
     void loadUser();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setUserId(session?.user?.id ?? null);
+      if (!mounted) return;
+      const nextUserId = session?.user?.id ?? null;
+      setUserId(nextUserId);
+      void syncUnreadBadge(nextUserId);
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [syncUnreadBadge]);
+
+  useEffect(() => {
+    function handleChanged() {
+      void syncUnreadBadge(userId);
+    }
+    window.addEventListener("loombus:notifications-changed", handleChanged);
+    return () => window.removeEventListener("loombus:notifications-changed", handleChanged);
+  }, [syncUnreadBadge, userId]);
 
   useEffect(() => {
     setOpen(false);
@@ -54,9 +75,7 @@ export function DesktopNotificationsTrayController() {
 
   useEffect(() => {
     function getNotificationButton() {
-      return document.querySelector<HTMLButtonElement>(
-        DESKTOP_NOTIFICATION_BUTTON_SELECTOR,
-      );
+      return document.querySelector<HTMLElement>(DESKTOP_NOTIFICATION_BUTTON_SELECTOR);
     }
 
     function syncExpandedState(nextOpen: boolean) {
@@ -75,13 +94,9 @@ export function DesktopNotificationsTrayController() {
 
     function handleDocumentClick(event: MouseEvent) {
       const target = event.target as Element | null;
-      const notificationButton = target?.closest<HTMLButtonElement>(
-        DESKTOP_NOTIFICATION_BUTTON_SELECTOR,
-      );
+      const notificationButton = target?.closest<HTMLElement>(DESKTOP_NOTIFICATION_BUTTON_SELECTOR);
 
       if (notificationButton) {
-        // Capture the desktop bell before the legacy mini-menu handler. The
-        // compact tray below is now the single desktop notification surface.
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -139,6 +154,12 @@ export function DesktopNotificationsTrayController() {
     >
       <DesktopNotificationsTray
         userId={userId}
+        onUnreadCountChange={(count) => {
+          const button = document.querySelector<HTMLElement>(DESKTOP_NOTIFICATION_BUTTON_SELECTOR);
+          if (!button) return;
+          button.dataset.unreadCount = count > 99 ? "99+" : String(count);
+          button.setAttribute("aria-label", count > 0 ? `Notifications, ${count} unread` : "Notifications");
+        }}
         onClose={() => {
           setOpen(false);
           setPosition(null);
