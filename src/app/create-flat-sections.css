@@ -1,0 +1,265 @@
+/* /create flat-section presentation.
+   Functionality stays in create-discussion-composer.tsx; this layer only reshapes the page variant. */
+
+@media (min-width: 1px) {
+  [data-create-composer-variant="page"] {
+    background: var(--loombus-page-bg) !important;
+  }
+
+  [data-create-composer-variant="page"] > section {
+    max-width: 78rem !important;
+  }
+
+  [data-create-composer-variant="page"] form {
+    gap: 2rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child {
+    gap: 0 !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] {
+    margin: 0 !important;
+    padding: 0.75rem 0 1rem !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] h1 {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] button {
+    min-height: 2.75rem !important;
+    padding-inline: 0 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Topic / mode / add become compact navigation rows instead of pills. */
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid > button {
+    min-height: 3.25rem !important;
+    border: 0 !important;
+    border-right: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid > button:last-child {
+    border-right: 0 !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid > button:hover {
+    background: color-mix(in srgb, var(--loombus-surface-muted) 58%, transparent) !important;
+  }
+
+  /* Main writing surface: open sections separated by dividers. */
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section {
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section > label {
+    padding: 1.15rem 0 !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section > label + label {
+    border-top: 0 !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section input {
+    min-height: 3rem !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding-inline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section textarea {
+    min-height: 20rem !important;
+    border: 1px solid var(--loombus-border) !important;
+    border-radius: 0.75rem !important;
+    background: color-mix(in srgb, var(--loombus-surface) 48%, transparent) !important;
+    padding: 1rem 3rem 1rem 1rem !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section input:focus,
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section textarea:focus {
+    border-color: var(--loombus-gold) !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] button[aria-label="Open Draft Guidance"] {
+    right: 0.65rem !important;
+    bottom: 4.7rem !important;
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] button[aria-label="Open Draft Guidance"] svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  /* Status messages become inline system rows. */
+  [data-create-composer-variant="page"] form > div:first-child > div.rounded-2xl.border {
+    margin-top: 0.75rem !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0.75rem 0 !important;
+  }
+
+  /* Bottom actions are a compact divided action row, not a CTA card. */
+  [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 1.25rem !important;
+    margin-top: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0.9rem 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button {
+    min-height: 2.5rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 0.15rem !important;
+    color: var(--loombus-text-muted) !important;
+    font-size: 0.78rem !important;
+    font-weight: 750 !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button[type="submit"] {
+    color: var(--loombus-gold) !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button[type="submit"] svg {
+    display: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section.grid:last-child button:hover {
+    color: var(--loombus-text) !important;
+  }
+
+  /* Right rail mirrors discussion-detail: flat blocks with thin dividers. */
+  [data-create-composer-variant="page"] form > aside {
+    margin: 0 !important;
+    border-left: 1px solid var(--loombus-border) !important;
+    padding-left: 1.5rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section {
+    margin: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 1rem 0 1.2rem !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:first-child {
+    padding-top: 0.75rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside h2 {
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 {
+    margin-top: 0.75rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 > div {
+    align-items: baseline !important;
+    gap: 0.65rem !important;
+    padding: 0.45rem 0 !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:first-child .mt-5.space-y-5 > div > span {
+    width: 1.25rem !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--loombus-gold) !important;
+    font-size: 0.7rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside svg {
+    display: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:nth-child(2) > div,
+  [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div:first-child {
+    gap: 0 !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div {
+    gap: 0.75rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button {
+    min-height: 2.25rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: var(--loombus-text-muted) !important;
+    text-align: left !important;
+    box-shadow: none !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button[type="submit"] {
+    color: var(--loombus-gold) !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside > section:nth-child(3) button:hover {
+    color: var(--loombus-text) !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside .h-2 {
+    height: 2px !important;
+    border-radius: 0 !important;
+  }
+
+  [data-create-composer-variant="page"] form > aside .h-2 > div {
+    border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  [data-create-composer-variant="page"] form > aside {
+    border-left: 0 !important;
+    border-top: 1px solid var(--loombus-border) !important;
+    padding-left: 0 !important;
+  }
+}
