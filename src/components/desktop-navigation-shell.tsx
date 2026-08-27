@@ -138,20 +138,9 @@ export function DesktopNavigationShell() {
       setAskLoading(true);
       const pattern = `%${cleanQuery}%`;
       const [profilesResult, discussionsResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url")
-          .or(`username.ilike.${pattern},full_name.ilike.${pattern}`)
-          .limit(4),
-        supabase
-          .from("discussions")
-          .select("id, title, topic")
-          .is("deleted_at", null)
-          .or(`title.ilike.${pattern},topic.ilike.${pattern}`)
-          .order("created_at", { ascending: false })
-          .limit(5),
+        supabase.from("profiles").select("id, username, full_name, avatar_url").or(`username.ilike.${pattern},full_name.ilike.${pattern}`).limit(4),
+        supabase.from("discussions").select("id, title, topic").is("deleted_at", null).or(`title.ilike.${pattern},topic.ilike.${pattern}`).order("created_at", { ascending: false }).limit(5),
       ]);
-
       if (cancelled) return;
       setAskProfiles((profilesResult.data ?? []) as AskProfileResult[]);
       setAskDiscussions((discussionsResult.data ?? []) as AskDiscussionResult[]);
@@ -180,6 +169,7 @@ export function DesktopNavigationShell() {
 
   if (!userId) return null;
 
+  const cleanAskQuery = askQuery.trim();
   const displayName = profile?.full_name?.trim() || profile?.username?.trim() || email?.split("@")[0] || "Loombus member";
   const profileHref = profile?.username ? `/u/${profile.username}` : "/profile";
   const hasLiveResults = askProfiles.length > 0 || askDiscussions.length > 0;
@@ -227,13 +217,27 @@ export function DesktopNavigationShell() {
           {askOpen ? (
             <div id="loombus-desktop-ask-panel" className="loombus-desktop-ask-panel" role="dialog" aria-label="Ask Loombus suggestions and results">
               <div className="loombus-desktop-ask-panel-head">
-                <strong>{askQuery.trim() ? "Results" : "Suggestions"}</strong>
+                <strong>{cleanAskQuery ? "Results" : "Suggestions"}</strong>
                 <button type="button" onClick={openFullSearch}>Open full search</button>
               </div>
 
+              {cleanAskQuery.length >= 2 ? (
+                <Link
+                  href={`/search?q=${encodeURIComponent(cleanAskQuery)}`}
+                  className="loombus-desktop-ask-full-row"
+                  onClick={() => setAskOpen(false)}
+                >
+                  <Sparkles aria-hidden="true" size={17} style={{ color: "var(--loombus-gold)" }} />
+                  <span>
+                    <strong style={{ color: "var(--loombus-gold)" }}>Ask Loombus AI</strong>
+                    <small>Use AI with “{cleanAskQuery}”</small>
+                  </span>
+                </Link>
+              ) : null}
+
               {destinationMatches.length > 0 ? (
                 <section className="loombus-desktop-ask-section">
-                  <p>{askQuery.trim() ? "Destinations" : "Explore"}</p>
+                  <p>{cleanAskQuery ? "Destinations" : "Explore"}</p>
                   {destinationMatches.map((item) => {
                     const Icon = icons[item.icon];
                     return (
@@ -246,7 +250,7 @@ export function DesktopNavigationShell() {
                 </section>
               ) : null}
 
-              {askQuery.trim().length >= 2 ? (
+              {cleanAskQuery.length >= 2 ? (
                 <>
                   {askLoading ? <p className="loombus-desktop-ask-status">Searching Loombus…</p> : null}
 
