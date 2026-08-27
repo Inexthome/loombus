@@ -407,7 +407,7 @@ export function DesktopNotificationsTray({
         {topMenuOpen ? (
           <div
             data-notifications-tray-menu
-            className="absolute right-3 top-[3.4rem] z-40 grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20"
+            className="absolute right-3 top-[3.4rem] z-[80] grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20"
           >
             <button
               type="button"
@@ -496,6 +496,8 @@ export function DesktopNotificationsTray({
                       <div
                         key={notification.id}
                         className={`relative grid grid-cols-[minmax(0,1fr)_auto] items-center transition hover:bg-[var(--loombus-surface-muted)] ${
+                          menuOpen ? "z-40" : "z-0"
+                        } ${
                           unread
                             ? "bg-[color:color-mix(in_srgb,var(--loombus-gold)_7%,var(--loombus-surface))]"
                             : ""
@@ -561,7 +563,7 @@ export function DesktopNotificationsTray({
                           ) : null}
 
                           {menuOpen ? (
-                            <div className="absolute right-2 top-9 z-50 grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20">
+                            <div className="absolute right-2 top-9 z-[90] grid w-64 overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-2xl shadow-black/20">
                               <button
                                 type="button"
                                 disabled={workingId === notification.id}
