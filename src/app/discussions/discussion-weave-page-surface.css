@@ -1,0 +1,44 @@
+/* Final page-surface enforcement for Card-mode Discussion Weave. */
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article {
+  margin-top: 0 !important;
+  background-color: var(--loombus-page-bg) !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article:hover {
+  background-color: var(--loombus-page-bg) !important;
+  background-image: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article > div:first-child,
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article > div:last-child,
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article > div:first-child > a:first-child,
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article > div:first-child > a.mt-5,
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article section[aria-label="Discussion attachments"] {
+  background-color: var(--loombus-page-bg) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Keep the continuous strand visually uninterrupted across the full feed. */
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
+  z-index: 2 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article {
+  z-index: auto !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article::after {
+  z-index: 3 !important;
+}
