@@ -143,9 +143,10 @@ export function DiscussionAudienceDetailBadge() {
   const base = normalizeAudienceBase(audience.audience_base);
   const Icon = ICONS[type];
   const customBase = type === "custom" && base ? ` · ${LABELS[base]}` : "";
+  const audienceLabel = `Audience: ${LABELS[type]}${customBase}`;
 
   return createPortal(
-    <span className={styles.badge} title={`Audience: ${LABELS[type]}${customBase}`}>
+    <span className={styles.badge} title={audienceLabel} aria-label={audienceLabel}>
       <Icon aria-hidden="true" size={14} />
       {LABELS[type]}
     </span>,
