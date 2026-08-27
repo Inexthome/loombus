@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { DesktopNotificationsTray } from "./desktop-notifications-tray";
 
 const DESKTOP_NOTIFICATION_BUTTON_SELECTOR =
-  '.loombus-desktop-top-navbar button[aria-label="Notifications"]';
+  '.loombus-desktop-flat-topbar [aria-label="Notifications"]';
 
 type TrayPosition = {
   top: number;
@@ -54,7 +54,7 @@ export function DesktopNotificationsTrayController() {
 
   useEffect(() => {
     function getNotificationButton() {
-      return document.querySelector<HTMLButtonElement>(
+      return document.querySelector<HTMLElement>(
         DESKTOP_NOTIFICATION_BUTTON_SELECTOR,
       );
     }
@@ -75,13 +75,13 @@ export function DesktopNotificationsTrayController() {
 
     function handleDocumentClick(event: MouseEvent) {
       const target = event.target as Element | null;
-      const notificationButton = target?.closest<HTMLButtonElement>(
+      const notificationButton = target?.closest<HTMLElement>(
         DESKTOP_NOTIFICATION_BUTTON_SELECTOR,
       );
 
       if (notificationButton) {
-        // Capture the desktop bell before the legacy mini-menu handler. The
-        // compact tray below is now the single desktop notification surface.
+        // Capture the desktop bell before its navigation link. The compact
+        // tray remains the primary desktop notification preview surface.
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
