@@ -1,6 +1,23 @@
-/* Flatten the /discussions create and filter controls without changing bridge behavior. */
+/* Introduce the /discussions weave language without changing bridge behavior. */
+
+[data-discussions-create-trigger-slot="true"] {
+  position: relative;
+  min-width: 0;
+}
+
+[data-discussions-create-trigger-slot="true"]::before {
+  content: "";
+  position: absolute;
+  left: 1.08rem;
+  top: 0;
+  bottom: -0.75rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--loombus-border) 82%, transparent);
+  pointer-events: none;
+}
 
 [data-discussions-create-trigger-slot="true"] > button {
+  position: relative;
   min-height: 3.5rem !important;
   height: auto !important;
   border-left: 0 !important;
@@ -26,11 +43,15 @@
 }
 
 [data-discussions-create-trigger-slot="true"] > button > span:first-child {
+  position: relative;
+  z-index: 1;
   width: 2.25rem !important;
   height: 2.25rem !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 42%, var(--loombus-border)) !important;
+  border-radius: 999px !important;
+  background: var(--loombus-page-bg) !important;
   color: var(--loombus-gold) !important;
+  box-shadow: 0 0 0 4px var(--loombus-page-bg) !important;
 }
 
 [data-discussions-create-trigger-slot="true"] > button > span:last-child {
@@ -99,6 +120,11 @@
 }
 
 @media (max-width: 639px) {
+  [data-discussions-create-trigger-slot="true"]::before {
+    left: 0.96rem;
+    bottom: -0.55rem;
+  }
+
   [data-discussions-create-trigger-slot="true"] > button {
     min-height: 3.25rem !important;
     gap: 0.6rem !important;
