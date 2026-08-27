@@ -1,0 +1,53 @@
+/* Keep Card mode content-rich while reducing residual pill treatment in metrics and rail actions. */
+
+/* Signal is a branded metric, not a badge. Keep it readable but flat. */
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text) !important;
+  box-shadow: none !important;
+}
+
+/* Attachment count is metadata inside a card, so remove the extra capsule. */
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child span.inline-flex {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+/* Side-rail profile actions should read as text actions, not chips. */
+.discussion-feed-route[data-discussion-view] main > div > aside a.rounded-full {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Make the right-rail list hierarchy more legible after removing card chrome. */
+.discussion-feed-route[data-discussion-view] main > div > aside section > div.space-y-4 > * + * {
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.75rem;
+}
+
+.discussion-feed-route[data-discussion-view] main > div > aside section > div.space-y-4 {
+  gap: 0.75rem !important;
+}
+
+/* Compact already has its own metric treatment; keep this pass Card-specific there. */
+@media (max-width: 639px) {
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+    gap: 0.8rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+    margin-left: auto !important;
+    font-size: 0.78rem !important;
+  }
+}
