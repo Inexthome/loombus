@@ -179,6 +179,11 @@ export function DesktopNavigationShell() {
     setAskOpen(false);
     window.dispatchEvent(new Event("loombus:open-global-search"));
   }
+  function submitAskQuery() {
+    if (cleanAskQuery.length < 2) return;
+    setAskOpen(false);
+    window.location.href = `/search?q=${encodeURIComponent(cleanAskQuery)}`;
+  }
 
   return (
     <>
@@ -203,9 +208,9 @@ export function DesktopNavigationShell() {
             onFocus={() => setAskOpen(true)}
             onClick={() => setAskOpen(true)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (event.key === "Enter" && cleanAskQuery.length >= 2) {
                 event.preventDefault();
-                openFullSearch();
+                submitAskQuery();
               }
             }}
             placeholder="Ask Loombus or search everything"
