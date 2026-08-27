@@ -14,6 +14,7 @@ import "./discussion-top-controls.css";
 import "./discussion-weave-feed.css";
 import "./discussion-weave-page-surface.css";
 import "./discussion-weave-density.css";
+import "./discussion-view-relocation.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
