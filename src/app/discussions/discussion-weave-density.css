@@ -191,17 +191,17 @@
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
-    width: min(13.5rem, 62vw) !important;
-    margin-top: 0.85rem !important;
+    width: min(14rem, 64vw) !important;
+    margin-top: 0.9rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child {
-    max-height: 16.5rem !important;
+    max-height: 17rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
-    height: clamp(13rem, 54vw, 16.5rem) !important;
+    height: clamp(13.5rem, 56vw, 17rem) !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
