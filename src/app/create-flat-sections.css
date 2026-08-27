@@ -1,13 +1,12 @@
 /* /create flat-section presentation.
-   Functionality stays in create-discussion-composer.tsx; this layer only reshapes the page variant. */
+   This is the active page-variant surface layer after retiring the obsolete Create V2 shell. */
 
 @media (min-width: 1px) {
-  [data-create-composer-variant="page"] { background: transparent !important; }
+  [data-create-composer-variant="page"] { background: var(--loombus-page-bg) !important; }
   [data-create-composer-variant="page"] > section { max-width: 78rem !important; }
-  [data-create-composer-variant="page"] form { gap: 1.25rem !important; }
-  [data-create-composer-variant="page"] form > div:first-child { gap: 0 !important; }
+  [data-create-composer-variant="page"] form { gap: 1.25rem !important; background: transparent !important; box-shadow: none !important; }
+  [data-create-composer-variant="page"] form > div:first-child { gap: 0 !important; background: transparent !important; }
 
-  /* Keep the page as one continuous Loombus surface. */
   [data-create-composer-variant="page"] form > div:first-child,
   [data-create-composer-variant="page"] form > div:first-child > section,
   [data-create-composer-variant="page"] form > div:first-child > section > label,
@@ -17,6 +16,7 @@
     background: transparent !important;
     background-color: transparent !important;
     background-image: none !important;
+    box-shadow: none !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] {
@@ -42,7 +42,7 @@
     border: 0 !important; border-bottom: 1px solid var(--loombus-border) !important; border-radius: 0 !important;
     background: transparent !important; box-shadow: none !important;
   }
-  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section > label { padding: .8rem 0 !important; }
+  [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section > label { padding: .8rem 0 !important; background: transparent !important; }
   [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section > label + label { border-top: 0 !important; }
   [data-create-composer-variant="page"] [data-create-composer-header] + div.grid + section input {
     min-height: 2.7rem !important; border: 0 !important; border-bottom: 1px solid var(--loombus-border) !important;
@@ -116,7 +116,6 @@
   [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div.flex.flex-col > button[type="submit"] { color: var(--loombus-gold) !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(3) > div.flex.flex-col > button:hover { color: var(--loombus-text) !important; background: transparent !important; }
 
-  /* Selected framing: compact hierarchy, metadata reads like facts rather than a dense block. */
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) { padding: .8rem 0 .85rem !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > div:first-child { gap: 0 !important; }
   [data-create-composer-variant="page"] form > aside > section:nth-child(4) > p.mt-3 { margin-top: .55rem !important; font-size: .82rem !important; line-height: 1.25 !important; }
