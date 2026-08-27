@@ -10,6 +10,7 @@ import "./discussion-feed-refinements.css";
 import "./discussion-index-polish.css";
 import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
+import "./discussion-top-controls.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
