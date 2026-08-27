@@ -1,0 +1,64 @@
+@media (max-width: 1023px) {
+  .discussion-v2-mobile-bar {
+    left: max(0.75rem, env(safe-area-inset-left)) !important;
+    right: max(0.75rem, env(safe-area-inset-right)) !important;
+    bottom: max(0.65rem, env(safe-area-inset-bottom)) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: 28rem !important;
+    margin-inline: auto !important;
+    grid-template-columns: minmax(0, 1fr) auto auto auto !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--loombus-border) !important;
+    border-radius: 0 !important;
+    background: var(--loombus-surface) !important;
+    padding: 0.3rem 0 !important;
+    box-shadow: none !important;
+  }
+
+  .discussion-v2-mobile-bar button {
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--loombus-text-muted) !important;
+    box-shadow: none !important;
+  }
+
+  .discussion-v2-mobile-bar button:first-child {
+    justify-content: flex-start !important;
+    min-width: 0 !important;
+    padding-inline: 0.2rem 0.8rem !important;
+    color: var(--loombus-gold) !important;
+    font-weight: 850 !important;
+  }
+
+  .discussion-v2-mobile-bar button:first-child::after {
+    content: "";
+    align-self: flex-end;
+    height: 1px;
+    flex: 1 1 auto;
+    margin: 0 0 0.34rem 0.55rem;
+    background: color-mix(in srgb, var(--loombus-gold) 42%, transparent);
+  }
+
+  .discussion-v2-mobile-bar button:hover:not(:disabled),
+  .discussion-v2-mobile-bar button:focus-visible {
+    background: transparent !important;
+    color: var(--loombus-text) !important;
+  }
+
+  .discussion-v2-mobile-bar button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .discussion-v2-mobile-bar {
+    left: max(0.5rem, env(safe-area-inset-left)) !important;
+    right: max(0.5rem, env(safe-area-inset-right)) !important;
+  }
+}
