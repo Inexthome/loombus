@@ -1,43 +1,46 @@
-/* Final route-scoped /create surface normalization.
-   Imported from src/app/create/layout.tsx so it wins after root-level legacy create styles. */
+/* /create surface normalization aligned with /insights.
+   The page variant is one continuous surface; structure comes from dividers and spacing. */
 
 [data-create-composer-variant="page"] {
-  background:
-    radial-gradient(
-      circle at 10% -10%,
-      color-mix(in srgb, var(--loombus-gold) 12%, transparent),
-      transparent 32rem
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--loombus-page-bg) 94%, var(--loombus-surface) 6%),
-      var(--loombus-page-bg)
-    ) !important;
+  background: var(--loombus-page-bg) !important;
 }
 
 [data-create-composer-variant="page"] > section,
 [data-create-composer-variant="page"] form,
 [data-create-composer-variant="page"] form > div:first-child,
-[data-create-composer-variant="page"] form > div:first-child > section,
-[data-create-composer-variant="page"] form > div:first-child > section > label,
-[data-create-composer-variant="page"] form > aside,
-[data-create-composer-variant="page"] form > aside > section,
-[data-create-composer-variant="page"] form > aside > section > div {
+[data-create-composer-variant="page"] form > aside {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Neutralize the page-variant Tailwind surface utilities at the source-class level.
+   Restrict to the form so modal/panel surfaces keep their intentional backgrounds. */
+[data-create-composer-variant="page"] form .bg-\[var\(--loombus-surface\)\],
+[data-create-composer-variant="page"] form .bg-\[var\(--loombus-page-bg\)\] {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
+}
+
+[data-create-composer-variant="page"] form .shadow-sm,
+[data-create-composer-variant="page"] form .shadow-xl {
   box-shadow: none !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section,
 [data-create-composer-variant="page"] form > aside > section {
   border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label {
+  background: transparent !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child input,
 [data-create-composer-variant="page"] form > div:first-child textarea {
   background: transparent !important;
-  background-color: transparent !important;
   box-shadow: none !important;
 }
 
