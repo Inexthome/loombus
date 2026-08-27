@@ -2,7 +2,7 @@
    Functionality stays in create-discussion-composer.tsx; this layer only reshapes the page variant. */
 
 @media (min-width: 1px) {
-  [data-create-composer-variant="page"] { background: var(--loombus-page-bg) !important; }
+  [data-create-composer-variant="page"] { background: transparent !important; }
   [data-create-composer-variant="page"] > section { max-width: 78rem !important; }
   [data-create-composer-variant="page"] form { gap: 1.25rem !important; }
   [data-create-composer-variant="page"] form > div:first-child { gap: 0 !important; }
