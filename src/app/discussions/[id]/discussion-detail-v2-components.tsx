@@ -100,7 +100,7 @@ export function AttachmentGallery({ attachments }: { attachments: DiscussionAtta
         if (attachment.attachment_kind === "video") {
           return (
             <div key={attachment.id} className="discussion-v2-attachment discussion-v2-attachment-video">
-              <video controls preload="metadata" src={attachment.public_url}>
+              <video controls playsInline preload="metadata" src={attachment.public_url}>
                 Your browser does not support this video.
               </video>
               <a href={attachment.public_url} target="_blank" rel="noreferrer" className="discussion-v2-attachment-meta">
