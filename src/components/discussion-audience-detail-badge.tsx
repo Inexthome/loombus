@@ -77,12 +77,12 @@ function createAudienceBadgeSlot() {
   const existing = topicRow.querySelector<HTMLElement>(
     "[data-discussion-audience-badge-slot]"
   );
-  if (existing) return existing;
+  if (existing) return { slot: existing, created: false };
 
   const slot = document.createElement("span");
   slot.dataset.discussionAudienceBadgeSlot = "true";
   topicRow.append(slot);
-  return slot;
+  return { slot, created: true };
 }
 
 export function DiscussionAudienceDetailBadge() {
@@ -95,11 +95,13 @@ export function DiscussionAudienceDetailBadge() {
     let cancelled = false;
     let attempts = 0;
     let timer: number | null = null;
+    let ownedSlot: HTMLElement | null = null;
 
     function locate() {
-      const slot = createAudienceBadgeSlot();
-      if (slot) {
-        if (!cancelled) setPortalTarget(slot);
+      const result = createAudienceBadgeSlot();
+      if (result) {
+        if (result.created) ownedSlot = result.slot;
+        if (!cancelled) setPortalTarget(result.slot);
         return;
       }
 
@@ -111,9 +113,7 @@ export function DiscussionAudienceDetailBadge() {
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
-      document
-        .querySelector<HTMLElement>("[data-discussion-audience-badge-slot]")
-        ?.remove();
+      if (ownedSlot?.isConnected) ownedSlot.remove();
     };
   }, []);
 
