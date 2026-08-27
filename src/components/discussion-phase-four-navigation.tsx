@@ -59,7 +59,7 @@ export function DiscussionPhaseFourNavigation() {
         }
 
         const opening = mainColumn.querySelector("#discussion-opening");
-        opening?.insertAdjacentElement("beforebegin", nav);
+        opening?.insertAdjacentElement("afterend", nav);
       }
       return nav;
     }
