@@ -26,6 +26,7 @@ type PassageContext = PassageLink & {
 };
 
 const INLINE_HOST_ATTR = "data-discussion-library-feedback-inline";
+const MORE_ACTION_SELECTOR = 'button[aria-label="Open Discussion actions"]';
 
 export function DiscussionLibraryFeedbackLauncher() {
   const params = useParams<{ id: string }>();
@@ -42,13 +43,13 @@ export function DiscussionLibraryFeedbackLauncher() {
     let observer: MutationObserver | null = null;
 
     const mountInlineHost = () => {
-      if (cancelled) return false;
+      if (cancelled) return { mounted: false, positionedAfterMore: false };
 
       const opening = document.querySelector<HTMLElement>(".discussion-v2-opening-card");
-      if (!opening) return false;
+      if (!opening) return { mounted: false, positionedAfterMore: false };
 
       const openingActions = opening.querySelector<HTMLElement>(".discussion-v2-opening-actions");
-      if (!openingActions) return false;
+      if (!openingActions) return { mounted: false, positionedAfterMore: false };
 
       let host = openingActions.querySelector<HTMLElement>(`:scope > [${INLINE_HOST_ATTR}='true']`);
       if (!host) {
@@ -59,13 +60,20 @@ export function DiscussionLibraryFeedbackLauncher() {
         openingActions.append(host);
       }
 
+      const moreAction = openingActions.querySelector<HTMLElement>(MORE_ACTION_SELECTOR);
+      if (moreAction && moreAction.nextElementSibling !== host) {
+        moreAction.insertAdjacentElement("afterend", host);
+      }
+
       setInlineHost(host);
-      return true;
+      return { mounted: true, positionedAfterMore: Boolean(moreAction) };
     };
 
-    if (!mountInlineHost()) {
+    const initial = mountInlineHost();
+    if (!initial.positionedAfterMore) {
       observer = new MutationObserver(() => {
-        if (mountInlineHost() || document.querySelector(".discussion-v2-not-found")) {
+        const state = mountInlineHost();
+        if (state.positionedAfterMore || document.querySelector(".discussion-v2-not-found")) {
           observer?.disconnect();
           observer = null;
         }
