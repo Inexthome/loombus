@@ -12,6 +12,7 @@ import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
 import "./discussion-top-controls.css";
 import "./discussion-weave-feed.css";
+import "./discussion-weave-page-surface.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
