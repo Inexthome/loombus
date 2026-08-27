@@ -329,15 +329,6 @@
   font-size: 0.65rem;
 }
 
-:global(.discussion-audience-detail-badge) {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-  color: var(--loombus-text-muted) !important;
-}
-
 .formBody,
 .editorGrid {
   min-height: 0;
