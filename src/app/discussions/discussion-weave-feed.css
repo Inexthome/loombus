@@ -1,35 +1,45 @@
 /* Card-mode Discussion Weave feed. Compact mode remains unchanged. */
 
 .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
+  position: relative;
   display: grid !important;
   gap: 0 !important;
+  background: transparent !important;
+}
+
+/* One continuous strand belongs to the feed, not to individual posts. */
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 0.42rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--loombus-border) 84%, transparent);
+  pointer-events: none;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article {
   position: relative;
+  z-index: 1;
   overflow: visible !important;
   border: 0 !important;
   border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  transition: background 150ms ease, border-color 150ms ease !important;
+  transition: border-color 150ms ease !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article::before {
-  content: "";
-  position: absolute;
-  left: 0.42rem;
-  top: 0;
-  bottom: -1px;
-  width: 1px;
-  background: color-mix(in srgb, var(--loombus-border) 84%, transparent);
-  pointer-events: none;
+  display: none !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article::after {
   content: "";
   position: absolute;
+  z-index: 2;
   left: 0.19rem;
   top: 1.42rem;
   width: 0.48rem;
@@ -37,18 +47,25 @@
   border: 1px solid color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
   border-radius: 999px;
   background: var(--loombus-page-bg);
-  box-shadow: 0 0 0 3px var(--loombus-page-bg);
   pointer-events: none;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article:hover {
   border-bottom-color: color-mix(in srgb, var(--loombus-gold) 34%, var(--loombus-border)) !important;
-  background: color-mix(in srgb, var(--loombus-surface-muted) 34%, transparent) !important;
+  background: transparent !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article:hover::after {
   background: var(--loombus-gold);
   border-color: var(--loombus-gold);
+}
+
+/* Explicitly prevent legacy surface layers from recreating cards. */
+.discussion-feed-route[data-discussion-view="card"] main article > div,
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child,
+.discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
@@ -87,13 +104,70 @@
   color: var(--loombus-text-muted) !important;
 }
 
+/* Reddit-like media density: media becomes a bounded side strand instead of a tall card. */
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+  display: grid !important;
+  grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
+  grid-template-areas:
+    "media copy"
+    "media author"
+    "media tags";
+  column-gap: 1rem;
+  align-items: start;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a:first-child {
+  grid-area: copy;
+  min-width: 0;
+}
+
 .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
-  margin-top: 0.8rem !important;
+  grid-area: media;
+  align-self: start;
+  display: block !important;
+  width: 100%;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > * {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child {
+  display: block !important;
+  overflow: hidden;
+  width: 100%;
+  max-height: 10rem;
+  border: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0.45rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
+  width: 100% !important;
+  height: 10rem !important;
+  aspect-ratio: auto !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child > span,
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child > a {
+  display: none !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 {
   margin-top: 0.75rem !important;
   gap: 0.55rem !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a.mt-5 {
+  grid-area: author;
+  margin-top: 0.6rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 > div {
@@ -123,6 +197,10 @@
   gap: 0.35rem 0.65rem !important;
   border-top: 0 !important;
   padding-top: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > div.mt-4.flex.flex-wrap {
+  grid-area: tags;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
@@ -165,7 +243,7 @@
 }
 
 @media (max-width: 639px) {
-  .discussion-feed-route[data-discussion-view="card"] main article::before {
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
     left: 0.28rem;
   }
 
@@ -176,6 +254,20 @@
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
     padding: 0.95rem 0 0.5rem 1.25rem !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
+    display: block !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
+    width: min(9rem, 44vw);
+    margin: 0.7rem 0 0 !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
+  .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
+    height: 8rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article h2 {
