@@ -1,15 +1,20 @@
-/* Relocated Card / Compact selector: visible at the feed edge, visually quiet. */
+/* Card / Compact selector: share the same top-controls band as create and filter. */
 
 [data-discussion-view-control-slot="true"] {
   position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin-left: auto;
   background: transparent !important;
 }
 
 .discussion-view-control {
   position: relative;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  margin: 0 0 0.45rem !important;
+  margin: 0 !important;
 }
 
 .discussion-view-trigger {
@@ -63,8 +68,12 @@
 }
 
 @media (max-width: 639px) {
+  [data-discussion-view-control-slot="true"] {
+    align-self: stretch;
+  }
+
   .discussion-view-control {
     justify-content: flex-end !important;
-    margin-bottom: 0.35rem !important;
+    margin: 0 !important;
   }
 }
