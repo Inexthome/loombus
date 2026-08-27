@@ -30,6 +30,36 @@
   box-shadow: none !important;
 }
 
+/* The create row and filter share the exact same page surface as the feed/rails. */
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > div.mb-4,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-create-trigger-slot="true"],
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-create-trigger-slot="true"] > button,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-create-trigger-slot="true"] > button > span,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"],
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"] > div,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"] > div > button {
+  background-color: var(--loombus-page-bg) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-create-trigger-slot="true"] > button,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"] > div > button {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-create-trigger-slot="true"] > button:hover,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"] > div > button:hover,
+.discussion-feed-route[data-discussion-view="card"] [data-discussions-filter-slot="true"] > div > button[aria-expanded="true"] {
+  background-color: var(--loombus-page-bg) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
 /* Keep the continuous strand visually uninterrupted across the full feed. */
 .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
   z-index: 2 !important;
