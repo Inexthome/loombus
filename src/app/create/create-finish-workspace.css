@@ -48,6 +48,7 @@ main[data-create-composer-variant="page"] form > div:first-child > section input
 }
 
 main[data-create-composer-variant="page"] form > div:first-child > section textarea {
+  height: 14rem;
   min-height: 13rem !important;
   margin-top: 0.35rem !important;
   padding-top: 0.35rem !important;
@@ -160,6 +161,7 @@ main[data-create-composer-variant="page"] form > aside > section:last-child > .m
   }
 
   main[data-create-composer-variant="page"] form > div:first-child > section textarea {
+    height: 12rem;
     min-height: 11.5rem !important;
   }
 
