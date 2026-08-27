@@ -1,26 +1,32 @@
 .discussion-reply-pagination-controls {
   display: flex;
   justify-content: center;
-  padding: 0.45rem 0 0.25rem;
+  padding: 0.55rem 0 0.35rem;
 }
 
 .discussion-reply-pagination-button {
-  min-height: 2.65rem;
-  border: 1px solid var(--loombus-border);
-  background: var(--loombus-surface);
-  color: var(--loombus-text);
-  border-radius: 999px;
-  padding: 0.65rem 1rem;
+  min-height: 2.35rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  background: transparent;
+  color: var(--loombus-text-muted);
+  border-radius: 0;
+  padding: 0.5rem 0;
   font-size: 0.76rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-  transition: border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+  box-shadow: none;
+  transition: border-color 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
 .discussion-reply-pagination-button:hover:not(:disabled) {
-  border-color: rgba(180, 83, 9, 0.45);
-  transform: translateY(-1px);
+  border-bottom-color: rgba(180, 83, 9, 0.45);
+  color: #b45309;
+}
+
+.discussion-reply-pagination-button:focus-visible {
+  outline: 3px solid rgba(203, 171, 91, 0.58);
+  outline-offset: 3px;
 }
 
 .discussion-reply-pagination-button:disabled {
@@ -29,7 +35,12 @@
 }
 
 @media (max-width: 719px) {
+  .discussion-reply-pagination-controls {
+    justify-content: flex-start;
+  }
+
   .discussion-reply-pagination-button {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
   }
 }
