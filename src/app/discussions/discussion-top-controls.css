@@ -1,0 +1,120 @@
+/* Flatten the /discussions create and filter controls without changing bridge behavior. */
+
+[data-discussions-create-trigger-slot="true"] > button {
+  min-height: 3.5rem !important;
+  height: auto !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.5rem 0 !important;
+  box-shadow: none !important;
+  gap: 0.8rem !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button:hover {
+  border-bottom-color: color-mix(in srgb, var(--loombus-gold) 48%, var(--loombus-border)) !important;
+  box-shadow: none !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--loombus-gold) 48%, transparent) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button > span:first-child {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-gold) !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button > span:last-child {
+  display: none !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button strong {
+  font-weight: 750 !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button > span:nth-child(2) > span {
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-discussions-filter-slot="true"] > div > button {
+  width: 3rem !important;
+  height: 3.5rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-discussions-filter-slot="true"] > div > button:hover,
+[data-discussions-filter-slot="true"] > div > button[aria-expanded="true"] {
+  border-bottom-color: color-mix(in srgb, var(--loombus-gold) 48%, var(--loombus-border)) !important;
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-discussions-filter-slot="true"] > div > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--loombus-gold) 48%, transparent) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+[data-discussions-filter-menu] {
+  overflow: visible !important;
+  border-radius: 0 !important;
+  padding: 0.35rem 0 !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-discussions-filter-menu] > button {
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  background: transparent !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+[data-discussions-filter-menu] > button:last-child {
+  border-bottom: 0 !important;
+}
+
+[data-discussions-filter-menu] > button:hover {
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-discussions-filter-menu] > button[aria-checked="true"] {
+  background: transparent !important;
+  color: var(--loombus-gold) !important;
+}
+
+@media (max-width: 639px) {
+  [data-discussions-create-trigger-slot="true"] > button {
+    min-height: 3.25rem !important;
+    gap: 0.6rem !important;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button > span:first-child {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button strong {
+    font-size: 0.86rem !important;
+  }
+
+  [data-discussions-filter-slot="true"] > div > button {
+    height: 3.25rem !important;
+    width: 2.75rem !important;
+  }
+}
