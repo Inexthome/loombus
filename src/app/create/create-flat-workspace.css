@@ -1,0 +1,204 @@
+/* Flat Loombus workspace treatment for the dedicated /create page only. */
+
+main[data-create-composer-variant="page"] {
+  background: var(--loombus-page-bg) !important;
+}
+
+main[data-create-composer-variant="page"] form {
+  align-items: start;
+}
+
+/* Header */
+main[data-create-composer-variant="page"] [data-create-composer-header] {
+  border-bottom: 1px solid var(--loombus-border) !important;
+  padding: 0.35rem 0 0.8rem !important;
+}
+
+main[data-create-composer-variant="page"] [data-create-composer-header] button {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Topic / mode / context become one flat classification band. */
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 {
+  gap: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button {
+  min-height: 3.1rem !important;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.7rem 0.9rem !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button:last-child {
+  border-right: 0 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button:hover,
+main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button:focus-visible {
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+/* Main composer: page itself is the surface. */
+main[data-create-composer-variant="page"] form > div:first-child > section {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section > label {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+  padding: 1.25rem 0 !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section > label:last-child {
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section input,
+main[data-create-composer-variant="page"] form > div:first-child > section textarea {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-shadow: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section input:focus,
+main[data-create-composer-variant="page"] form > div:first-child > section textarea:focus {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section textarea {
+  min-height: 20rem !important;
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+  padding-right: 3.75rem !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section label:last-child > button {
+  right: 0 !important;
+  bottom: 4.8rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Inline status message should not become another card. */
+main[data-create-composer-variant="page"] form > div:first-child > div.rounded-2xl.border {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Main action row: simple footer band, only Publish carries emphasis. */
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] {
+  gap: 0.75rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 0 !important;
+  box-shadow: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button:not([type="submit"]) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button[type="submit"] {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+/* Desktop rail: one informational column separated by rules. */
+main[data-create-composer-variant="page"] form > aside {
+  gap: 0 !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section {
+  margin: 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Duplicate Copy/Review/Publish card is intentionally removed from the dedicated page rail. */
+main[data-create-composer-variant="page"] form > aside > section:nth-child(3) {
+  display: none !important;
+}
+
+main[data-create-composer-variant="page"] form > aside > section button,
+main[data-create-composer-variant="page"] form > aside > section [class*="rounded-"] {
+  box-shadow: none !important;
+}
+
+@media (max-width: 1023px) {
+  main[data-create-composer-variant="page"] form {
+    display: block !important;
+  }
+}
+
+@media (max-width: 639px) {
+  main[data-create-composer-variant="page"] {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  main[data-create-composer-variant="page"] [data-create-composer-header] {
+    grid-template-columns: auto 1fr auto !important;
+    gap: 0.4rem !important;
+  }
+
+  main[data-create-composer-variant="page"] [data-create-composer-header] h1 {
+    font-size: 1.08rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > div.grid.grid-cols-3 > button {
+    min-height: 2.85rem !important;
+    padding-inline: 0.55rem !important;
+    font-size: 0.76rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section > label {
+    padding: 1rem 0 !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section textarea {
+    min-height: 18rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] {
+    grid-template-columns: 0.9fr 1fr 1.25fr !important;
+    gap: 0.45rem !important;
+  }
+
+  main[data-create-composer-variant="page"] form > div:first-child > section.grid.grid-cols-\[1fr_1fr_1\.2fr\] > button {
+    min-height: 3rem !important;
+    padding-inline: 0.5rem !important;
+  }
+}
