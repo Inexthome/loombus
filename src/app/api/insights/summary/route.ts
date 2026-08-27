@@ -6,6 +6,11 @@ import {
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 const rangeDays: Record<RangeKey, number | null> = {
   "7d": 7,
   "30d": 30,
@@ -53,8 +58,22 @@ export async function GET(request: NextRequest) {
 
   if (since) discussionsQuery = discussionsQuery.gte("created_at", since);
 
-  const { data: discussions, error: discussionsError } = await discussionsQuery;
+  const [{ data: discussions, error: discussionsError }, { data: blockRows, error: blocksError }] =
+    await Promise.all([
+      discussionsQuery,
+      service
+        .from("user_blocks")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`),
+    ]);
+
   if (discussionsError) return jsonError(discussionsError.message, 500);
+  if (blocksError) return jsonError(blocksError.message, 500);
+
+  const blockedUserIds = new Set<string>();
+  for (const block of (blockRows ?? []) as BlockRow[]) {
+    blockedUserIds.add(block.blocker_id === user.id ? block.blocked_id : block.blocker_id);
+  }
 
   const owned = discussions ?? [];
   const ids = owned.map((item) => item.id);
@@ -120,9 +139,15 @@ export async function GET(request: NextRequest) {
     viewsResult.error || repliesResult.error || savesResult.error || promotionsResult.error;
   if (firstError) return jsonError(firstError.message, 500);
 
-  const views = viewsResult.data ?? [];
-  const replies = repliesResult.data ?? [];
-  const saves = savesResult.data ?? [];
+  const views = (viewsResult.data ?? []).filter(
+    (row) => !row.viewer_id || !blockedUserIds.has(row.viewer_id)
+  );
+  const replies = (repliesResult.data ?? []).filter(
+    (row) => !row.user_id || !blockedUserIds.has(row.user_id)
+  );
+  const saves = (savesResult.data ?? []).filter(
+    (row) => !row.user_id || !blockedUserIds.has(row.user_id)
+  );
   const promotions = promotionsResult.data ?? [];
   const promotionByDiscussion = new Map(
     promotions.map((promotion) => [promotion.discussion_id, promotion])
