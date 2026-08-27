@@ -49,25 +49,26 @@ export function DiscussionViewModeControl() {
     let timer = 0;
     let mount: HTMLDivElement | null = null;
 
-    function locateFeed() {
+    function locateControlsRow() {
       if (cancelled) return;
 
-      const feed = document.querySelector<HTMLElement>(
-        '.discussion-feed-route main section.min-w-0 > .space-y-5'
+      const filterSlot = document.querySelector<HTMLElement>(
+        '[data-discussions-filter-slot="true"]'
       );
+      const controlsRow = filterSlot?.parentElement;
 
-      if (!feed?.parentElement) {
-        timer = window.setTimeout(locateFeed, 120);
+      if (!controlsRow) {
+        timer = window.setTimeout(locateControlsRow, 120);
         return;
       }
 
       mount = document.createElement("div");
       mount.dataset.discussionViewControlSlot = "true";
-      feed.parentElement.insertBefore(mount, feed);
+      controlsRow.append(mount);
       setHost(mount);
     }
 
-    locateFeed();
+    locateControlsRow();
 
     return () => {
       cancelled = true;
