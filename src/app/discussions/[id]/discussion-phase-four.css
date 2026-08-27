@@ -1,4 +1,9 @@
+.discussion-v2-opening-card {
+  order: -2;
+}
+
 .discussion-phase-four-nav {
+  order: -1;
   position: sticky;
   top: 4.25rem;
   z-index: 8;
