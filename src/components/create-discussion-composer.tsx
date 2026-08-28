@@ -11,11 +11,9 @@ import {
 } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  Brain,
   CheckCircle2,
   Circle,
   Copy,
-  FileText,
   MessageSquare,
   Paperclip,
   Puzzle,
@@ -23,9 +21,7 @@ import {
   Scale,
   Search,
   Send,
-  ShieldCheck,
   Sparkles,
-  Tags,
   Trash2,
   WandSparkles,
   X,
@@ -55,8 +51,9 @@ type DiscussionMode =
   | "problem_solving";
 type PickerPanel = "topics" | "reality" | "purpose";
 type ContextKind = "file" | "video";
-type ComposerPanel = "topic" | "mode" | "add" | "guidance" | "more" | null;
+type ComposerPanel = "topic" | "mode" | "guidance" | null;
 type ComposerVariant = "page" | "modal";
+type ComposerView = "write" | "review" | "quality" | "structure";
 
 type ModeOption = {
   key: DiscussionMode;
@@ -194,18 +191,6 @@ function getTagCount(value: string) {
     .slice(0, 5).length;
 }
 
-function formatDraftTime(value: string | null) {
-  if (!value) return "Not saved yet";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Saved recently";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -238,7 +223,6 @@ function buildDraftBody({
     mode ? `Mode: ${mode}` : "",
     tags.trim() ? `Tags: ${tags.trim()}` : "",
   ].filter(Boolean);
-
   return metadataLines.length > 0 ? `${metadataLines.join("\n")}\n\n${body}` : body;
 }
 
@@ -279,7 +263,6 @@ function parseDraftBody(value: string | null | undefined) {
 
 function readLocalDraft(): DraftRow | null {
   if (typeof window === "undefined") return null;
-
   try {
     const raw = window.localStorage.getItem(LOCAL_CREATE_DRAFT_KEY);
     if (!raw) return null;
@@ -314,11 +297,9 @@ function writeLocalDraft(
     body: draft.body ?? "",
     updated_at: draft.updated_at ?? new Date().toISOString(),
   };
-
   if (typeof window !== "undefined") {
     window.localStorage.setItem(LOCAL_CREATE_DRAFT_KEY, JSON.stringify(nextDraft));
   }
-
   return nextDraft;
 }
 
@@ -342,7 +323,6 @@ function buildQualityFindings({
   const wordCount = body.trim()
     ? body.trim().replace(/\s+/g, " ").split(" ").length
     : 0;
-
   return [
     {
       label: "Clear title",
@@ -432,7 +412,7 @@ function getTopicChipLabel({
   purposeLane: string;
 }) {
   if (topic === "Other") return realityLens || purposeLane || "Other";
-  return topic || "Topic";
+  return topic || "Topics";
 }
 
 function PanelShell({
@@ -485,10 +465,10 @@ export default function CreateDiscussionComposer({
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [mode, setMode] = useState<DiscussionMode>("open_discussion");
+  const [composerView, setComposerView] = useState<ComposerView>("write");
   const [message, setMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [autosaveStatus, setAutosaveStatus] = useState("Loading draft...");
@@ -529,26 +509,10 @@ export default function CreateDiscussionComposer({
       ),
     [body, mode, purpose, purposeLane, realityLens, tags, title, topic]
   );
-  const readiness = useMemo(() => {
-    const checks = [
-      { label: "Choose a clear title", done: title.trim().length >= 8 },
-      { label: "Select the right topic", done: topic.trim().length >= 2 },
-      { label: "Select the right mode", done: Boolean(mode) },
-      { label: "Add useful context", done: body.trim().length >= 40 },
-    ];
-    const completed = checks.filter((check) => check.done).length;
-    return {
-      checks,
-      completed,
-      total: checks.length,
-      percent: Math.round((completed / checks.length) * 100),
-    };
-  }, [body, mode, title, topic]);
 
   function hydrateDraft(draft: DraftRow, status: string) {
     const parsed = parseDraftBody(draft.body);
     setDraftId(draft.id === "local-create-draft" ? null : draft.id);
-    setDraftSavedAt(draft.updated_at);
     setTitle(draft.title ?? "");
     setTopic(draft.topic ?? "");
     setRealityLens(draft.reality_lens ?? "");
@@ -577,32 +541,27 @@ export default function CreateDiscussionComposer({
       setAutosaveStatus("Loading draft...");
       const localDraft = readLocalDraft();
       const { data: sessionData } = await supabase.auth.getSession();
-
       if (!sessionData.session) {
         if (localDraft) hydrateDraft(localDraft, "Local draft loaded");
         else setAutosaveStatus("Sign in required");
         setDraftHydrated(true);
         return;
       }
-
       try {
         const response = await fetch("/api/discussion-drafts", {
           headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
         });
         const result = await response.json().catch(() => ({}));
-
         if (response.ok && result.draft) {
           hydrateDraft(result.draft as DraftRow, "Draft loaded");
           setDraftHydrated(true);
           return;
         }
-
         if (localDraft) {
           hydrateDraft(localDraft, "Local draft loaded");
           setDraftHydrated(true);
           return;
         }
-
         setAutosaveStatus(
           response.ok ? "Ready to autosave" : "Server draft unavailable. Local autosave ready."
         );
@@ -613,13 +572,11 @@ export default function CreateDiscussionComposer({
         setDraftHydrated(true);
       }
     }
-
     void loadLatestDraft();
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadAudiencePolicy() {
       const { data: userResult } = await supabase.auth.getUser();
       const user = userResult.user;
@@ -627,7 +584,6 @@ export default function CreateDiscussionComposer({
         setAttachmentsRestricted(false);
         return;
       }
-
       const { data: capability, error: capabilityError } = await supabase.rpc(
         "get_discussion_audience_capability"
       );
@@ -635,27 +591,22 @@ export default function CreateDiscussionComposer({
         setAttachmentsRestricted(false);
         return;
       }
-
       const { data: preference } = await supabase
         .from("discussion_audience_preferences")
         .select("default_audience_type")
         .eq("user_id", user.id)
         .maybeSingle();
-
       if (cancelled) return;
       const audienceType =
         (preference as AudiencePreference | null)?.default_audience_type ?? "public";
       setAttachmentsRestricted(audienceType !== "public");
     }
-
     function refreshPolicy() {
       if (document.visibilityState !== "hidden") void loadAudiencePolicy();
     }
-
     void loadAudiencePolicy();
     window.addEventListener("focus", refreshPolicy);
     document.addEventListener("visibilitychange", refreshPolicy);
-
     return () => {
       cancelled = true;
       window.removeEventListener("focus", refreshPolicy);
@@ -698,7 +649,6 @@ export default function CreateDiscussionComposer({
   function addSupportingContext(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []) as File[];
     if (files.length === 0) return;
-
     if (attachmentsRestricted) {
       setAttachmentMessage(
         "Attachments require Public visibility. Change Future Discussion visibility in Settings."
@@ -706,20 +656,17 @@ export default function CreateDiscussionComposer({
       event.target.value = "";
       return;
     }
-
     if (contextItems.length + files.length > MAX_DISCUSSION_ATTACHMENTS) {
       setAttachmentMessage(`You can attach up to ${MAX_DISCUSSION_ATTACHMENTS} files.`);
       event.target.value = "";
       return;
     }
-
     const invalidFile = files.find((file) => !getAttachmentKindForMimeType(file.type));
     if (invalidFile) {
       setAttachmentMessage("Choose a supported image, PDF, MP4, MOV, or WebM file.");
       event.target.value = "";
       return;
     }
-
     const incomingVideoCount = files.filter((file) => isVideoContextMimeType(file.type)).length;
     const existingVideoCount = contextItems.filter((item) => item.kind === "video").length;
     if (existingVideoCount + incomingVideoCount > MAX_VIDEO_CONTEXTS_PER_DISCUSSION) {
@@ -727,7 +674,6 @@ export default function CreateDiscussionComposer({
       event.target.value = "";
       return;
     }
-
     const invalidSizeFile = files.find(
       (file) =>
         !isVideoContextMimeType(file.type) &&
@@ -738,7 +684,6 @@ export default function CreateDiscussionComposer({
       event.target.value = "";
       return;
     }
-
     const nextItems = files.map((file) => {
       const kind: ContextKind = isVideoContextMimeType(file.type) ? "video" : "file";
       return {
@@ -747,7 +692,6 @@ export default function CreateDiscussionComposer({
         kind,
       };
     });
-
     setContextItems((items) =>
       [...items, ...nextItems]
         .filter(
@@ -764,21 +708,17 @@ export default function CreateDiscussionComposer({
 
   async function saveDraft({ manual = true }: { manual?: boolean } = {}) {
     const localDraft = saveLocalSnapshot();
-    setDraftSavedAt(localDraft.updated_at);
     setDraftLoading(true);
     if (manual) setMessage("");
     setAutosaveStatus(manual ? "Saving draft..." : "Autosaving...");
-
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
-
     if (!accessToken) {
       setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
       if (manual) setMessage("Draft saved locally. Sign in is required for server sync.");
       setDraftLoading(false);
       return true;
     }
-
     try {
       const response = await fetch("/api/discussion-drafts", {
         method: "POST",
@@ -796,16 +736,13 @@ export default function CreateDiscussionComposer({
         }),
       });
       const result = await response.json().catch(() => ({}));
-
       if (!response.ok) {
         setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
         if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
         return true;
       }
-
       const savedDraft = result.draft as { id: string; updated_at: string };
       setDraftId(savedDraft.id);
-      setDraftSavedAt(savedDraft.updated_at);
       writeLocalDraft({
         id: savedDraft.id,
         title,
@@ -841,14 +778,12 @@ export default function CreateDiscussionComposer({
     setAiMessage("");
     setMessage("Draft cleared locally.");
     setAutosaveStatus("Ready to autosave");
+    setComposerView("write");
     clearLocalDraft();
-
     if (!draftId) {
       setDraftId(null);
-      setDraftSavedAt(null);
       return;
     }
-
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
     if (accessToken) {
@@ -861,20 +796,7 @@ export default function CreateDiscussionComposer({
         body: JSON.stringify({ draftId }),
       }).catch(() => null);
     }
-
     setDraftId(null);
-    setDraftSavedAt(null);
-  }
-
-  async function reviewDraft() {
-    if (!hasDraftContent) {
-      setMessage("Add a title or body before reviewing a draft.");
-      return;
-    }
-
-    saveLocalSnapshot();
-    await saveDraft({ manual: false });
-    window.location.href = "/create/review";
   }
 
   async function copyDraft() {
@@ -909,7 +831,6 @@ export default function CreateDiscussionComposer({
       const storagePath = `${userId}/${discussionId}/${crypto.randomUUID()}.${extension}`;
       const attachmentKind = getAttachmentKindForMimeType(item.file.type);
       if (!attachmentKind) return { ok: false, error: "Attachment type is not allowed." };
-
       const { error: uploadError } = await supabase.storage
         .from(ATTACHMENT_BUCKET)
         .upload(storagePath, item.file, {
@@ -922,7 +843,6 @@ export default function CreateDiscussionComposer({
           error: `Discussion was saved, but ${item.file.name} could not upload: ${uploadError.message}`,
         };
       }
-
       const { data: publicUrlData } = supabase.storage
         .from(ATTACHMENT_BUCKET)
         .getPublicUrl(storagePath);
@@ -962,7 +882,6 @@ export default function CreateDiscussionComposer({
     setPublishing(true);
     setMessage("");
     setSafetyWarning(null);
-
     if (!title.trim()) {
       setMessage("Please enter a discussion title.");
       setPublishing(false);
@@ -995,14 +914,12 @@ export default function CreateDiscussionComposer({
       setPublishing(false);
       return;
     }
-
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData.session;
     if (!session) {
       window.location.href = "/login";
       return;
     }
-
     const response = await fetch("/api/discussions/create", {
       method: "POST",
       headers: {
@@ -1026,7 +943,6 @@ export default function CreateDiscussionComposer({
       }),
     });
     const result = await response.json().catch(() => ({}));
-
     if (!response.ok) {
       const safetyWarningResult = getSafetyWarningFromResult(result);
       if (safetyWarningResult) setSafetyWarning(safetyWarningResult);
@@ -1034,14 +950,12 @@ export default function CreateDiscussionComposer({
       setPublishing(false);
       return;
     }
-
     const discussionId = result.discussion?.id as string | undefined;
     if (!discussionId) {
       setMessage("Discussion was created, but Loombus could not open it automatically.");
       setPublishing(false);
       return;
     }
-
     if (contextItems.length > 0) {
       const uploadResult = await uploadContext({
         discussionId,
@@ -1054,7 +968,6 @@ export default function CreateDiscussionComposer({
         return;
       }
     }
-
     clearLocalDraft();
     if (draftId) {
       await fetch("/api/discussion-drafts", {
@@ -1066,7 +979,6 @@ export default function CreateDiscussionComposer({
         body: JSON.stringify({ draftId }),
       }).catch(() => null);
     }
-
     window.location.href = `/discussions/${discussionId}`;
   }
 
@@ -1081,7 +993,6 @@ export default function CreateDiscussionComposer({
       setActivePanel(null);
       return;
     }
-
     if (pickerPanel === "reality") {
       setRealityLens(option);
       if (topic === "Other") {
@@ -1092,263 +1003,287 @@ export default function CreateDiscussionComposer({
       }
       return;
     }
-
     setPurposeLane(option);
     if (topic === "Other") setRealityLens("");
     setActivePanel(null);
   }
 
+  function openView(view: ComposerView) {
+    setComposerView(view);
+    if (view === "quality") {
+      setFindings([]);
+      setAiMessage("");
+    }
+    if (view === "structure") {
+      setFindings([]);
+      setAiMessage("");
+    }
+  }
+
   const centerRail = (
-    <div className="min-w-0 space-y-5">
-      <header
-        data-create-composer-header
-        className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1 py-2"
-      >
-        <button
-          type="button"
-          onClick={cancelComposer}
-          className="min-h-11 justify-self-start px-2 text-sm font-black text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
-        >
+    <div className="create-discussion-shell min-w-0">
+      <header data-create-composer-header className="create-discussion-header">
+        <button type="button" onClick={cancelComposer} className="create-text-action">
           Cancel
         </button>
-        <h1 className="text-center text-xl font-black tracking-tight text-[var(--loombus-text)] sm:text-2xl">
-          Create Discussion
-        </h1>
+        <h1>Create Discussion</h1>
         <button
           type="button"
           onClick={() => void saveDraft({ manual: true })}
-          className="min-h-11 justify-self-end px-2 text-sm font-black text-[#9a701c] dark:text-[#d6a84f]"
+          className="create-save-state"
           title={autosaveStatus}
         >
           {getStatusLabel(autosaveStatus)}
         </button>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="create-classification-row">
         <button
           type="button"
           onClick={() => {
             setPickerPanel("topics");
             setActivePanel("topic");
           }}
-          className="min-h-14 truncate rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300"
+          className="create-classification-action"
         >
-          {getTopicChipLabel({ topic, realityLens, purposeLane })}
+          {getTopicChipLabel({ topic, realityLens, purposeLane })} <span aria-hidden>⌄</span>
         </button>
         <button
           type="button"
           onClick={() => setActivePanel("mode")}
-          className="min-h-14 truncate rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300"
+          className="create-classification-action"
         >
-          {selectedMode.label}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActivePanel("add")}
-          className="min-h-14 truncate rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300"
-        >
-          {contextItems.length > 0 ? `Add · ${contextItems.length}` : "Add"}
+          {selectedMode.label} <span aria-hidden>⌄</span>
         </button>
       </div>
 
-      <section className="overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] shadow-sm">
-        <label className="block border-b border-[var(--loombus-border)] p-5 sm:p-6">
-          <span className="mb-3 block text-sm font-black text-[var(--loombus-text)]">
+      <section className="create-fields">
+        <label className="create-field-row">
+          <span className="create-field-label">
             Discussion Title <span className="text-red-500">*</span>
           </span>
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="e.g., The future of decentralized identity"
-            className="min-h-14 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-base font-semibold text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20"
           />
-          <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
-            Be clear, specific, and engaging.
-          </p>
+          <small>Be clear, specific, and engaging.</small>
         </label>
 
-        <label className="block border-b border-[var(--loombus-border)] p-5 sm:p-6">
-          <span className="mb-3 block text-sm font-black text-[var(--loombus-text)]">
+        <label className="create-field-row">
+          <span className="create-field-label">
             {selectedMode.purposeLabel}{" "}
-            <span className="font-semibold text-[var(--loombus-text-subtle)]">(optional)</span>
+            <span className="create-optional">(optional)</span>
           </span>
           <input
             value={purpose}
             onChange={(event) => setPurpose(event.target.value)}
             placeholder={selectedMode.purposePlaceholder}
-            className="min-h-14 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20"
           />
-          <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
-            {selectedMode.purposeHelp}
-          </p>
+          <small>{selectedMode.purposeHelp}</small>
         </label>
 
-        <label className="relative block p-5 sm:p-6">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <span className="text-sm font-black text-[var(--loombus-text)]">
-              Discussion Body <span className="text-red-500">*</span>
-            </span>
-            <span className="text-xs font-bold text-[var(--loombus-text-subtle)]">
-              {body.length}/3000
-            </span>
-          </div>
-          <textarea
-            value={body}
-            onChange={(event) => setBody(event.target.value.slice(0, 3000))}
-            placeholder={selectedMode.bodyPlaceholder}
-            rows={12}
-            className="min-h-[22rem] w-full resize-y rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-4 pr-16 text-base leading-7 text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20"
+        <label className="create-field-row">
+          <span className="create-field-label create-field-label-split">
+            <span>Tags <span className="create-optional">(optional)</span></span>
+            <span>{tagCount}/5</span>
+          </span>
+          <input
+            value={tags}
+            onChange={(event) => setTags(event.target.value)}
+            placeholder="Add up to 5 tags, separated by commas"
           />
-          <button
-            type="button"
-            onClick={() => setActivePanel("guidance")}
-            className="absolute bottom-[5.2rem] right-8 grid size-12 place-items-center rounded-full border border-amber-400/60 bg-[var(--loombus-surface-strong)] text-[#d6a84f] shadow-xl transition hover:scale-[1.03]"
-            aria-label="Open Draft Guidance"
-          >
-            <Sparkles className="size-5" />
-          </button>
-          <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
-            {selectedMode.bodyHelp}
-          </p>
         </label>
       </section>
 
-      {(message || attachmentMessage || copyMessage) && (
-        <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm font-bold text-[var(--loombus-text-muted)]">
-          {message || attachmentMessage || copyMessage}
-        </div>
+      <section className="create-composer" aria-label="Discussion composer">
+        <nav className="create-composer-tabs" aria-label="Composer tools">
+          <button
+            type="button"
+            data-active={composerView === "write"}
+            onClick={() => openView("write")}
+          >
+            Write
+          </button>
+          <button
+            type="button"
+            data-active={composerView === "review"}
+            onClick={() => openView("review")}
+          >
+            Review
+          </button>
+          <button
+            type="button"
+            data-active={composerView === "quality"}
+            onClick={() => openView("quality")}
+          >
+            Check Quality
+          </button>
+          <button
+            type="button"
+            data-active={composerView === "structure"}
+            onClick={() => openView("structure")}
+          >
+            Improve structure
+          </button>
+        </nav>
+
+        {composerView === "write" && (
+          <div className="create-composer-write">
+            <div className="create-composer-toolbar">
+              <span>Discussion body <span className="text-red-500">*</span></span>
+              <button type="button" onClick={() => setActivePanel("guidance")}>
+                <Sparkles className="size-4" /> Guidance
+              </button>
+            </div>
+            <textarea
+              value={body}
+              onChange={(event) => setBody(event.target.value.slice(0, 3000))}
+              placeholder={selectedMode.bodyPlaceholder}
+              rows={12}
+            />
+            <div className="create-composer-help">
+              <span>{selectedMode.bodyHelp}</span>
+              <span>{body.length}/3000</span>
+            </div>
+          </div>
+        )}
+
+        {composerView === "review" && (
+          <div className="create-composer-panel">
+            {!hasDraftContent ? (
+              <p className="create-empty-state">Nothing to review</p>
+            ) : (
+              <div className="create-review-copy">
+                <h2>{title.trim() || "Untitled discussion"}</h2>
+                <p className="create-review-meta">
+                  {topic || "No topic selected"} · {selectedMode.label}
+                </p>
+                {purpose.trim() && <p>{purpose.trim()}</p>}
+                <p className="whitespace-pre-wrap">{body.trim() || "No discussion body yet."}</p>
+              </div>
+            )}
+            <div className="create-panel-actions">
+              <button type="button" onClick={clearDraft}>Clear draft</button>
+              <button type="button" onClick={copyDraft}>Copy draft</button>
+            </div>
+          </div>
+        )}
+
+        {composerView === "quality" && (
+          <div className="create-composer-panel">
+            <h2>Discussion quality check</h2>
+            {aiMessage && <p className="create-tool-message">{aiMessage}</p>}
+            {findings.length > 0 && (
+              <div className="create-findings">
+                {findings.map((finding) => (
+                  <div key={finding.label} className="create-finding-row">
+                    {finding.done ? (
+                      <CheckCircle2 className="size-4" />
+                    ) : (
+                      <Circle className="size-4" />
+                    )}
+                    <div>
+                      <strong>{finding.label}</strong>
+                      <p>{finding.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="create-panel-actions">
+              <button type="button" className="create-tool-primary" onClick={runQualityCheck}>
+                Check discussion quality
+              </button>
+            </div>
+          </div>
+        )}
+
+        {composerView === "structure" && (
+          <div className="create-composer-panel">
+            <h2>Clarity suggestions</h2>
+            {aiMessage ? (
+              <p className="create-tool-message whitespace-pre-wrap">{aiMessage}</p>
+            ) : (
+              <p className="create-empty-state">Improve the structure without leaving the composer.</p>
+            )}
+            <div className="create-panel-actions">
+              <button type="button" className="create-tool-primary" onClick={runClaritySuggestions}>
+                <WandSparkles className="size-4" /> Improve structure
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {contextItems.length > 0 && (
+        <section className="create-attachments" aria-label="Staged evidence">
+          {contextItems.map((item) => (
+            <div key={item.id} className="create-attachment-row">
+              <div>
+                <strong>{item.file.name}</strong>
+                <span>{item.kind === "video" ? "Video Context" : "File"} · {formatFileSize(item.file.size)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setContextItems((items) => items.filter((candidate) => candidate.id !== item.id))
+                }
+                aria-label={`Remove ${item.file.name}`}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
+        </section>
       )}
 
-      <section className="grid grid-cols-[1fr_1fr_1.2fr] gap-2 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3 shadow-sm sm:gap-3">
-        <button
-          type="button"
-          onClick={() => setActivePanel("more")}
-          className="min-h-14 rounded-2xl text-sm font-black text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)]"
-        >
-          More
-        </button>
-        <button
-          type="button"
-          onClick={reviewDraft}
-          disabled={draftLoading || publishing}
-          className="min-h-14 rounded-2xl border border-[var(--loombus-border)] px-4 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300 disabled:opacity-60"
-        >
-          Review
-        </button>
+      {(message || attachmentMessage || copyMessage) && (
+        <p className="create-inline-message">{message || attachmentMessage || copyMessage}</p>
+      )}
+
+      <input
+        ref={attachmentInputRef}
+        type="file"
+        multiple
+        accept={DISCUSSION_ATTACHMENT_ACCEPT}
+        className="hidden"
+        onChange={addSupportingContext}
+      />
+
+      <footer className="create-footer-actions">
+        <div className="create-footer-secondary">
+          <button
+            type="button"
+            onClick={() => void saveDraft({ manual: true })}
+            disabled={draftLoading}
+          >
+            <Save className="size-4" /> {draftLoading ? "Saving..." : "Save draft"}
+          </button>
+          <button type="button" onClick={clearDraft} disabled={draftLoading || publishing}>
+            <Trash2 className="size-4" /> Clear
+          </button>
+          <button
+            type="button"
+            disabled={attachmentsRestricted}
+            onClick={() => attachmentInputRef.current?.click()}
+          >
+            <Paperclip className="size-4" />
+            {contextItems.length > 0
+              ? `Add files / evidence · ${contextItems.length}`
+              : "Add files / evidence"}
+          </button>
+        </div>
         <button
           type="submit"
           disabled={publishing}
-          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-[#17140c] shadow-sm disabled:opacity-60"
+          className="create-publish-action"
           style={{ backgroundColor: LOOMBUS_GOLD }}
         >
           <Send className="size-4" /> {publishing ? "Publishing..." : "Publish"}
         </button>
-      </section>
+      </footer>
     </div>
-  );
-
-  const rightRail = (
-    <aside className="space-y-4">
-      <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-        <h2 className="text-lg font-black text-[var(--loombus-text)]">Create with clarity</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
-          A great discussion starts with a clear setup.
-        </p>
-        <div className="mt-5 space-y-5">
-          {readiness.checks.map((check, index) => (
-            <div key={check.label} className="flex gap-3">
-              <span
-                className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${
-                  check.done ? "text-slate-950" : "bg-amber-50 text-amber-800"
-                }`}
-                style={check.done ? { backgroundColor: LOOMBUS_GOLD } : undefined}
-              >
-                {index + 1}
-              </span>
-              <div>
-                <p className="text-sm font-black text-[var(--loombus-text)]">{check.label}</p>
-                <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">
-                  {check.done ? "Ready" : "Needs attention before review"}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${readiness.percent}%`, backgroundColor: LOOMBUS_GOLD }}
-          />
-        </div>
-        <p className="mt-3 text-xs font-semibold text-[var(--loombus-text-muted)]">
-          {readiness.completed} of {readiness.total} checks complete.
-        </p>
-      </section>
-
-      <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Save className="size-5 text-amber-700" />
-          <h2 className="font-black text-[var(--loombus-text)]">Private draft</h2>
-        </div>
-        <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
-          {autosaveStatus}
-        </p>
-        <p className="mt-2 text-xs font-semibold text-[var(--loombus-text-subtle)]">
-          Last saved: {formatDraftTime(draftSavedAt)}
-        </p>
-      </section>
-
-      <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-        <ShieldCheck className="mb-4 size-5 text-amber-700" />
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={copyDraft}
-            className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50"
-          >
-            Copy draft
-          </button>
-          <button
-            type="button"
-            onClick={reviewDraft}
-            disabled={draftLoading || publishing}
-            className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-60"
-          >
-            Review draft
-          </button>
-          <button
-            type="submit"
-            disabled={publishing}
-            className="rounded-2xl px-4 py-2 text-center text-sm font-black text-slate-950 disabled:opacity-60"
-            style={{ backgroundColor: LOOMBUS_GOLD }}
-          >
-            {publishing ? "Publishing..." : "Publish"}
-          </button>
-        </div>
-        {copyMessage && (
-          <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{copyMessage}</p>
-        )}
-      </section>
-
-      <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <FileText className="size-5 text-amber-700" />
-          <h2 className="font-black text-[var(--loombus-text)]">Selected framing</h2>
-        </div>
-        <p className="mt-3 text-sm font-bold text-[var(--loombus-text)]">{selectedMode.label}</p>
-        <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
-          {selectedMode.description}
-        </p>
-        <div className="mt-4 space-y-2 text-xs font-semibold text-[var(--loombus-text-muted)]">
-          <p>Topic: {topic || "Not selected"}</p>
-          <p>Reality Lens: {realityLens || "Not selected"}</p>
-          <p>Purpose Lane: {purposeLane || "Not selected"}</p>
-          <p>
-            Supporting context: {contextItems.length > 0 ? `${contextItems.length} staged` : "None staged"}
-          </p>
-        </div>
-      </section>
-    </aside>
   );
 
   return (
@@ -1361,14 +1296,8 @@ export default function CreateDiscussionComposer({
       }
     >
       <SafetyWarningModal warning={safetyWarning} onClose={() => setSafetyWarning(null)} />
-      <section className={variant === "modal" ? "mx-auto max-w-3xl p-4 sm:p-5" : "mx-auto max-w-7xl"}>
-        <form
-          onSubmit={publishDiscussion}
-          className={variant === "modal" ? "block" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"}
-        >
-          {centerRail}
-          {variant === "page" ? rightRail : null}
-        </form>
+      <section className={variant === "modal" ? "mx-auto max-w-3xl p-4 sm:p-5" : "mx-auto max-w-5xl"}>
+        <form onSubmit={publishDiscussion}>{centerRail}</form>
       </section>
 
       {activePanel === "topic" && (
@@ -1393,7 +1322,6 @@ export default function CreateDiscussionComposer({
               </button>
             ))}
           </div>
-
           {pickerPanel === "topics" && (
             <button
               type="button"
@@ -1408,7 +1336,6 @@ export default function CreateDiscussionComposer({
               Other: choose one Reality Lens or Purpose Lane
             </button>
           )}
-
           <div className="grid gap-2 sm:grid-cols-2">
             {topicOptions.map((option) => (
               <button
@@ -1421,14 +1348,6 @@ export default function CreateDiscussionComposer({
               </button>
             ))}
           </div>
-
-          {(topic || realityLens || purposeLane) && (
-            <div className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4 text-sm text-[var(--loombus-text-muted)]">
-              <p>Topic: {topic || "Not selected"}</p>
-              <p className="mt-1">Reality Lens: {realityLens || "Not selected"}</p>
-              <p className="mt-1">Purpose Lane: {purposeLane || "Not selected"}</p>
-            </div>
-          )}
         </PanelShell>
       )}
 
@@ -1462,101 +1381,20 @@ export default function CreateDiscussionComposer({
         </PanelShell>
       )}
 
-      {activePanel === "add" && (
-        <PanelShell title="Add supporting context" onClose={() => setActivePanel(null)}>
-          <section>
-            <input
-              ref={attachmentInputRef}
-              type="file"
-              multiple
-              accept={DISCUSSION_ATTACHMENT_ACCEPT}
-              className="hidden"
-              onChange={addSupportingContext}
-            />
-
-            {attachmentsRestricted && (
-              <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-950 dark:bg-amber-400/10 dark:text-amber-100">
-                Attachments are unavailable because Future Discussion visibility is restricted. Change it to Public in Settings.
-              </div>
-            )}
-
-            <button
-              type="button"
-              disabled={attachmentsRestricted}
-              onClick={() => attachmentInputRef.current?.click()}
-              className="flex w-full items-center gap-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-[#d6a84f]">
-                <Paperclip className="size-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block text-sm text-[var(--loombus-text)]">
-                  Attach files or Video Context
-                </strong>
-                <span className="mt-1 block text-xs leading-5 text-[var(--loombus-text-muted)]">
-                  Images and PDFs up to 10 MB, or one MP4, MOV, or WebM within your plan limit.
-                </span>
-              </span>
-            </button>
-
-            {contextItems.length > 0 && (
-              <div className="mt-5 space-y-2">
-                {contextItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-black text-[var(--loombus-text)]">{item.file.name}</p>
-                      <p className="text-xs font-semibold text-[var(--loombus-text-subtle)]">
-                        {item.kind === "video" ? "Video Context" : "File"} · {formatFileSize(item.file.size)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setContextItems((items) =>
-                          items.filter((candidate) => candidate.id !== item.id)
-                        )
-                      }
-                      className="grid size-9 shrink-0 place-items-center rounded-full text-[var(--loombus-text-muted)] transition hover:bg-red-50 hover:text-red-600"
-                      aria-label={`Remove ${item.file.name}`}
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {attachmentMessage && (
-              <p className="mt-4 text-sm font-bold text-[var(--loombus-text-muted)]">
-                {attachmentMessage}
-              </p>
-            )}
-          </section>
-        </PanelShell>
-      )}
-
       {activePanel === "guidance" && (
         <PanelShell title="Draft Guidance" onClose={() => setActivePanel(null)}>
-          <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
-            <div className="flex items-start gap-3">
-              <Brain className="mt-0.5 size-5 text-amber-700 dark:text-[#d6a84f]" />
-              <div>
-                <h3 className="text-sm font-black text-[var(--loombus-text)]">
-                  {selectedMode.label} structure
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-[var(--loombus-text-muted)]">
-                  {selectedMode.description}
-                </p>
-              </div>
+          <div className="space-y-4 text-sm text-[var(--loombus-text)]">
+            <div>
+              <h3 className="font-black">{selectedMode.label} structure</h3>
+              <p className="mt-1 leading-6 text-[var(--loombus-text-muted)]">
+                {selectedMode.description}
+              </p>
             </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {selectedMode.prompts.map((prompt) => (
                 <span
                   key={prompt}
-                  className="rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs font-bold text-[var(--loombus-text-muted)]"
+                  className="border-b border-[var(--loombus-border)] px-1 py-2 text-xs font-bold text-[var(--loombus-text-muted)]"
                 >
                   {prompt}
                 </span>
@@ -1565,120 +1403,14 @@ export default function CreateDiscussionComposer({
             <button
               type="button"
               disabled={body.trim().length > 0}
-              onClick={() => setBody(selectedMode.template)}
-              className="mt-4 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm font-black text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => {
+                setBody(selectedMode.template);
+                setActivePanel(null);
+                setComposerView("write");
+              }}
+              className="border-b border-[var(--loombus-border)] px-1 py-2 font-black disabled:cursor-not-allowed disabled:opacity-50"
             >
               Use this structure
-            </button>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={runQualityCheck}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 text-sm font-black text-[var(--loombus-text)]"
-            >
-              <Sparkles className="size-4 text-amber-700 dark:text-[#d6a84f]" />
-              Check discussion quality
-            </button>
-            <button
-              type="button"
-              onClick={runClaritySuggestions}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-[#17140c]"
-              style={{ backgroundColor: LOOMBUS_GOLD }}
-            >
-              <WandSparkles className="size-4" />
-              Improve structure
-            </button>
-          </div>
-
-          {aiMessage && (
-            <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4 text-sm font-semibold leading-6 text-[var(--loombus-text)]">
-              {aiMessage}
-            </p>
-          )}
-
-          {findings.length > 0 && (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {findings.map((finding) => (
-                <div
-                  key={finding.label}
-                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4 text-sm"
-                >
-                  <p
-                    className={`flex items-center gap-2 font-black ${
-                      finding.done ? "text-emerald-700" : "text-amber-700"
-                    }`}
-                  >
-                    {finding.done ? (
-                      <CheckCircle2 className="size-4" />
-                    ) : (
-                      <Circle className="size-4" />
-                    )}
-                    {finding.label}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">
-                    {finding.detail}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </PanelShell>
-      )}
-
-      {activePanel === "more" && (
-        <PanelShell title="More options" onClose={() => setActivePanel(null)}>
-          <label className="block rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
-            <span className="mb-2 flex items-center justify-between gap-3 text-sm font-black text-[var(--loombus-text)]">
-              <span className="inline-flex items-center gap-2">
-                <Tags className="size-4 text-amber-700 dark:text-[#d6a84f]" /> Tags
-              </span>
-              <span className="text-xs text-[var(--loombus-text-subtle)]">{tagCount}/5</span>
-            </span>
-            <input
-              value={tags}
-              onChange={(event) => setTags(event.target.value)}
-              placeholder="Add up to 5 tags, separated by commas"
-              className="min-h-12 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm text-[var(--loombus-text)] outline-none focus:border-amber-400"
-            />
-          </label>
-
-          <div className="mt-4 grid gap-3">
-            <button
-              type="button"
-              onClick={() => void saveDraft({ manual: true })}
-              disabled={draftLoading}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 text-sm font-black text-[var(--loombus-text)] disabled:opacity-60"
-            >
-              <Save className="size-4" /> {draftLoading ? "Saving..." : "Save draft"}
-            </button>
-            <button
-              type="button"
-              onClick={copyDraft}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 text-sm font-black text-[var(--loombus-text)]"
-            >
-              <Copy className="size-4" /> Copy draft
-            </button>
-            <button
-              type="button"
-              onClick={clearDraft}
-              disabled={draftLoading || publishing}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-red-300 px-4 text-sm font-black text-red-600 disabled:opacity-60"
-            >
-              <Trash2 className="size-4" /> Clear draft
-            </button>
-            <button
-              type="button"
-              disabled={publishing}
-              onClick={() => {
-                setActivePanel(null);
-                void publishDiscussion();
-              }}
-              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-[#17140c] disabled:opacity-60"
-              style={{ backgroundColor: LOOMBUS_GOLD }}
-            >
-              <Send className="size-4" /> {publishing ? "Publishing..." : "Publish now"}
             </button>
           </div>
         </PanelShell>
