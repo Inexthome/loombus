@@ -177,6 +177,49 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   color: #9a701c !important;
 }
 
+/* Keep secondary create tools focused without turning them into another dashboard. */
+[data-create-composer-variant="page"] > div[class*="z-[110]"] {
+  background: rgb(0 0 0 / 0.44) !important;
+  backdrop-filter: blur(3px) !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] > section {
+  max-width: 38rem !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.16) !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] > section > header {
+  padding: 0.8rem 1rem !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] > section > header h2 {
+  font-size: 1rem !important;
+  letter-spacing: -0.015em !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] > section > header button {
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  border: 0 !important;
+  border-radius: 0.55rem !important;
+  background: transparent !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] > section > div:last-child {
+  padding: 1rem !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] button[class*="rounded-2xl"],
+[data-create-composer-variant="page"] > div[class*="z-[110]"] div[class*="rounded-2xl"] {
+  border-radius: 0.65rem !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] > div[class*="z-[110]"] button[class*="rounded-full"] {
+  box-shadow: none !important;
+}
+
 @media (max-width: 63.99rem) {
   [data-create-composer-variant="page"] {
     padding-left: 0.8rem !important;
@@ -220,5 +263,11 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
     padding-inline: 0.75rem !important;
     font-size: 0.75rem !important;
+  }
+
+  [data-create-composer-variant="page"] > div[class*="z-[110]"] > section {
+    max-width: none !important;
+    border-radius: 0.9rem 0.9rem 0 0 !important;
+    box-shadow: 0 -10px 32px rgb(0 0 0 / 0.14) !important;
   }
 }
