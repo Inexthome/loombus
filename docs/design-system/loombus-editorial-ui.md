@@ -259,6 +259,75 @@ Inputs should not default to large rounded boxes when a flat editorial field wor
 
 Focus states must remain visible and accessible.
 
+## Loombus Info Tooltip
+
+The **Loombus Info Tooltip** is the canonical inline explanation pattern for unfamiliar, Loombus-specific, technical, or potentially ambiguous terminology.
+
+It uses a small information icon, such as `ⓘ`, immediately adjacent to the term or label it explains. The tooltip provides contextual help without permanently adding instructional copy to the page.
+
+Appropriate examples include:
+
+- Reality Lens ⓘ
+- Purpose Lane ⓘ
+- Discussion Mode ⓘ
+- Evidence ⓘ
+- other Loombus-specific concepts whose meaning may not be immediately obvious
+
+Do **not** add Info Tooltips to familiar labels or actions that are already self-explanatory, such as Title, Cancel, Save, Clear, or Publish. The pattern must reduce uncertainty rather than create icon clutter.
+
+### Interaction
+
+The same explanation must be available across input methods:
+
+- **Desktop pointer:** show on hover.
+- **Keyboard:** show when the info trigger receives focus and allow normal keyboard navigation.
+- **Touch/mobile:** show on tap; do not rely on hover behavior.
+- The user must be able to dismiss a persistent/tapped tooltip without triggering the underlying field or action.
+
+Hover is an enhancement, not the only access mechanism.
+
+### Content
+
+Tooltip copy should normally be one or two concise sentences. Explain what the term means or why it matters in the current workflow.
+
+Do not use a tooltip for long instructions, policy text, tutorials, multi-step guidance, or content that users must read before proceeding. Use visible helper text, a panel, modal, or dedicated help surface for those cases.
+
+Tooltip language should be plain, direct, and specific to the Loombus concept being explained.
+
+### Visual treatment
+
+The trigger should remain subordinate to the label:
+
+- use a small information icon rather than a large button
+- align it naturally with the label text
+- use muted text/icon treatment at rest
+- use **Loombus Gold `#CBAB5B`** as a restrained hover, focus, or active accent where appropriate
+- use the appropriate Light/Dark surface, text, border, and shadow tokens for the tooltip bubble
+- keep the bubble compact and readable
+- avoid excessive radius, decorative effects, or oversized callouts
+
+In Light mode the tooltip must remain legible against Loombus Cream `#FEFBEC`; in Dark mode it must use the established dark surface system. System mode follows the corresponding Light or Dark behavior.
+
+### Accessibility
+
+The information trigger must be a real keyboard-focusable interactive element rather than an icon with hover-only CSS.
+
+Implementations should:
+
+- give the trigger an accessible name such as `More information about Reality Lens`
+- associate the trigger and tooltip content with appropriate accessible semantics
+- expose the explanation on keyboard focus
+- preserve visible focus treatment
+- support Escape to dismiss when the tooltip remains open
+- avoid placing essential information exclusively inside the tooltip
+- maintain a practical touch target even when the visible icon is visually small
+
+### Component rule
+
+Prefer one shared reusable component, conventionally named `InfoTooltip`, rather than implementing separate tooltip behavior page by page.
+
+A page adopting the Loombus Editorial UI should reuse the shared Info Tooltip pattern whenever contextual definitions are needed. Do not create competing info-icon styles or interaction models on individual routes.
+
 ## Classification and Metadata Controls
 
 Topic, mode, lens, category, filter, and similar controls should be compact.
@@ -478,14 +547,15 @@ When instructed to redesign a route using the **Loombus Editorial UI**, the impl
 4. Audit the target page's existing functionality.
 5. Preserve functionality unless behavior changes are explicitly requested.
 6. Apply the **Loombus Gold `#CBAB5B` and Cream `#FEFBEC` palette** through the Light, Dark, and System theme rules in this specification.
-7. Apply this system based on the target page's purpose rather than blindly copying markup.
-8. Report any intentional departures from this specification.
+7. Reuse the **Loombus Info Tooltip** for unfamiliar or Loombus-specific terminology where concise contextual explanation improves comprehension.
+8. Apply this system based on the target page's purpose rather than blindly copying markup.
+9. Report any intentional departures from this specification.
 
 ## Standard Prompt
 
 The preferred instruction for future work is:
 
-> Redesign `<route>` using the **Loombus Editorial UI**. Read `docs/design-system/loombus-editorial-ui.md` first, use the current `/create` and `/discussions/[id]` implementations as canonical references, preserve existing functionality unless explicitly instructed otherwise, apply the canonical Loombus Gold (`#CBAB5B`) and Cream (`#FEFBEC`) palette with Light, Dark, and System support, and apply the system to the page's own information architecture.
+> Redesign `<route>` using the **Loombus Editorial UI**. Read `docs/design-system/loombus-editorial-ui.md` first, use the current `/create` and `/discussions/[id]` implementations as canonical references, preserve existing functionality unless explicitly instructed otherwise, apply the canonical Loombus Gold (`#CBAB5B`) and Cream (`#FEFBEC`) palette with Light, Dark, and System support, use the Loombus Info Tooltip for unfamiliar or Loombus-specific terminology where contextual definitions are useful, and apply the system to the page's own information architecture.
 
 ## Version
 
