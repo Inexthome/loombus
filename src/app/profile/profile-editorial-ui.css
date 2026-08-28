@@ -356,6 +356,110 @@ html[data-loombus-theme="light"] .profile-editorial-route {
   box-shadow: none !important;
 }
 
+/* Creator tools stay functional but use the same editorial hierarchy inside /profile. */
+.profile-workspace-layout .creator-hub-phase-one {
+  gap: 0 !important;
+}
+
+.profile-workspace-layout .creator-hub-hero,
+.profile-workspace-layout .creator-hub-section,
+.profile-workspace-layout .creator-supporter-manager {
+  margin: 0 !important;
+  padding: 1.35rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.profile-workspace-layout .creator-hub-hero {
+  padding-top: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-layout .creator-hub-hero h2 {
+  font-size: clamp(1.55rem, 3vw, 2.1rem) !important;
+  letter-spacing: -0.035em;
+}
+
+.profile-workspace-layout .creator-hub-eyebrow {
+  color: #CBAB5B !important;
+  font-size: 0.64rem !important;
+  letter-spacing: 0.14em !important;
+}
+
+.profile-workspace-layout .creator-hub-primary-link,
+.profile-workspace-layout .creator-hub-save-row button {
+  border-radius: 0.7rem !important;
+  background: #CBAB5B !important;
+  color: #171717 !important;
+}
+
+.profile-workspace-layout .creator-hub-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.profile-workspace-layout .creator-hub-metrics article {
+  padding: 0.9rem 1rem !important;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-layout .creator-hub-metrics article:last-child {
+  border-right: 0 !important;
+}
+
+.profile-workspace-layout .creator-hub-metrics span {
+  margin-top: 0.35rem !important;
+  font-size: 1.35rem !important;
+}
+
+.profile-workspace-layout .creator-hub-launch-grid {
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted);
+}
+
+.profile-workspace-layout .creator-hub-launch-grid article {
+  padding: 1rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-layout .creator-hub-launch-grid article:nth-child(odd) {
+  padding-right: 1rem !important;
+}
+
+.profile-workspace-layout .creator-hub-launch-grid article:nth-child(even) {
+  padding-left: 1rem !important;
+  border-left: 1px solid var(--loombus-border-muted) !important;
+}
+
+.profile-workspace-layout .creator-supporter-manager input,
+.profile-workspace-layout .creator-supporter-manager textarea,
+.profile-workspace-layout .creator-supporter-manager select {
+  border-radius: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.profile-workspace-layout .creator-supporter-manager-heading > span,
+.profile-workspace-layout .creator-supporter-tier-heading > span {
+  border-radius: 999px !important;
+}
+
 .profile-workspace-page :is(button, a, input, textarea, select):focus-visible {
   outline: 3px solid color-mix(in srgb, #CBAB5B 52%, transparent) !important;
   outline-offset: 3px;
@@ -432,6 +536,29 @@ html[data-loombus-theme="light"] .profile-editorial-route {
   .profile-workspace-content > section:first-child button,
   .profile-workspace-content form button[type="submit"] {
     width: 100%;
+  }
+
+  .profile-workspace-layout .creator-hub-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-workspace-layout .creator-hub-metrics article {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border-muted) !important;
+  }
+
+  .profile-workspace-layout .creator-hub-metrics article:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .profile-workspace-layout .creator-hub-launch-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-workspace-layout .creator-hub-launch-grid article:nth-child(odd),
+  .profile-workspace-layout .creator-hub-launch-grid article:nth-child(even) {
+    padding-inline: 0 !important;
+    border-left: 0 !important;
   }
 }
 
