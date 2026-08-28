@@ -51,7 +51,7 @@ function findDefinition(text: string | null | undefined) {
   });
 }
 
-function InfoTooltip({ definition }: { definition: TooltipDefinition }) {
+export function InfoTooltip({ definition }: { definition: TooltipDefinition }) {
   const id = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
