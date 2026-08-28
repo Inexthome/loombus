@@ -73,6 +73,20 @@
   left: 0;
 }
 
+[data-create-composer-variant] .create-publish-action {
+  background: #CBAB5B !important;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger {
+  position: relative;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger::before {
+  content: "";
+  position: absolute;
+  inset: -0.55rem;
+}
+
 @media (max-width: 40rem) {
   [data-create-composer-variant] .create-classification-row {
     gap: 0.45rem;
@@ -83,5 +97,9 @@
     flex: 0 0 auto;
     min-height: 2.55rem;
     white-space: nowrap;
+  }
+
+  [data-create-composer-variant] .create-info-tooltip__trigger::before {
+    inset: -0.7rem;
   }
 }
