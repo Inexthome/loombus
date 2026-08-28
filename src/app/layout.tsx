@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./loombus-brand-accent.css";
 import "./desktop-navigation-shell.css";
+import "./desktop-rail-appearance-footer.css";
 import "./ipad-desktop-shell-safe-inset.css";
 import "./mobile-navigation-shell.css";
 import "./adaptive-shell-controls.css";
@@ -29,6 +30,7 @@ import { DesktopAccountAutoCloseController } from "@/components/desktop-account-
 import { DesktopMessagesPreviewTrayController } from "@/components/desktop-messages-preview-tray-controller";
 import { DesktopNotificationsTrayController } from "@/components/desktop-notifications-tray-controller";
 import { DesktopNavigationShell } from "@/components/desktop-navigation-shell";
+import { DesktopRailAppearanceFooter } from "@/components/desktop-rail-appearance-footer";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
@@ -92,6 +94,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         ` }} />
         <AppChromeBoundary>
           <DesktopNavigationShell />
+          <DesktopRailAppearanceFooter />
           <DesktopAccountAutoCloseController />
           <DesktopMessagesPreviewTrayController />
           <DesktopNotificationsTrayController />
