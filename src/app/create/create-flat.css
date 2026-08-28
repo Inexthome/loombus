@@ -99,16 +99,39 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   display: none !important;
 }
 
+[data-create-composer-variant="page"] form > div:first-child > section > label > span,
+[data-create-composer-variant="page"] form > div:first-child > section > label > div:first-child {
+  margin-bottom: 0.45rem !important;
+}
+
 [data-create-composer-variant="page"] form > div:first-child > section input,
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  border-color: var(--loombus-border) !important;
-  border-radius: 0.75rem !important;
-  background: color-mix(in srgb, var(--loombus-surface) 54%, transparent) !important;
   box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:not(:last-child) input {
+  min-height: 3rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:not(:last-child) input:focus {
+  border-bottom-color: #d6a84f !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
+  font-size: 1.05rem !important;
+  font-weight: 650 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
   min-height: 24rem !important;
+  border-color: var(--loombus-border) !important;
+  border-radius: 0.75rem !important;
+  background: color-mix(in srgb, var(--loombus-surface) 54%, transparent) !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
@@ -189,13 +212,9 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
     padding: 1rem 0 !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section input,
-  [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    border-radius: 0.65rem !important;
-  }
-
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
     min-height: 18rem !important;
+    border-radius: 0.65rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
