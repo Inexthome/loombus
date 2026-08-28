@@ -39,6 +39,11 @@
   padding-left: 0.85rem;
 }
 
+[data-create-composer-variant] .create-fields,
+[data-create-composer-variant] .create-field-row {
+  border-bottom: 0;
+}
+
 [data-create-composer-variant] .create-field-row {
   padding: 0.82rem 0;
 }
@@ -51,15 +56,18 @@
 
 [data-create-composer-variant] .create-field-row input {
   min-height: 2.45rem;
+  border-bottom: 0;
   padding: 0.1rem 0;
   font-size: 0.96rem;
   line-height: 1.45;
 }
 
+[data-create-composer-variant] .create-field-row input:focus {
+  border-bottom: 0;
+}
+
 [data-create-composer-variant] .create-field-row small {
-  margin-top: 0.35rem;
-  font-size: 0.73rem;
-  line-height: 1.4;
+  display: none;
 }
 
 [data-create-composer-variant] .create-composer-tabs button {
