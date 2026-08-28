@@ -1,0 +1,7 @@
+/* The legacy floating utility stack is intentionally retired.
+   Ask Loombus, Saved, Stickies, and Appearance remain available through
+   their canonical navigation/search/rail surfaces instead of a floating launcher. */
+.loombus-floating-utility-stack,
+.loombus-floating-utility-stack + button {
+  display: none !important;
+}
