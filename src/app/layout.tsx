@@ -4,6 +4,7 @@ import "./desktop-navigation-shell.css";
 import "./desktop-rail-appearance-footer.css";
 import "./ipad-desktop-shell-safe-inset.css";
 import "./mobile-navigation-shell.css";
+import "./mobile-top-appearance-cycle.css";
 import "./adaptive-shell-controls.css";
 import "./persistent-mobile-primary-dock.css";
 import "./floating-utility-removal.css";
@@ -31,6 +32,7 @@ import { DesktopNotificationsTrayController } from "@/components/desktop-notific
 import { DesktopNavigationShell } from "@/components/desktop-navigation-shell";
 import { DesktopRailAppearanceFooter } from "@/components/desktop-rail-appearance-footer";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
+import { MobileTopAppearanceCycle } from "@/components/mobile-top-appearance-cycle";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
@@ -98,6 +100,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <DesktopMessagesPreviewTrayController />
           <DesktopNotificationsTrayController />
           <MobileNavigationShell />
+          <MobileTopAppearanceCycle />
           <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
