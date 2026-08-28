@@ -23,7 +23,7 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] > section {
-  max-width: 58rem !important;
+  max-width: 52rem !important;
 }
 
 [data-create-composer-variant="page"] form {
@@ -45,17 +45,18 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 [data-create-composer-variant="page"] [data-create-composer-header] {
   margin-bottom: 0 !important;
   border-bottom: 1px solid var(--loombus-border);
-  padding: 0 0 1rem !important;
+  padding: 0 0 0.75rem !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
+  font-size: clamp(1.5rem, 2.6vw, 1.95rem) !important;
   letter-spacing: -0.035em !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] button {
   min-height: 2.75rem !important;
-  font-size: 0.78rem !important;
+  padding-inline: 0.35rem !important;
+  font-size: 0.76rem !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
@@ -64,13 +65,13 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-  min-height: 2.9rem !important;
+  min-height: 2.65rem !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.8rem 0.65rem !important;
+  padding: 0.65rem 0.55rem !important;
   color: var(--loombus-text-muted) !important;
-  font-size: 0.78rem !important;
+  font-size: 0.75rem !important;
   box-shadow: none !important;
 }
 
@@ -94,11 +95,11 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label {
-  padding: 1.1rem 0 !important;
+  padding: 0.85rem 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label + label {
-  border-top: 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--loombus-border) 72%, transparent) !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label > p {
@@ -107,7 +108,12 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 
 [data-create-composer-variant="page"] form > div:first-child > section > label > span,
 [data-create-composer-variant="page"] form > div:first-child > section > label > div:first-child {
-  margin-bottom: 0.45rem !important;
+  margin-bottom: 0.3rem !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label > span,
+[data-create-composer-variant="page"] form > div:first-child > section > label > div:first-child span {
+  font-size: 0.75rem !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section input,
@@ -116,12 +122,13 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label:not(:last-child) input {
-  min-height: 3rem !important;
+  min-height: 2.55rem !important;
   border: 0 !important;
   border-bottom: 1px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
   padding: 0 !important;
+  line-height: 1.35 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label:not(:last-child) input:focus {
@@ -129,59 +136,102 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
-  font-size: 1.05rem !important;
-  font-weight: 650 !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) input {
+  font-size: 0.96rem !important;
+  color: var(--loombus-text-muted) !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  min-height: 24rem !important;
-  border-color: var(--loombus-border) !important;
-  border-radius: 0.75rem !important;
-  background: color-mix(in srgb, var(--loombus-surface) 54%, transparent) !important;
-  line-height: 1.75 !important;
+  min-height: 16rem !important;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 0.65rem !important;
+  background: color-mix(in srgb, var(--loombus-surface) 34%, transparent) !important;
+  padding: 0.9rem 3.25rem 0.9rem 0.95rem !important;
+  font-size: 0.98rem !important;
+  line-height: 1.65 !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section textarea::placeholder {
+  color: var(--loombus-text-subtle) !important;
+  opacity: 0.82 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
-  right: 0.9rem !important;
-  bottom: 1.9rem !important;
-  width: 2.75rem !important;
-  height: 2.75rem !important;
-  border-radius: 0.75rem !important;
+  right: 0.7rem !important;
+  bottom: 1.55rem !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border: 0 !important;
+  border-radius: 0.55rem !important;
+  background: transparent !important;
   box-shadow: none !important;
+  opacity: 0.72;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"]:hover {
+    background: color-mix(in srgb, var(--loombus-surface) 80%, transparent) !important;
+    opacity: 1;
+  }
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div[class*="rounded-2xl"][class*="border"] {
   border-width: 0 0 1px !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.85rem 0 !important;
+  padding: 0.7rem 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child {
   display: flex !important;
+  align-items: center !important;
   justify-content: flex-end !important;
-  gap: 0 !important;
-  padding: 0.85rem 0 0 !important;
+  gap: 0.35rem !important;
+  padding: 0.75rem 0 0 !important;
   border-bottom: 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
   width: auto !important;
-  min-height: 2.75rem !important;
+  min-height: 2.6rem !important;
   border: 0 !important;
-  border-left: 1px solid var(--loombus-border) !important;
-  border-radius: 0 !important;
+  border-radius: 0.55rem !important;
   background: transparent !important;
-  padding: 0 1rem !important;
+  padding: 0 0.85rem !important;
+  font-size: 0.78rem !important;
   box-shadow: none !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:first-child {
-  border-left: 0 !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:nth-child(2) {
+  color: var(--loombus-text) !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child {
-  color: #9a701c !important;
+  min-width: 6.25rem !important;
+  background: #d6a84f !important;
+  color: #17140c !important;
+  font-weight: 800 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:not(:last-child):hover {
+    background: color-mix(in srgb, var(--loombus-surface) 78%, transparent) !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child:hover {
+    filter: brightness(0.97);
+  }
 }
 
 /* Keep secondary create tools focused without turning them into another dashboard. */
@@ -256,44 +306,54 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 20rem !important;
+    min-height: 15rem !important;
   }
 }
 
 @media (max-width: 40rem) {
   [data-create-composer-variant="page"] {
-    padding-top: 1rem !important;
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+    padding-top: 0.7rem !important;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] {
     grid-template-columns: auto minmax(0, 1fr) auto !important;
-    gap: 0.35rem !important;
+    gap: 0.3rem !important;
+    padding-bottom: 0.55rem !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-    font-size: 1.25rem !important;
+    font-size: 1.15rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-    min-height: 2.75rem !important;
-    padding-inline: 0.4rem !important;
-    font-size: 0.72rem !important;
+    min-height: 2.55rem !important;
+    padding-inline: 0.35rem !important;
+    font-size: 0.7rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section > label {
-    padding: 1rem 0 !important;
+    padding: 0.75rem 0 !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
+    font-size: 1.08rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 18rem !important;
-    border-radius: 0.65rem !important;
+    min-height: 14rem !important;
+    border-radius: 0.55rem !important;
+    padding: 0.8rem 2.85rem 0.8rem 0.8rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-    min-height: 2.75rem !important;
-    padding-inline: 0.75rem !important;
-    font-size: 0.75rem !important;
+    min-height: 2.65rem !important;
+    padding-inline: 0.7rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child {
+    min-width: 5.75rem !important;
   }
 
   [data-create-composer-variant="page"] > div[class*="z-[110]"] > section {
