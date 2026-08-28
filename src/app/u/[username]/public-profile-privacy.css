@@ -9,103 +9,148 @@ body:has([data-public-profile-privacy-state="limited"]) [data-public-profile-con
 
 .private-profile-gate {
   min-height: calc(100vh - 8rem);
-  display: grid;
-  place-items: center;
-  background: var(--loombus-page-bg);
   padding: 2rem 1rem 7rem;
+  display: grid;
+  place-items: start center;
+  background: var(--loombus-page-bg);
   color: var(--loombus-text);
 }
 
+html[data-loombus-theme="light"] .private-profile-gate {
+  background: #FEFBEC;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .private-profile-gate {
+    background: #FEFBEC;
+  }
+}
+
 .private-profile-card {
-  width: min(100%, 38rem);
-  border: 1px solid var(--loombus-border);
-  border-radius: 2rem;
-  background: var(--loombus-surface);
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.12);
+  width: min(100%, 40rem);
+  margin-top: min(10vh, 6rem);
+  padding: 1.6rem 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  box-shadow: none;
 }
 
 .private-profile-lock {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0 0 1rem;
+  border: 1px solid color-mix(in srgb, #CBAB5B 38%, var(--loombus-border));
+  border-radius: 999px;
   display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
   place-items: center;
-  margin: 0 auto 1rem;
-  border-radius: 1.15rem;
-  background: color-mix(in srgb, var(--loombus-gold) 18%, transparent);
-  color: var(--loombus-gold);
+  background: transparent;
+  color: #CBAB5B;
 }
 
 .private-profile-lock svg {
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .private-profile-eyebrow {
-  margin: 1rem 0 0;
-  color: var(--loombus-gold);
-  font-size: 0.72rem;
+  margin: 0;
+  color: #CBAB5B;
+  font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .private-profile-card h1 {
-  margin: 0.55rem 0 0;
-  font-size: clamp(2rem, 7vw, 3.2rem);
-  line-height: 1;
-  letter-spacing: -0.045em;
+  margin: 0.48rem 0 0;
+  color: var(--loombus-text-strong);
+  font-size: clamp(1.8rem, 6vw, 2.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.private-profile-card > :is(img, span):not(.private-profile-lock):not(.private-profile-eyebrow):not(.private-profile-handle):not(.private-profile-copy):not(.private-profile-message) {
+  margin-bottom: 0.9rem;
 }
 
 .private-profile-handle {
-  margin: 0.7rem 0 0;
+  margin: 0.55rem 0 0;
   color: var(--loombus-text-muted);
+  font-size: 0.82rem;
   font-weight: 700;
 }
 
-.private-profile-copy {
-  max-width: 31rem;
-  margin: 1.25rem auto 0;
+.private-profile-copy,
+.private-profile-card > p:not(.private-profile-eyebrow):not(.private-profile-handle):not(.private-profile-message) {
+  max-width: 34rem;
+  margin: 0.9rem 0 0;
   color: var(--loombus-text-muted);
-  font-size: 0.95rem;
-  line-height: 1.65rem;
+  font-size: 0.9rem;
+  line-height: 1.62;
 }
 
 .private-profile-follow {
+  min-height: 2.7rem;
+  margin-top: 1.15rem;
+  padding: 0.65rem 0.92rem;
+  border: 1px solid #CBAB5B;
+  border-radius: 0.72rem;
   display: inline-flex;
-  min-height: 3rem;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem;
-  margin-top: 1.4rem;
-  border: 0;
-  border-radius: 1rem;
-  background: var(--loombus-gold-strong);
-  padding: 0.75rem 1.1rem;
-  color: var(--loombus-gold-contrast);
-  font-size: 0.88rem;
-  font-weight: 800;
+  gap: 0.5rem;
+  background: #CBAB5B;
+  color: #171717;
+  font-size: 0.8rem;
+  font-weight: 780;
+  cursor: pointer;
 }
 
 .private-profile-follow svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .private-profile-follow:disabled {
-  opacity: 0.6;
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.private-profile-follow:focus-visible {
+  outline: 3px solid color-mix(in srgb, #CBAB5B 55%, transparent);
+  outline-offset: 3px;
 }
 
 .private-profile-message {
-  margin: 0.9rem 0 0;
+  margin: 0.75rem 0 0;
   color: var(--loombus-text-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 @media (max-width: 640px) {
+  .private-profile-gate {
+    padding: 1rem 0.85rem 6rem;
+  }
+
   .private-profile-card {
-    border-radius: 1.5rem;
-    padding: 1.5rem;
+    margin-top: 6vh;
+    padding: 1.3rem 0;
+  }
+
+  .private-profile-follow {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .private-profile-gate *,
+  .private-profile-gate *::before,
+  .private-profile-gate *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
