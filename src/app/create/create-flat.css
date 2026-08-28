@@ -23,15 +23,19 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] > section {
-  max-width: 80rem !important;
+  max-width: 58rem !important;
 }
 
 [data-create-composer-variant="page"] form {
-  gap: 2rem !important;
+  display: block !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child {
   gap: 0 !important;
+}
+
+[data-create-composer-variant="page"] form > aside {
+  display: none !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] {
@@ -84,11 +88,15 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label {
-  padding: 1.15rem 0 !important;
+  padding: 1.1rem 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label + label {
   border-top: 0 !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label > p {
+  display: none !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section input,
@@ -100,12 +108,12 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  min-height: 18rem !important;
+  min-height: 24rem !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
   right: 0.9rem !important;
-  bottom: 4.75rem !important;
+  bottom: 1.9rem !important;
   width: 2.65rem !important;
   height: 2.65rem !important;
   border-radius: 0.75rem !important;
@@ -120,47 +128,30 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-  grid-template-columns: 1fr 1fr 1.2fr !important;
-  gap: 0.5rem !important;
-  padding: 0.8rem 0 0 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  padding: 0.85rem 0 0 !important;
   border-bottom: 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-  min-height: 2.85rem !important;
-  border-radius: 0.7rem !important;
-  box-shadow: none !important;
-}
-
-[data-create-composer-variant="page"] form > aside {
-  gap: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside > section {
-  margin: 0 !important;
+  width: auto !important;
+  min-height: 2.75rem !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
+  border-left: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 1rem 0 !important;
+  padding: 0 1rem !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > aside > section:first-child {
-  padding-top: 0 !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:first-child {
+  border-left: 0 !important;
 }
 
-[data-create-composer-variant="page"] form > aside > section:last-child {
-  border-bottom: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside h2 {
-  font-size: 0.95rem !important;
-}
-
-[data-create-composer-variant="page"] form > aside button {
-  border-radius: 0.65rem !important;
-  box-shadow: none !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child {
+  color: #9a701c !important;
 }
 
 @media (max-width: 63.99rem) {
@@ -170,7 +161,7 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 16rem !important;
+    min-height: 20rem !important;
   }
 }
 
@@ -203,7 +194,12 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
     border-radius: 0.65rem !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-    grid-template-columns: 0.9fr 1fr 1.15fr !important;
+  [data-create-composer-variant="page"] form > div:first-child > section textarea {
+    min-height: 18rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
+    padding-inline: 0.75rem !important;
+    font-size: 0.75rem !important;
   }
 }
