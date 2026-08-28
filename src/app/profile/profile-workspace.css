@@ -1,20 +1,351 @@
-.profile-workspace-page { background: var(--loombus-page-bg,var(--loombus-bg,#fefbec)) !important; color: var(--loombus-text,#201b13) !important; }
-.profile-workspace-layout { display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 1rem; align-items: start; }
-.profile-workspace-nav { position: sticky; top: 6rem; display: grid; gap: .3rem; padding: .85rem; border: 1px solid var(--loombus-border,rgba(81,67,39,.18)); border-radius: 1.35rem; background: var(--loombus-surface,#fffdf4); }
-.profile-workspace-nav > p { margin: .2rem .65rem .45rem; color: var(--loombus-text-muted,#736a5b); font-size: .68rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-.profile-workspace-nav button, .profile-workspace-nav a { display: flex; align-items: center; gap: .6rem; padding: .72rem .75rem; border: 0; border-radius: .9rem; background: transparent; color: var(--loombus-text-muted,#736a5b); font: inherit; font-size: .8rem; font-weight: 800; text-align: left; text-decoration: none; cursor: pointer; }
-.profile-workspace-nav button:hover, .profile-workspace-nav button.is-active, .profile-workspace-nav a:hover { background: color-mix(in srgb,#cbab5b 14%,transparent); color: var(--loombus-text,#201b13); }
-.profile-workspace-nav button.is-active { box-shadow: inset 3px 0 0 #cbab5b; }
-.profile-workspace-nav svg { width: 1rem; height: 1rem; color: #a07c28; }
-.profile-workspace-content { min-width: 0; }
-.profile-workspace-content .is-preview-only { display: block; }
-.profile-workspace-content .is-preview-only aside { width: min(620px,100%); margin: 0 auto; }
-.profile-workspace-standalone-section { min-width: 0; }
-.profile-workspace-standalone-section > section { margin-top: 0; }
-.profile-workspace-page .bg-black, .profile-workspace-page .bg-zinc-950 { background: var(--loombus-surface,#fffdf4) !important; }
-.profile-workspace-page .text-white, .profile-workspace-page .text-zinc-200, .profile-workspace-page .text-zinc-300, .profile-workspace-page .text-zinc-400 { color: var(--loombus-text,#201b13) !important; }
-.profile-workspace-page .text-zinc-500, .profile-workspace-page .text-zinc-600, .profile-workspace-page .text-zinc-700 { color: var(--loombus-text-muted,#736a5b) !important; }
-.profile-workspace-page .border-zinc-700, .profile-workspace-page .border-zinc-800, .profile-workspace-page .border-zinc-900 { border-color: var(--loombus-border,rgba(81,67,39,.18)) !important; }
-.profile-workspace-page input, .profile-workspace-page textarea, .profile-workspace-page select { background: var(--loombus-page-bg,#fefbec) !important; color: var(--loombus-text,#201b13) !important; }
-.profile-workspace-content [data-loombus-prompt-source="true"] { display: none !important; }
-@media (max-width: 900px) { .profile-workspace-layout { grid-template-columns: 1fr; } .profile-workspace-nav { position: static; display: flex; overflow-x: auto; } .profile-workspace-nav > p { display: none; } .profile-workspace-nav button, .profile-workspace-nav a { flex: 0 0 auto; white-space: nowrap; } }
+.profile-editorial-route,
+.profile-workspace-page {
+  min-height: 100vh;
+  background: var(--loombus-page-bg, var(--loombus-bg, #fefbec));
+  color: var(--loombus-text, #201b13);
+}
+
+html[data-loombus-theme="light"] .profile-editorial-route,
+html[data-loombus-theme="light"] .profile-workspace-page {
+  background: #fefbec;
+}
+
+.profile-workspace-page {
+  padding: 1.25rem 1rem 6.5rem !important;
+}
+
+.profile-workspace-page > div {
+  width: min(100%, 68rem);
+  margin-inline: auto;
+}
+
+.profile-workspace-page > div > a:first-child {
+  display: inline-flex;
+  margin: 0 0 1rem !important;
+  color: var(--loombus-text-muted, #736a5b) !important;
+  font-size: .8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.profile-workspace-page > div > a:first-child:hover {
+  color: #a07c28 !important;
+}
+
+.profile-workspace-page > div > h1 {
+  margin: 0 !important;
+  color: var(--loombus-text-strong, var(--loombus-text, #201b13)) !important;
+  font-size: clamp(1.85rem, 4vw, 2.65rem) !important;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.profile-workspace-page > div > h1 + p {
+  max-width: 42rem;
+  margin: .55rem 0 1.65rem !important;
+  color: var(--loombus-text-muted, #736a5b) !important;
+  font-size: .92rem !important;
+  line-height: 1.6;
+}
+
+.profile-workspace-layout {
+  display: grid;
+  grid-template-columns: 11.5rem minmax(0, 1fr);
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.profile-workspace-nav {
+  position: sticky;
+  top: 5rem;
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.profile-workspace-nav > p {
+  margin: 0;
+  padding: 0 0 .6rem;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, .18));
+  color: var(--loombus-text-muted, #736a5b);
+  font-size: .64rem;
+  font-weight: 850;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.profile-workspace-nav button,
+.profile-workspace-nav a {
+  display: flex;
+  min-height: 2.7rem;
+  align-items: center;
+  gap: .55rem;
+  padding: .7rem .15rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border-muted, var(--loombus-border, rgba(81, 67, 39, .12)));
+  background: transparent;
+  color: var(--loombus-text-muted, #736a5b);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 760;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-workspace-nav button:hover,
+.profile-workspace-nav a:hover {
+  color: var(--loombus-text, #201b13);
+}
+
+.profile-workspace-nav button.is-active {
+  color: var(--loombus-text, #201b13);
+  box-shadow: inset 2px 0 0 #cbab5b;
+  padding-left: .6rem;
+}
+
+.profile-workspace-nav svg {
+  width: .95rem;
+  height: .95rem;
+  color: #a07c28;
+}
+
+.profile-workspace-content,
+.profile-workspace-standalone-section {
+  min-width: 0;
+}
+
+/* The existing profile form remains the behavior owner. These rules remove only legacy shell chrome. */
+.profile-workspace-content > section:first-child {
+  margin: 0 0 1.5rem !important;
+  padding: 0 0 1.5rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-content > section:first-child p:first-child {
+  color: #a07c28 !important;
+}
+
+.profile-workspace-content > section:first-child h2 {
+  color: var(--loombus-text, #201b13) !important;
+}
+
+.profile-workspace-content > section:first-child p.rounded-xl {
+  padding: .7rem 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, .14)) !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, .14)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-content > div.grid {
+  grid-template-columns: minmax(0, 1fr) 17rem !important;
+  gap: 2rem !important;
+  align-items: start;
+}
+
+.profile-workspace-content form {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.profile-workspace-content form > section {
+  margin: 0 !important;
+  padding: 1.45rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-content form > section:first-child {
+  padding-top: 0 !important;
+}
+
+.profile-workspace-content form > section:last-of-type {
+  border-bottom: 0 !important;
+}
+
+.profile-workspace-content form > section:first-child .h-2 {
+  height: .25rem !important;
+  background: var(--loombus-border-muted, rgba(81, 67, 39, .12)) !important;
+}
+
+.profile-workspace-content form > section:first-child .h-2 > div {
+  background: #cbab5b !important;
+}
+
+.profile-workspace-content form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.profile-workspace-content form textarea,
+.profile-workspace-content form select {
+  background: var(--loombus-surface, #fffdf4) !important;
+  color: var(--loombus-text, #201b13) !important;
+  border-color: var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+}
+
+.profile-workspace-content form input:focus,
+.profile-workspace-content form textarea:focus,
+.profile-workspace-content form select:focus {
+  border-color: #cbab5b !important;
+}
+
+.profile-workspace-content form input[type="checkbox"],
+.profile-workspace-content form input[type="radio"] {
+  accent-color: #cbab5b;
+}
+
+.profile-workspace-content form button[type="submit"] {
+  background: #cbab5b !important;
+  color: #17130c !important;
+  font-weight: 800;
+}
+
+.profile-workspace-content > div.grid > aside {
+  position: sticky;
+  top: 5rem;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-workspace-content > div.grid > aside > div {
+  border-color: var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+  background: var(--loombus-surface, #fffdf4) !important;
+  box-shadow: none !important;
+}
+
+.profile-workspace-content .is-preview-only {
+  display: block;
+}
+
+.profile-workspace-content .is-preview-only aside {
+  position: static;
+  width: min(100%, 38rem);
+  margin: 0;
+}
+
+.profile-workspace-page .bg-black,
+.profile-workspace-page .bg-zinc-950 {
+  background: var(--loombus-surface, #fffdf4) !important;
+}
+
+.profile-workspace-page .text-white,
+.profile-workspace-page .text-zinc-200,
+.profile-workspace-page .text-zinc-300,
+.profile-workspace-page .text-zinc-400 {
+  color: var(--loombus-text, #201b13) !important;
+}
+
+.profile-workspace-page .text-zinc-500,
+.profile-workspace-page .text-zinc-600,
+.profile-workspace-page .text-zinc-700 {
+  color: var(--loombus-text-muted, #736a5b) !important;
+}
+
+.profile-workspace-page .border-zinc-700,
+.profile-workspace-page .border-zinc-800,
+.profile-workspace-page .border-zinc-900 {
+  border-color: var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+}
+
+.profile-workspace-content [data-loombus-prompt-source="true"] {
+  display: none !important;
+}
+
+.profile-workspace-page :is(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, #cbab5b 48%, transparent);
+  outline-offset: 3px;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .profile-editorial-route,
+  html[data-loombus-theme="system"] .profile-workspace-page {
+    background: #fefbec;
+  }
+}
+
+@media (max-width: 900px) {
+  .profile-workspace-page {
+    padding-inline: .85rem !important;
+  }
+
+  .profile-workspace-layout {
+    grid-template-columns: 1fr;
+    gap: 1.15rem;
+  }
+
+  .profile-workspace-nav {
+    position: static;
+    display: flex;
+    gap: .15rem;
+    overflow-x: auto;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, .18));
+    scrollbar-width: none;
+  }
+
+  .profile-workspace-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-workspace-nav > p {
+    display: none;
+  }
+
+  .profile-workspace-nav button,
+  .profile-workspace-nav a {
+    flex: 0 0 auto;
+    min-height: 2.5rem;
+    padding: .55rem .65rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+
+  .profile-workspace-nav button.is-active {
+    padding-left: .65rem;
+    border-bottom-color: #cbab5b;
+    box-shadow: none;
+  }
+
+  .profile-workspace-content > div.grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-workspace-content > div.grid > aside {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-workspace-page > div > h1 {
+    font-size: 2rem !important;
+  }
+
+  .profile-workspace-content > section:first-child a,
+  .profile-workspace-content > section:first-child button,
+  .profile-workspace-content form button[type="submit"] {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-editorial-route *,
+  .profile-editorial-route *::before,
+  .profile-editorial-route *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
