@@ -187,6 +187,61 @@
   font-weight: 850;
 }
 
+[data-create-composer-variant] .create-info-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.32rem;
+  vertical-align: middle;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger {
+  display: inline-grid;
+  width: 1.1rem;
+  height: 1.1rem;
+  min-width: 1.1rem;
+  min-height: 1.1rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--loombus-text-muted) 55%, transparent);
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: var(--loombus-text-muted);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 850;
+  line-height: 1;
+  cursor: help;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger:hover,
+[data-create-composer-variant] .create-info-tooltip__trigger:focus-visible,
+[data-create-composer-variant] .create-info-tooltip__trigger[aria-expanded="true"] {
+  border-color: #CBAB5B;
+  color: #CBAB5B;
+}
+
+[data-create-composer-variant] .create-info-tooltip__bubble {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  border: 1px solid var(--loombus-border);
+  border-radius: 0.55rem;
+  padding: 0.58rem 0.68rem;
+  background: var(--loombus-surface, #FEFBEC);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  color: var(--loombus-text);
+  font-size: 0.72rem;
+  font-weight: 550;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+
 [data-create-composer-variant] button:not(:disabled),
 [data-create-composer-variant] input:not(:disabled),
 [data-create-composer-variant] textarea:not(:disabled) {
@@ -196,7 +251,7 @@
 [data-create-composer-variant] button:focus-visible,
 [data-create-composer-variant] input:focus-visible,
 [data-create-composer-variant] textarea:focus-visible {
-  outline: 2px solid color-mix(in srgb, #d6a84f 72%, transparent);
+  outline: 2px solid color-mix(in srgb, #CBAB5B 72%, transparent);
   outline-offset: 3px;
 }
 
@@ -242,5 +297,12 @@
 
   [data-create-composer-variant] .create-publish-action {
     min-height: 2.55rem;
+  }
+
+  [data-create-composer-variant] .create-info-tooltip__trigger {
+    width: 1.35rem;
+    height: 1.35rem;
+    min-width: 1.35rem;
+    min-height: 1.35rem;
   }
 }
