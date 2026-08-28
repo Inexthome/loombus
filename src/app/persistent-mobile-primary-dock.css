@@ -10,38 +10,91 @@
 
   .loombus-persistent-mobile-dock {
     position: fixed;
-    inset-inline: 0.65rem;
-    bottom: calc(env(safe-area-inset-bottom) + 0.45rem);
+    left: 0.78rem;
+    bottom: calc(env(safe-area-inset-bottom) + 0.58rem);
     z-index: 68;
     display: block;
-    border: 1px solid color-mix(in srgb, var(--loombus-gold) 20%, var(--loombus-border));
-    border-radius: 1.7rem;
-    padding: 0.38rem 0.42rem 0.42rem;
-    background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
     color: var(--loombus-text);
-    box-shadow: 0 1rem 3.25rem rgb(0 0 0 / 0.22);
+  }
+
+  .loombus-persistent-mobile-dock-launcher {
+    position: relative;
+    width: 3.55rem;
+    height: 3.55rem;
+    border: 1px solid color-mix(in srgb, var(--loombus-gold) 38%, var(--loombus-border));
+    border-radius: 1.35rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: color-mix(in srgb, var(--loombus-surface) 95%, transparent);
+    color: var(--loombus-text);
+    box-shadow: 0 0.9rem 2.6rem rgb(0 0 0 / 0.2);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
-    will-change: transform, opacity;
+    cursor: pointer;
+    opacity: 1;
     transition:
-      transform 205ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 155ms ease;
+      opacity 620ms ease,
+      border-color 180ms ease,
+      background 180ms ease;
   }
 
-  .loombus-persistent-mobile-dock[data-hidden="true"] {
+  .loombus-persistent-mobile-dock-launcher[data-faded="true"] {
+    opacity: 0.08;
     pointer-events: none;
-    opacity: 0;
-    transform: translateY(calc(100% + env(safe-area-inset-bottom) + 1.25rem));
   }
 
-  .loombus-persistent-mobile-dock > div {
-    width: min(100%, 32rem);
-    min-height: 4.15rem;
-    margin: 0 auto;
+  .loombus-persistent-mobile-dock-launcher:hover,
+  .loombus-persistent-mobile-dock-launcher:focus-visible {
+    border-color: color-mix(in srgb, var(--loombus-gold) 72%, var(--loombus-border));
+    background: var(--loombus-surface-strong);
+  }
+
+  .loombus-persistent-mobile-dock-launcher:focus-visible,
+  .loombus-persistent-mobile-dock a:focus-visible,
+  .loombus-persistent-mobile-dock-close:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
+    outline-offset: 2px;
+  }
+
+  .loombus-persistent-mobile-dock-launcher-badge,
+  .loombus-persistent-mobile-dock-badge {
+    position: absolute;
+    min-width: 1.18rem;
+    height: 1.18rem;
+    border: 2px solid var(--loombus-surface);
+    border-radius: 999px;
+    padding-inline: 0.18rem;
+    display: grid;
+    place-items: center;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.53rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .loombus-persistent-mobile-dock-launcher-badge {
+    top: -0.3rem;
+    right: -0.3rem;
+  }
+
+  .loombus-persistent-mobile-dock-panel {
+    position: relative;
+    width: min(calc(100vw - 1.3rem), 32rem);
+    min-height: 4.65rem;
+    border: 1px solid color-mix(in srgb, var(--loombus-gold) 20%, var(--loombus-border));
+    border-radius: 1.7rem;
+    padding: 0.42rem 2.7rem 0.45rem 0.45rem;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: end;
     gap: 0.12rem;
+    background: color-mix(in srgb, var(--loombus-surface) 95%, transparent);
+    box-shadow: 0 1rem 3.25rem rgb(0 0 0 / 0.22);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    animation: loombus-mobile-dock-expand 190ms ease-out;
   }
 
   .loombus-persistent-mobile-dock a {
@@ -104,68 +157,59 @@
   }
 
   .loombus-persistent-mobile-dock a[data-primary="true"] .loombus-persistent-mobile-dock-icon {
-    width: 3.35rem;
-    height: 3.35rem;
-    margin-top: -1.08rem;
+    width: 3.2rem;
+    height: 3.2rem;
+    margin-top: -0.95rem;
     border: 4px solid var(--loombus-surface);
     border-radius: 999px;
     background: var(--loombus-primary-bg);
     color: var(--loombus-primary-text);
-    box-shadow: 0 0.85rem 2.1rem rgb(0 0 0 / 0.24);
-    transition: transform 150ms ease, filter 150ms ease;
-  }
-
-  .loombus-persistent-mobile-dock a[data-primary="true"]:active .loombus-persistent-mobile-dock-icon {
-    transform: scale(0.94);
-  }
-
-  .loombus-persistent-mobile-dock a[data-primary="true"]:hover .loombus-persistent-mobile-dock-icon,
-  .loombus-persistent-mobile-dock a[data-primary="true"]:focus-visible .loombus-persistent-mobile-dock-icon {
-    filter: brightness(1.05);
+    box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 0.23);
   }
 
   .loombus-persistent-mobile-dock a[data-primary="true"] .loombus-persistent-mobile-dock-label {
-    margin-top: -0.05rem;
     color: var(--loombus-text);
     font-weight: 850;
   }
 
   .loombus-persistent-mobile-dock-badge {
-    position: absolute;
     top: -0.42rem;
     right: -0.58rem;
-    min-width: 1.18rem;
-    height: 1.18rem;
-    border: 2px solid var(--loombus-surface);
+  }
+
+  .loombus-persistent-mobile-dock-close {
+    position: absolute;
+    top: 50%;
+    right: 0.45rem;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
     border-radius: 999px;
-    padding-inline: 0.18rem;
     display: grid;
     place-items: center;
-    background: #ef4444;
-    color: #fff;
-    font-size: 0.53rem;
-    font-weight: 900;
-    line-height: 1;
+    padding: 0;
+    background: var(--loombus-surface-muted);
+    color: var(--loombus-text-muted);
+    transform: translateY(-50%);
+    cursor: pointer;
   }
 
   body[data-loombus-mobile-menu-open] .loombus-persistent-mobile-dock {
     pointer-events: none;
     opacity: 0;
   }
-
-  .loombus-persistent-mobile-dock a:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
-    outline-offset: 2px;
-  }
 }
 
-@media (max-width: 374px) {
-  .loombus-persistent-mobile-dock {
-    inset-inline: 0.42rem;
+@keyframes loombus-mobile-dock-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+    transform-origin: left bottom;
   }
-
-  .loombus-persistent-mobile-dock-label {
-    font-size: 0.52rem;
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: left bottom;
   }
 }
 
