@@ -1,0 +1,89 @@
+.loombus-desktop-rail-footer{display:none}
+
+@media (min-width:768px){
+  .loombus-desktop-left-rail-scroll{padding-bottom:116px}
+
+  .loombus-desktop-rail-footer{
+    position:fixed;
+    left:0;
+    bottom:0;
+    z-index:64;
+    display:flex;
+    width:244px;
+    min-height:104px;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:10px;
+    padding:12px 14px 14px;
+    border-top:1px solid var(--loombus-border);
+    border-right:1px solid var(--loombus-border);
+    background:color-mix(in srgb,var(--loombus-surface) 86%,transparent);
+    -webkit-backdrop-filter:blur(22px) saturate(160%);
+    backdrop-filter:blur(22px) saturate(160%);
+    color:var(--loombus-text);
+    transition:width 160ms ease,padding 160ms ease;
+  }
+
+  .loombus-desktop-rail-appearance{
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
+
+  .loombus-desktop-rail-appearance button,
+  .loombus-desktop-rail-collapsed-appearance{
+    width:36px;
+    height:36px;
+    display:grid;
+    place-items:center;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    color:var(--loombus-text-muted);
+    cursor:pointer;
+  }
+
+  .loombus-desktop-rail-appearance button:hover,
+  .loombus-desktop-rail-collapsed-appearance:hover{
+    background:var(--loombus-surface-muted);
+    color:var(--loombus-text);
+  }
+
+  .loombus-desktop-rail-appearance button[data-active="true"]{
+    background:color-mix(in srgb,var(--loombus-gold) 13%,transparent);
+    color:var(--loombus-gold);
+  }
+
+  .loombus-desktop-rail-appearance button:focus-visible,
+  .loombus-desktop-rail-collapsed-appearance:focus-visible{
+    outline:2px solid var(--loombus-gold);
+    outline-offset:2px;
+  }
+
+  .loombus-desktop-rail-copyright{
+    margin:0;
+    color:var(--loombus-text-muted);
+    font-size:.61rem;
+    line-height:1.45;
+    letter-spacing:.01em;
+  }
+
+  .loombus-desktop-rail-footer[data-open="false"]{
+    width:58px;
+    min-height:58px;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    border-top:1px solid var(--loombus-border);
+    background:color-mix(in srgb,var(--loombus-surface) 22%,transparent);
+  }
+
+  .loombus-desktop-rail-collapsed-appearance{
+    width:38px;
+    height:38px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .loombus-desktop-rail-footer{transition:none}
+}
