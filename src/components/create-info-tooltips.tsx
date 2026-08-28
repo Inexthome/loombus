@@ -10,14 +10,6 @@ type TooltipDefinition = {
 
 const CREATE_TOOLTIPS: TooltipDefinition[] = [
   {
-    label: "Topic",
-    description: "Classifies the main subject of your discussion so people can discover it in the right context.",
-  },
-  {
-    label: "Discussion mode",
-    description: "Sets how the conversation is structured, such as an open discussion, debate, research question, or problem-solving discussion.",
-  },
-  {
     label: "Discussion Purpose",
     description: "Briefly states what you want this discussion to explore, clarify, or accomplish.",
   },
@@ -36,10 +28,6 @@ const CREATE_TOOLTIPS: TooltipDefinition[] = [
   {
     label: "Tags",
     description: "Adds a few specific terms that help describe and organize the discussion beyond its main topic.",
-  },
-  {
-    label: "Add files / evidence",
-    description: "Attach supporting files or evidence that gives readers additional context for the discussion.",
   },
 ];
 
@@ -116,9 +104,7 @@ export function CreateInfoTooltips() {
     if (!root) return;
 
     const discover = () => {
-      const elements = Array.from(
-        root.querySelectorAll<HTMLElement>("label, button, [role='button'], .create-field-label")
-      );
+      const elements = Array.from(root.querySelectorAll<HTMLElement>(".create-field-label"));
       const next: Array<{ element: HTMLElement; definition: TooltipDefinition }> = [];
 
       for (const element of elements) {
