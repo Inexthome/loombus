@@ -15,6 +15,7 @@ type ProfileAccess = {
 };
 
 const ACTION_COOLDOWN_SECONDS = 5;
+const DECLINED_REQUEST_COOLDOWN_HOURS = 24;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -129,6 +130,38 @@ export async function POST(request: NextRequest) {
           .eq("status", "pending");
         if (cancelError) return jsonError(cancelError.message, 500);
         return NextResponse.json({ following: false, requested: false });
+      }
+
+      const declinedSince = new Date(
+        Date.now() - DECLINED_REQUEST_COOLDOWN_HOURS * 60 * 60 * 1000
+      ).toISOString();
+      const { data: recentDeclinedRequest, error: declinedRequestError } = await service
+        .from("follow_requests")
+        .select("responded_at")
+        .eq("requester_id", user.id)
+        .eq("target_id", targetUserId)
+        .eq("status", "declined")
+        .gte("responded_at", declinedSince)
+        .order("responded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (declinedRequestError) {
+        return jsonError(declinedRequestError.message, 500);
+      }
+
+      if (recentDeclinedRequest?.responded_at) {
+        const retryAt = new Date(recentDeclinedRequest.responded_at).getTime() +
+          DECLINED_REQUEST_COOLDOWN_HOURS * 60 * 60 * 1000;
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil((retryAt - Date.now()) / 1000)
+        );
+        return jsonError(
+          "This member declined your recent follow request. Please wait before requesting again.",
+          429,
+          { code: "follow_request_declined_cooldown", retryAfterSeconds }
+        );
       }
 
       const { data: requestRow, error: requestError } = await service

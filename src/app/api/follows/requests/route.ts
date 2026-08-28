@@ -16,6 +16,23 @@ function jsonError(message: string, status: number) {
   );
 }
 
+async function clearFollowRequestNotification(
+  service: ReturnType<typeof createMemberPrivacyServiceClient>,
+  userId: string,
+  requesterId: string
+) {
+  if (!service) return;
+
+  await service
+    .from("notifications")
+    .delete()
+    .eq("user_id", userId)
+    .eq("actor_id", requesterId)
+    .eq("type", "follow_request")
+    .eq("target_type", "profile")
+    .eq("target_id", requesterId);
+}
+
 export async function GET(request: NextRequest) {
   const service = createMemberPrivacyServiceClient();
   if (!service) return jsonError("Follow request service is not configured.", 503);
@@ -72,7 +89,9 @@ export async function POST(request: NextRequest) {
   const action = String(body.action ?? "").trim().toLowerCase();
 
   if (!UUID_PATTERN.test(requestId)) return jsonError("Invalid follow request.", 400);
-  if (!['accept', 'decline'].includes(action)) return jsonError("Choose accept or decline.", 400);
+  if (!["accept", "decline"].includes(action)) {
+    return jsonError("Choose accept or decline.", 400);
+  }
 
   const { data: followRequest, error } = await service
     .from("follow_requests")
@@ -95,6 +114,7 @@ export async function POST(request: NextRequest) {
       .eq("status", "pending");
 
     if (declineError) return jsonError(declineError.message, 500);
+    await clearFollowRequestNotification(service, user.id, followRequest.requester_id);
     return NextResponse.json({ accepted: false, declined: true });
   }
 
@@ -120,6 +140,8 @@ export async function POST(request: NextRequest) {
     .eq("status", "pending");
 
   if (updateError) return jsonError(updateError.message, 500);
+
+  await clearFollowRequestNotification(service, user.id, followRequest.requester_id);
 
   await createNotification({
     user_id: followRequest.requester_id,
