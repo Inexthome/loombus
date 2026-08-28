@@ -264,6 +264,78 @@ html[data-loombus-theme="light"] .profile-workspace-page {
   display: none !important;
 }
 
+/* Overview is a read-only summary, not a partially hidden edit form. */
+.profile-workspace-content[data-profile-section="overview"] > div.grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 1.25rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] > section:first-child {
+  margin-bottom: 1.1rem !important;
+  padding-bottom: 1.1rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] > section:first-child > div {
+  align-items: flex-start !important;
+  gap: 1rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] > section:first-child > div > div:last-child {
+  width: auto !important;
+  min-width: 8rem;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.profile-workspace-content[data-profile-section="overview"] > section:first-child a,
+.profile-workspace-content[data-profile-section="overview"] > section:first-child button {
+  min-height: 2.5rem;
+  width: auto !important;
+  padding: .6rem .9rem !important;
+  border-radius: .65rem !important;
+  font-size: .76rem !important;
+  white-space: nowrap;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child {
+  width: 100%;
+  padding: 1rem 0 0 !important;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, .18)) !important;
+  border-bottom: 0 !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child > div:first-child {
+  margin-bottom: .75rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child p:first-child {
+  margin-bottom: .35rem !important;
+  color: #a07c28 !important;
+  font-size: .66rem !important;
+  font-weight: 800;
+  letter-spacing: .13em !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child h2 {
+  font-size: 1.35rem !important;
+  line-height: 1.15;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child span.rounded-full {
+  padding: .4rem .65rem !important;
+  border-radius: 999px !important;
+  font-size: .72rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] form > section:first-child .h-2 {
+  margin-bottom: .75rem !important;
+}
+
+.profile-workspace-content[data-profile-section="overview"] > div.grid > aside {
+  display: none !important;
+}
+
 .profile-workspace-page :is(button, a, input, textarea, select):focus-visible {
   outline: 3px solid color-mix(in srgb, #cbab5b 48%, transparent);
   outline-offset: 3px;
@@ -338,6 +410,16 @@ html[data-loombus-theme="light"] .profile-workspace-page {
   .profile-workspace-content > section:first-child button,
   .profile-workspace-content form button[type="submit"] {
     width: 100%;
+  }
+
+  .profile-workspace-content[data-profile-section="overview"] > section:first-child > div > div:last-child {
+    width: 100% !important;
+    justify-content: stretch;
+  }
+
+  .profile-workspace-content[data-profile-section="overview"] > section:first-child a,
+  .profile-workspace-content[data-profile-section="overview"] > section:first-child button {
+    flex: 1 1 9rem;
   }
 }
 
