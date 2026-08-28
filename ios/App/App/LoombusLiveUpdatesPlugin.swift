@@ -2,6 +2,7 @@ import ActivityKit
 import Capacitor
 import Foundation
 import UIKit
+import UserNotifications
 
 @objc(LoombusLiveUpdatesPlugin)
 public class LoombusLiveUpdatesPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -13,8 +14,29 @@ public class LoombusLiveUpdatesPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "updateAppointment", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endAppointment", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endAllAppointments", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setNotificationBadgeCount", returnType: CAPPluginReturnPromise)
     ]
+
+    @objc func setNotificationBadgeCount(_ call: CAPPluginCall) {
+        let count = max(0, call.getInt("count") ?? 0)
+
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(count) { error in
+                if let error {
+                    call.reject("Unable to update the iOS notification badge: \(error.localizedDescription)")
+                    return
+                }
+                call.resolve(["count": count, "applied": true])
+            }
+            return
+        }
+
+        DispatchQueue.main.async {
+            UIApplication.shared.applicationIconBadgeNumber = count
+            call.resolve(["count": count, "applied": true])
+        }
+    }
 
     @objc func getStatus(_ call: CAPPluginCall) {
         guard #available(iOS 16.2, *) else {

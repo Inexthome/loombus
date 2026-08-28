@@ -37,6 +37,10 @@ type LoombusLiveUpdatesPlugin = {
   endAppointment(input: { appointmentId: string }): Promise<{ ended?: number }>;
   endAllAppointments(): Promise<{ ended?: number }>;
   openSettings(): Promise<void>;
+  setNotificationBadgeCount(input: { count: number }): Promise<{
+    count?: number;
+    applied?: boolean;
+  }>;
 };
 
 const LiveUpdates = registerPlugin<LoombusLiveUpdatesPlugin>(
@@ -46,6 +50,17 @@ const LiveUpdates = registerPlugin<LoombusLiveUpdatesPlugin>(
 const TERMINAL_STATUSES = new Set(["cancelled", "completed", "declined"]);
 const ELIGIBLE_STATUSES = new Set(["accepted", "approved", "confirmed"]);
 const START_WINDOW_MS = 60 * 60 * 1000;
+
+export async function setNativeNotificationBadgeCount(count: number) {
+  const platform = getNativePlatform();
+  const normalizedCount = Math.max(0, Math.floor(Number.isFinite(count) ? count : 0));
+
+  if (platform !== "ios" && platform !== "android") {
+    return { count: normalizedCount, applied: false };
+  }
+
+  return LiveUpdates.setNotificationBadgeCount({ count: normalizedCount });
+}
 
 export async function getAppointmentLiveUpdateStatus() {
   const platform = getNativePlatform();
