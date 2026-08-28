@@ -126,23 +126,87 @@ Editorial content should prioritize readability:
 
 Descriptions, counts, timestamps, helper copy, and status text should use muted Loombus text tokens and lower visual weight.
 
-## Color
+## Color and Theme Palette
 
-Use existing Loombus theme tokens wherever possible.
+The Loombus Editorial UI uses the **Loombus Gold and Cream palette** as part of the canonical product identity.
 
-Gold is an accent, not a fill color for the entire interface.
+### Canonical brand colors
 
-Use Loombus gold primarily for:
+- **Loombus Gold:** `#CBAB5B`
+- **Loombus Cream:** `#FEFBEC`
 
-- active states
-- selected emphasis
-- important status accents
+These values are authoritative for new Editorial UI work. Do not substitute visually similar gold or cream values when implementing a new page or refactoring a page into this system.
+
+### Loombus Gold usage
+
+Loombus Gold is an accent and action color, not a large-surface background color.
+
+Use `#CBAB5B` primarily for:
+
 - primary actions
-- focused interactive details
+- active tab indicators
+- selected or focused emphasis
+- important status accents
+- restrained links or interactive highlights where appropriate
+- brand details that need clear Loombus identity
 
-Do not flood large surfaces with gold.
+Do not flood large page regions or long reading surfaces with gold. Content must remain visually dominant.
 
-Light mode may use the established warm editorial page background used by `/create` where appropriate. Dark mode should use the normal Loombus dark page and surface tokens.
+When gold is used as a filled primary action, text and icon contrast must remain accessible.
+
+### Loombus Cream usage
+
+Loombus Cream `#FEFBEC` is the canonical warm editorial background for **Light** theme pages where the Editorial UI calls for the Loombus paper-like reading/composition surface.
+
+It is especially appropriate for:
+
+- focused creation pages
+- reading-heavy editorial pages
+- structured discussion and knowledge surfaces
+- continuous flat workflows where a warm page background reinforces the editorial character
+
+Cream should not automatically replace every surface token. Discrete cards, inputs, overlays, and nested surfaces should continue to use the appropriate Loombus surface and border tokens unless the page specification requires otherwise.
+
+## Theme Modes
+
+Every Loombus Editorial UI implementation must support **Light, Dark, and System** appearance modes.
+
+### Light
+
+In Light mode:
+
+- use **Loombus Cream `#FEFBEC`** as the preferred editorial page background where appropriate
+- use dark, high-contrast Loombus text tokens for readable content
+- use `#CBAB5B` for primary actions and restrained active-state accents
+- keep major working surfaces visually calm; avoid converting the cream background into a high-contrast dashboard of white cards
+- preserve thin borders and subtle surface separation
+
+### Dark
+
+In Dark mode:
+
+- use the established Loombus dark page and surface tokens rather than forcing Cream onto the page
+- retain **Loombus Gold `#CBAB5B`** as the brand accent, adjusting surrounding text/surface treatment only as necessary for contrast
+- use dark-theme Loombus text, muted-text, border, page, and surface tokens
+- preserve the same information hierarchy, density, divider rhythm, and action hierarchy as Light mode
+- do not create a separate visual system merely because the theme is dark
+
+### System
+
+System mode must follow the operating system/browser color-scheme preference:
+
+- when the system preference is light, apply the Editorial UI Light behavior, including Cream where appropriate
+- when the system preference is dark, apply the Editorial UI Dark behavior
+- System must not be treated as a third independent palette
+- theme changes should not alter functionality, information architecture, or page hierarchy
+
+### Theme implementation rule
+
+Prefer shared Loombus CSS/theme tokens for text, borders, surfaces, and state colors. The canonical Gold and Cream values may be expressed through centralized design tokens rather than repeated hard-coded values.
+
+If existing theme tokens conflict with the canonical Editorial UI values for a newly redesigned surface, align or introduce the appropriate centralized token rather than scattering page-specific color overrides.
+
+A page redesigned using the Loombus Editorial UI is not complete until Light, Dark, and System appearances have been checked.
 
 ## Surfaces
 
@@ -243,7 +307,7 @@ Examples:
 - Submit
 - Continue
 
-Primary actions may use Loombus gold but should remain proportionate to the surrounding interface.
+Primary actions may use Loombus Gold `#CBAB5B` but should remain proportionate to the surrounding interface.
 
 ### Secondary actions
 
@@ -400,7 +464,7 @@ When redesigning an existing Loombus page into the Loombus Editorial UI:
 7. Consolidate tools that operate on the same content.
 8. Reduce secondary action weight.
 9. Keep one clear primary completion action.
-10. Verify desktop, mobile, light mode, dark mode, keyboard navigation, loading states, empty states, validation, and error states.
+10. Verify desktop, mobile, **Light, Dark, and System**, keyboard navigation, loading states, empty states, validation, and error states.
 
 Do not interpret “use the Loombus Editorial UI” as permission to delete features or simplify business logic. The instruction concerns visual and interaction architecture unless the task explicitly says otherwise.
 
@@ -413,14 +477,15 @@ When instructed to redesign a route using the **Loombus Editorial UI**, the impl
 3. Inspect the relevant portions of `/discussions/[id]`.
 4. Audit the target page's existing functionality.
 5. Preserve functionality unless behavior changes are explicitly requested.
-6. Apply this system based on the target page's purpose rather than blindly copying markup.
-7. Report any intentional departures from this specification.
+6. Apply the **Loombus Gold `#CBAB5B` and Cream `#FEFBEC` palette** through the Light, Dark, and System theme rules in this specification.
+7. Apply this system based on the target page's purpose rather than blindly copying markup.
+8. Report any intentional departures from this specification.
 
 ## Standard Prompt
 
 The preferred instruction for future work is:
 
-> Redesign `<route>` using the **Loombus Editorial UI**. Read `docs/design-system/loombus-editorial-ui.md` first, use the current `/create` and `/discussions/[id]` implementations as canonical references, preserve existing functionality unless explicitly instructed otherwise, and apply the system to the page's own information architecture.
+> Redesign `<route>` using the **Loombus Editorial UI**. Read `docs/design-system/loombus-editorial-ui.md` first, use the current `/create` and `/discussions/[id]` implementations as canonical references, preserve existing functionality unless explicitly instructed otherwise, apply the canonical Loombus Gold (`#CBAB5B`) and Cream (`#FEFBEC`) palette with Light, Dark, and System support, and apply the system to the page's own information architecture.
 
 ## Version
 
