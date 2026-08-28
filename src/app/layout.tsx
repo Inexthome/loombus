@@ -6,7 +6,7 @@ import "./ipad-desktop-shell-safe-inset.css";
 import "./mobile-navigation-shell.css";
 import "./adaptive-shell-controls.css";
 import "./persistent-mobile-primary-dock.css";
-import "./persistent-quick-rail.css";
+import "./floating-utility-removal.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./create-flat-sections.css";
@@ -22,7 +22,6 @@ import "./trust-safety-appearance-fixes.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import RouteClientLayout from "./route-client-layout";
-import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-utility-launcher";
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
@@ -105,7 +104,6 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <PlatformPromptBridge />
         <PlatformPromptDomBridge />
         <PlatformNativeAlertBridge />
-        <AppChromeBoundary><AdaptiveFloatingUtilityLauncher /></AppChromeBoundary>
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
