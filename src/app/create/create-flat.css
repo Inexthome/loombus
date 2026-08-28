@@ -22,55 +22,51 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 }
 
-/*
- * /create is intentionally treated as a writing surface rather than a
- * dashboard. Classification, guidance, attachments, and review remain
- * available, but the initial hierarchy is topic -> title -> body -> publish.
- */
 [data-create-composer-variant="page"] > section {
-  max-width: 50rem !important;
+  max-width: 54rem !important;
 }
 
 [data-create-composer-variant="page"] form {
   display: block !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child {
-  gap: 0 !important;
-}
-
-/* The former desktop helper rail duplicates actions already available in the
- * composer. Removing it keeps attention on the draft and lowers cognitive load.
- */
 [data-create-composer-variant="page"] form > aside {
   display: none !important;
 }
 
-/* Quiet utility header: exit, page identity, draft state. */
+[data-create-composer-variant="page"] form > div:first-child {
+  gap: 0 !important;
+}
+
+/* Quiet utility row: no large centered page title. */
 [data-create-composer-variant="page"] [data-create-composer-header] {
-  margin-bottom: 0.9rem !important;
+  grid-template-columns: 1fr 1fr !important;
+  margin: 0 0 1.1rem !important;
   border: 0 !important;
   padding: 0 !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-  font-size: 1rem !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.015em !important;
+  display: none !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] button {
-  min-height: 2.5rem !important;
-  padding-inline: 0.35rem !important;
+  min-height: 2.25rem !important;
+  padding: 0 !important;
   font-size: 0.78rem !important;
+  font-weight: 800 !important;
 }
 
-/* Classification is available before writing without reading like a form. */
+[data-create-composer-variant="page"] [data-create-composer-header] button:last-child {
+  justify-self: end !important;
+}
+
+/* Compact context controls, closer to Reddit's community/tag pills. */
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
   display: flex !important;
   align-items: center !important;
-  gap: 0.5rem !important;
-  margin-bottom: 1.25rem !important;
+  gap: 0.45rem !important;
+  margin: 0 0 1.35rem !important;
   overflow-x: auto !important;
   border: 0 !important;
   scrollbar-width: none;
@@ -82,14 +78,14 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
   flex: 0 0 auto !important;
-  min-height: 2.5rem !important;
+  min-height: 2.35rem !important;
   max-width: 15rem !important;
   border: 1px solid var(--loombus-border) !important;
   border-radius: 999px !important;
-  background: color-mix(in srgb, var(--loombus-surface) 76%, transparent) !important;
-  padding: 0.55rem 0.9rem !important;
+  background: color-mix(in srgb, var(--loombus-surface) 58%, transparent) !important;
+  padding: 0.48rem 0.82rem !important;
   color: var(--loombus-text-muted) !important;
-  font-size: 0.78rem !important;
+  font-size: 0.76rem !important;
   font-weight: 800 !important;
   box-shadow: none !important;
 }
@@ -103,8 +99,8 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   color: var(--loombus-text) !important;
 }
 
-/* One continuous document surface. */
-[data-create-composer-variant="page"] form > div:first-child > section {
+/* Remove the old card treatment completely. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) {
   overflow: visible !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -112,161 +108,175 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label {
-  padding: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > div:first-child > section > label + label {
-  border: 0 !important;
-}
-
-/* Title: the strongest element in the composer. */
-[data-create-composer-variant="page"] form > div:first-child > section > label:first-child {
-  padding: 0 0 1rem !important;
-}
-
-[data-create-composer-variant="page"] form > div:first-child > section > label:first-child > span {
-  margin-bottom: 0.35rem !important;
-  font-size: 0.78rem !important;
-  color: var(--loombus-text-muted) !important;
-}
-
-[data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
-  min-height: 3.5rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   padding: 0 !important;
-  font-size: clamp(1.45rem, 4vw, 2rem) !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.025em !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:first-child input:focus {
+/* Title should read like a post title field, not a headline preview. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child {
+  padding-bottom: 0.95rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child > span {
+  margin: 0 0 0.35rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child input {
+  min-height: 2.9rem !important;
+  width: 100% !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child input:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:first-child > p {
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child > p {
   display: none !important;
 }
 
-/* Optional purpose is deliberately secondary. */
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) {
-  padding: 0.1rem 0 1.15rem !important;
+/* Purpose stays available, but should not compete with title/body. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(2) {
+  padding: 0.7rem 0 0.85rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) > span {
-  margin-bottom: 0.25rem !important;
-  font-size: 0.75rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(2) > span {
+  margin: 0 0 0.2rem !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
   color: var(--loombus-text-subtle) !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) input {
-  min-height: 2.75rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(2) input {
+  min-height: 2.3rem !important;
+  width: 100% !important;
   border: 0 !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
   background: transparent !important;
   padding: 0 !important;
-  font-size: 0.9rem !important;
+  font-size: 0.88rem !important;
+  font-weight: 400 !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) input:focus {
-  border-bottom-color: #d6a84f !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(2) input:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) > p {
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(2) > p {
   display: none !important;
 }
 
-/* Body: open canvas first, controls second. */
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) {
-  padding: 0.55rem 0 0 !important;
+/* Body is one continuous writing canvas, not a giant rounded textarea card. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(3) {
+  padding: 0.9rem 0 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > div:first-child {
-  margin-bottom: 0.4rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(3) > div:first-child {
+  margin-bottom: 0.25rem !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > div:first-child > span:first-child {
-  font-size: 0.82rem !important;
-  color: var(--loombus-text-muted) !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(3) > div:first-child > span:first-child {
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+  color: var(--loombus-text) !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section textarea {
-  min-height: 22rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) textarea {
+  min-height: 18rem !important;
+  width: 100% !important;
+  resize: vertical !important;
   border: 0 !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
   background: transparent !important;
-  padding: 0.5rem 3.25rem 1rem 0 !important;
-  font-size: 1rem !important;
-  line-height: 1.75 !important;
+  padding: 0.65rem 3rem 1rem 0 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.7 !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section textarea:focus {
-  border-bottom-color: #d6a84f !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) textarea:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) button[aria-label="Open Draft Guidance"] {
   right: 0 !important;
-  bottom: 3.9rem !important;
-  width: 2.5rem !important;
-  height: 2.5rem !important;
+  bottom: 2.9rem !important;
+  width: 2.35rem !important;
+  height: 2.35rem !important;
   border: 1px solid var(--loombus-border) !important;
   border-radius: 999px !important;
-  background: color-mix(in srgb, var(--loombus-surface) 86%, transparent) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 82%, transparent) !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > p {
-  margin-top: 0.55rem !important;
-  font-size: 0.75rem !important;
-  line-height: 1.35rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:nth-child(3) > p {
+  margin: 0.45rem 0 0.65rem !important;
+  font-size: 0.72rem !important;
+  line-height: 1.3rem !important;
   color: var(--loombus-text-subtle) !important;
 }
 
-/* Inline notices should not become cards. */
+/* Inline status messages stay text-like. */
 [data-create-composer-variant="page"] form > div:first-child > div[class*="rounded-2xl"][class*="border"] {
-  margin-top: 0.65rem !important;
+  margin-top: 0.6rem !important;
   border-width: 0 0 1px !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.7rem 0 !important;
+  padding: 0.65rem 0 !important;
   box-shadow: none !important;
 }
 
-/* Compact action row directly attached to the writing surface. */
-[data-create-composer-variant="page"] form > div:first-child > section:last-child {
+/* Bottom actions are compact and attached to the composer. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(2) {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 0.5rem !important;
-  margin-top: 0.55rem !important;
+  gap: 0.45rem !important;
+  margin-top: 0.65rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   padding: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-  flex: 0 0 auto !important;
-  min-height: 2.65rem !important;
-  border-radius: 999px !important;
-  padding-inline: 1rem !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:first-child {
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(2) > button {
+  flex: 0 0 auto !important;
+  min-height: 2.45rem !important;
+  border-radius: 999px !important;
+  padding: 0 0.9rem !important;
+  font-size: 0.76rem !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(2) > button:first-child {
   margin-right: auto !important;
   border: 0 !important;
   padding-left: 0 !important;
   color: var(--loombus-text-muted) !important;
+  background: transparent !important;
 }
 
 @media (max-width: 63.99rem) {
@@ -278,16 +288,7 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 
 @media (max-width: 40rem) {
   [data-create-composer-variant="page"] {
-    padding-top: 0.85rem !important;
-  }
-
-  [data-create-composer-variant="page"] [data-create-composer-header] {
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
-    gap: 0.3rem !important;
-  }
-
-  [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-    font-size: 0.92rem !important;
+    padding-top: 0.75rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
@@ -295,26 +296,22 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 
   [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-    min-height: 2.35rem !important;
-    padding-inline: 0.75rem !important;
-    font-size: 0.72rem !important;
+    min-height: 2.25rem !important;
+    padding-inline: 0.7rem !important;
+    font-size: 0.7rem !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
-    font-size: 1.35rem !important;
+  [data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) textarea {
+    min-height: 16rem !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 18rem !important;
-  }
-
-  [data-create-composer-variant="page"] form > div:first-child > section:last-child {
+  [data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(2) {
     flex-wrap: wrap !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-    min-height: 2.55rem !important;
-    padding-inline: 0.85rem !important;
-    font-size: 0.76rem !important;
+  [data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(2) > button {
+    min-height: 2.4rem !important;
+    padding-inline: 0.8rem !important;
+    font-size: 0.74rem !important;
   }
 }
