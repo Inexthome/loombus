@@ -2,6 +2,7 @@ import { CreateProfileCompletionNotice } from "@/components/create-profile-compl
 import { CreatePublishGuard } from "@/components/create-publish-guard";
 import { CreatePublishMessagePrompt } from "@/components/create-publish-message-prompt";
 import CreateV2ClientPage from "./create-v2-client-page";
+import "./create-flat.css";
 
 export default function CreatePage() {
   return (
