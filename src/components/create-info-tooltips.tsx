@@ -37,10 +37,6 @@ const CREATE_TOOLTIPS: TooltipDefinition[] = [
     label: "Tags",
     description: "Adds a few specific terms that help describe and organize the discussion beyond its main topic.",
   },
-  {
-    label: "Add files / evidence",
-    description: "Attach supporting files or evidence that gives readers additional context for the discussion.",
-  },
 ];
 
 function normalize(value: string | null | undefined) {
@@ -118,7 +114,7 @@ export function CreateInfoTooltips() {
     const discover = () => {
       const elements = Array.from(
         root.querySelectorAll<HTMLElement>(
-          ".create-field-label-split > span:first-child, .create-field-label:not(.create-field-label-split), button, [role='button']"
+          ".create-field-label-split > span:first-child, .create-field-label:not(.create-field-label-split), .create-classification-action"
         )
       );
       const next: Array<{ element: HTMLElement; definition: TooltipDefinition }> = [];
