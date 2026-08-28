@@ -22,188 +22,299 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 }
 
+/*
+ * /create is intentionally treated as a writing surface rather than a
+ * dashboard. Classification, guidance, attachments, and review remain
+ * available, but the initial hierarchy is topic -> title -> body -> publish.
+ */
 [data-create-composer-variant="page"] > section {
-  max-width: 80rem !important;
+  max-width: 50rem !important;
 }
 
 [data-create-composer-variant="page"] form {
-  gap: 2rem !important;
+  display: block !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child {
   gap: 0 !important;
 }
 
+/* The former desktop helper rail duplicates actions already available in the
+ * composer. Removing it keeps attention on the draft and lowers cognitive load.
+ */
+[data-create-composer-variant="page"] form > aside {
+  display: none !important;
+}
+
+/* Quiet utility header: exit, page identity, draft state. */
 [data-create-composer-variant="page"] [data-create-composer-header] {
-  margin-bottom: 0 !important;
-  border-bottom: 1px solid var(--loombus-border);
-  padding: 0 0 1rem !important;
+  margin-bottom: 0.9rem !important;
+  border: 0 !important;
+  padding: 0 !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
-  letter-spacing: -0.035em !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.015em !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] button {
   min-height: 2.5rem !important;
+  padding-inline: 0.35rem !important;
   font-size: 0.78rem !important;
 }
 
+/* Classification is available before writing without reading like a form. */
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
-  gap: 0 !important;
-  border-bottom: 1px solid var(--loombus-border);
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-bottom: 1.25rem !important;
+  overflow-x: auto !important;
+  border: 0 !important;
+  scrollbar-width: none;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > div:nth-child(2)::-webkit-scrollbar {
+  display: none;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-  min-height: 2.9rem !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 0.8rem 0.65rem !important;
+  flex: 0 0 auto !important;
+  min-height: 2.5rem !important;
+  max-width: 15rem !important;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--loombus-surface) 76%, transparent) !important;
+  padding: 0.55rem 0.9rem !important;
   color: var(--loombus-text-muted) !important;
   font-size: 0.78rem !important;
+  font-weight: 800 !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button + button {
-  border-left: 1px solid var(--loombus-border) !important;
-}
-
-[data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button:hover {
-  background: color-mix(in srgb, var(--loombus-surface) 72%, transparent) !important;
+[data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button:first-child {
   color: var(--loombus-text) !important;
 }
 
+[data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button:hover {
+  border-color: #d6a84f !important;
+  color: var(--loombus-text) !important;
+}
+
+/* One continuous document surface. */
 [data-create-composer-variant="page"] form > div:first-child > section {
+  overflow: visible !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label {
-  padding: 1.15rem 0 !important;
+  padding: 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label + label {
-  border-top: 0 !important;
+  border: 0 !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section input,
-[data-create-composer-variant="page"] form > div:first-child > section textarea {
-  border-color: var(--loombus-border) !important;
-  border-radius: 0.75rem !important;
-  background: color-mix(in srgb, var(--loombus-surface) 54%, transparent) !important;
+/* Title: the strongest element in the composer. */
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child {
+  padding: 0 0 1rem !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child > span {
+  margin-bottom: 0.35rem !important;
+  font-size: 0.78rem !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
+  min-height: 3.5rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: clamp(1.45rem, 4vw, 2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
   box-shadow: none !important;
 }
 
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:first-child > p {
+  display: none !important;
+}
+
+/* Optional purpose is deliberately secondary. */
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) {
+  padding: 0.1rem 0 1.15rem !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) > span {
+  margin-bottom: 0.25rem !important;
+  font-size: 0.75rem !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) input {
+  min-height: 2.75rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 0.9rem !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) input:focus {
+  border-bottom-color: #d6a84f !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(2) > p {
+  display: none !important;
+}
+
+/* Body: open canvas first, controls second. */
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) {
+  padding: 0.55rem 0 0 !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > div:first-child {
+  margin-bottom: 0.4rem !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > div:first-child > span:first-child {
+  font-size: 0.82rem !important;
+  color: var(--loombus-text-muted) !important;
+}
+
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  min-height: 18rem !important;
+  min-height: 22rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+  padding: 0.5rem 3.25rem 1rem 0 !important;
+  font-size: 1rem !important;
+  line-height: 1.75 !important;
+  box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section textarea:focus {
+  border-bottom-color: #d6a84f !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
-  right: 0.9rem !important;
-  bottom: 4.75rem !important;
-  width: 2.65rem !important;
-  height: 2.65rem !important;
-  border-radius: 0.75rem !important;
+  right: 0 !important;
+  bottom: 3.9rem !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--loombus-surface) 86%, transparent) !important;
   box-shadow: none !important;
 }
 
+[data-create-composer-variant="page"] form > div:first-child > section > label:nth-child(3) > p {
+  margin-top: 0.55rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35rem !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+/* Inline notices should not become cards. */
 [data-create-composer-variant="page"] form > div:first-child > div[class*="rounded-2xl"][class*="border"] {
+  margin-top: 0.65rem !important;
   border-width: 0 0 1px !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.85rem 0 !important;
+  padding: 0.7rem 0 !important;
+  box-shadow: none !important;
 }
 
+/* Compact action row directly attached to the writing surface. */
 [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-  grid-template-columns: 1fr 1fr 1.2fr !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
   gap: 0.5rem !important;
-  padding: 0.8rem 0 0 !important;
-  border-bottom: 0 !important;
+  margin-top: 0.55rem !important;
+  padding: 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-  min-height: 2.85rem !important;
-  border-radius: 0.7rem !important;
+  flex: 0 0 auto !important;
+  min-height: 2.65rem !important;
+  border-radius: 999px !important;
+  padding-inline: 1rem !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > aside {
-  gap: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside > section {
-  margin: 0 !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:first-child {
+  margin-right: auto !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 1rem 0 !important;
-  box-shadow: none !important;
-}
-
-[data-create-composer-variant="page"] form > aside > section:first-child {
-  padding-top: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside > section:last-child {
-  border-bottom: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside h2 {
-  font-size: 0.95rem !important;
-}
-
-[data-create-composer-variant="page"] form > aside button {
-  border-radius: 0.65rem !important;
-  box-shadow: none !important;
+  padding-left: 0 !important;
+  color: var(--loombus-text-muted) !important;
 }
 
 @media (max-width: 63.99rem) {
   [data-create-composer-variant="page"] {
-    padding-left: 0.8rem !important;
-    padding-right: 0.8rem !important;
-  }
-
-  [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 16rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 }
 
 @media (max-width: 40rem) {
   [data-create-composer-variant="page"] {
-    padding-top: 1rem !important;
+    padding-top: 0.85rem !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] {
     grid-template-columns: auto minmax(0, 1fr) auto !important;
-    gap: 0.35rem !important;
+    gap: 0.3rem !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-    font-size: 1.25rem !important;
+    font-size: 0.92rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
+    margin-bottom: 1rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-    min-height: 2.75rem !important;
-    padding-inline: 0.4rem !important;
+    min-height: 2.35rem !important;
+    padding-inline: 0.75rem !important;
     font-size: 0.72rem !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section > label {
-    padding: 1rem 0 !important;
+  [data-create-composer-variant="page"] form > div:first-child > section > label:first-child input {
+    font-size: 1.35rem !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section input,
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    border-radius: 0.65rem !important;
+    min-height: 18rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-    grid-template-columns: 0.9fr 1fr 1.15fr !important;
+    flex-wrap: wrap !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
+    min-height: 2.55rem !important;
+    padding-inline: 0.85rem !important;
+    font-size: 0.76rem !important;
   }
 }
