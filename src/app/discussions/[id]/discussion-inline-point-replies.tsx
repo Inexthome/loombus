@@ -3,7 +3,7 @@
 import { LoaderCircle, Reply as ReplyIcon, Send, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
 import "./discussion-inline-point-replies.css";
@@ -17,6 +17,9 @@ type CreateReplyResponse = {
   error?: string;
   reply?: { id?: string };
 };
+
+const LAST_POINT_REPLY_KEY = "loombus:last-point-reply";
+const RESTORE_POINT_THREAD_KEY = "loombus:restore-point-thread";
 
 function replyIdFromElement(element: Element | null) {
   if (!element) return null;
@@ -38,12 +41,22 @@ function scrollToReply(replyId: string) {
   return true;
 }
 
+function openFocusedThread(replyId: string) {
+  const trigger = document.querySelector<HTMLButtonElement>(
+    `[data-loombus-open-thread="${CSS.escape(replyId)}"]`,
+  );
+  if (!trigger) return false;
+  trigger.click();
+  return true;
+}
+
 export default function DiscussionInlinePointReplies() {
   const params = useParams();
   const discussionId = String(params.id ?? "");
   const [targets, setTargets] = useState<PortalTarget[]>([]);
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [pastedCharacterCounts, setPastedCharacterCounts] = useState<Record<string, number>>({});
   const [busyReplyId, setBusyReplyId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pinnedReplyId, setPinnedReplyId] = useState<string | null>(null);
@@ -117,6 +130,44 @@ export default function DiscussionInlinePointReplies() {
   }, [discussionId, pinnedReplyId]);
 
   useEffect(() => {
+    if (!discussionId) return;
+    const restoreReplyId = window.sessionStorage.getItem(RESTORE_POINT_THREAD_KEY);
+    if (!restoreReplyId) return;
+
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      if (!openFocusedThread(restoreReplyId)) return;
+      restored = true;
+      window.sessionStorage.removeItem(RESTORE_POINT_THREAD_KEY);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#reply-${restoreReplyId}`,
+      );
+      window.setTimeout(() => scrollToReply(restoreReplyId), 50);
+    };
+
+    restore();
+    if (restored) return;
+
+    const observer = new MutationObserver(restore);
+    observer.observe(document.body, { childList: true, subtree: true });
+    const timeout = window.setTimeout(() => {
+      observer.disconnect();
+      if (!restored) {
+        window.sessionStorage.removeItem(RESTORE_POINT_THREAD_KEY);
+        scrollToReply(restoreReplyId);
+      }
+    }, 6000);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+    };
+  }, [discussionId]);
+
+  useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (!target) return;
@@ -139,7 +190,7 @@ export default function DiscussionInlinePointReplies() {
         event.stopImmediatePropagation();
         setOpenReplyId((current) => (current === replyId ? null : replyId));
         setErrors((current) => ({ ...current, [replyId]: "" }));
-        window.sessionStorage.setItem("loombus:last-point-reply", replyId);
+        window.sessionStorage.setItem(LAST_POINT_REPLY_KEY, replyId);
         window.setTimeout(() => textareaRefs.current[replyId]?.focus(), 0);
         return;
       }
@@ -156,18 +207,21 @@ export default function DiscussionInlinePointReplies() {
               ".discussion-thread-focused-list [data-thread-context='true']",
             ),
           );
-        const remembered = window.sessionStorage.getItem("loombus:last-point-reply");
+        const remembered = window.sessionStorage.getItem(LAST_POINT_REPLY_KEY);
         const hashReply = window.location.hash.startsWith("#reply-")
           ? window.location.hash.slice("#reply-".length)
           : null;
         const replyId = contextual || remembered || hashReply;
 
-        if (replyId && scrollToReply(replyId)) {
-          window.history.replaceState(
-            null,
-            "",
-            `${window.location.pathname}${window.location.search}#reply-${replyId}`,
-          );
+        if (replyId) {
+          openFocusedThread(replyId);
+          if (scrollToReply(replyId)) {
+            window.history.replaceState(
+              null,
+              "",
+              `${window.location.pathname}${window.location.search}#reply-${replyId}`,
+            );
+          }
         }
       }
     };
@@ -185,6 +239,14 @@ export default function DiscussionInlinePointReplies() {
     () => new Map(targets.map((target) => [target.replyId, target.host])),
     [targets],
   );
+
+  function handlePointReplyPaste(event: ClipboardEvent<HTMLTextAreaElement>, replyId: string) {
+    const pastedText = event.clipboardData.getData("text");
+    setPastedCharacterCounts((current) => ({
+      ...current,
+      [replyId]: (current[replyId] ?? 0) + pastedText.length,
+    }));
+  }
 
   async function submitPointReply(event: FormEvent<HTMLFormElement>, replyId: string) {
     event.preventDefault();
@@ -220,7 +282,7 @@ export default function DiscussionInlinePointReplies() {
           discussionId,
           body: normalizePublicText(body),
           referencedReplyId: replyId,
-          pastedCharacterCount: 0,
+          pastedCharacterCount: pastedCharacterCounts[replyId] ?? 0,
         }),
       });
       const result = (await response.json().catch(() => ({}))) as CreateReplyResponse;
@@ -233,8 +295,10 @@ export default function DiscussionInlinePointReplies() {
       }
 
       setDrafts((current) => ({ ...current, [replyId]: "" }));
+      setPastedCharacterCounts((current) => ({ ...current, [replyId]: 0 }));
       setOpenReplyId(null);
-      window.sessionStorage.setItem("loombus:last-point-reply", replyId);
+      window.sessionStorage.setItem(LAST_POINT_REPLY_KEY, replyId);
+      window.sessionStorage.setItem(RESTORE_POINT_THREAD_KEY, replyId);
       window.dispatchEvent(
         new CustomEvent("loombus:discussion-metrics-changed", {
           detail: { discussionId },
@@ -290,6 +354,7 @@ export default function DiscussionInlinePointReplies() {
                 value={drafts[replyId] ?? ""}
                 rows={3}
                 placeholder="Add a focused response to this point…"
+                onPaste={(event) => handlePointReplyPaste(event, replyId)}
                 onChange={(event) => {
                   const value = event.target.value;
                   setDrafts((current) => ({ ...current, [replyId]: value }));
