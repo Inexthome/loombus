@@ -1,0 +1,246 @@
+/* Refinement layer: keep /create aligned with the restrained discussion-detail rhythm. */
+
+[data-create-composer-variant="page"] {
+  padding: 1.35rem 1rem 6.5rem !important;
+}
+
+[data-create-composer-variant="page"] .create-discussion-shell {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+}
+
+[data-create-composer-variant] .create-discussion-header {
+  gap: 0.6rem;
+  padding: 0 0 0.85rem;
+}
+
+[data-create-composer-variant] .create-discussion-header h1 {
+  font-size: clamp(1.55rem, 2.6vw, 1.95rem);
+  font-weight: 780;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+[data-create-composer-variant] .create-text-action,
+[data-create-composer-variant] .create-save-state {
+  min-height: 2.25rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-classification-action {
+  min-height: 2.75rem;
+  padding-right: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-classification-action + .create-classification-action {
+  padding-left: 0.85rem;
+}
+
+[data-create-composer-variant] .create-field-row {
+  padding: 0.82rem 0;
+}
+
+[data-create-composer-variant] .create-field-label {
+  margin-bottom: 0.38rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+[data-create-composer-variant] .create-field-row input {
+  min-height: 2.45rem;
+  padding: 0.1rem 0;
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+[data-create-composer-variant] .create-field-row small {
+  margin-top: 0.35rem;
+  font-size: 0.73rem;
+  line-height: 1.4;
+}
+
+[data-create-composer-variant] .create-composer-tabs button {
+  min-height: 2.7rem;
+  padding: 0 0.85rem;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-composer-tabs button[data-active="true"]::after {
+  right: 0.85rem;
+  left: 0.85rem;
+  height: 1px;
+}
+
+[data-create-composer-variant] .create-composer-write {
+  padding-top: 0.6rem;
+}
+
+[data-create-composer-variant] .create-composer-toolbar {
+  gap: 0.75rem;
+  padding-bottom: 0.58rem;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-composer-toolbar button {
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-composer-write textarea {
+  min-height: 16.5rem;
+  padding: 0.9rem 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+[data-create-composer-variant] .create-composer-write textarea:focus {
+  outline: none;
+}
+
+[data-create-composer-variant] .create-composer-help {
+  padding: 0.55rem 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+[data-create-composer-variant] .create-composer-panel {
+  min-height: 16.5rem;
+  padding-top: 0.9rem;
+}
+
+[data-create-composer-variant] .create-composer-panel h2 {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+[data-create-composer-variant] .create-empty-state,
+[data-create-composer-variant] .create-tool-message,
+[data-create-composer-variant] .create-review-copy {
+  margin-top: 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.58;
+}
+
+[data-create-composer-variant] .create-review-copy h2 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+[data-create-composer-variant] .create-finding-row {
+  gap: 0.55rem;
+  padding: 0.62rem 0;
+}
+
+[data-create-composer-variant] .create-finding-row strong {
+  font-size: 0.77rem;
+  font-weight: 780;
+}
+
+[data-create-composer-variant] .create-finding-row p {
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+[data-create-composer-variant] .create-panel-actions {
+  gap: 0.9rem;
+  margin-top: 0.8rem;
+  padding: 0.62rem 0;
+}
+
+[data-create-composer-variant] .create-panel-actions button {
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-attachment-row {
+  padding: 0.58rem 0;
+}
+
+[data-create-composer-variant] .create-inline-message {
+  padding: 0.6rem 0;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+[data-create-composer-variant] .create-footer-actions {
+  padding: 0.68rem 0;
+}
+
+[data-create-composer-variant] .create-footer-secondary button {
+  min-height: 2.35rem;
+  padding: 0 0.78rem;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+[data-create-composer-variant] .create-publish-action {
+  min-width: 7.25rem;
+  min-height: 2.5rem;
+  border-radius: 0.6rem;
+  padding: 0 1rem;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+[data-create-composer-variant] button:not(:disabled),
+[data-create-composer-variant] input:not(:disabled),
+[data-create-composer-variant] textarea:not(:disabled) {
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease, opacity 150ms ease;
+}
+
+[data-create-composer-variant] button:focus-visible,
+[data-create-composer-variant] input:focus-visible,
+[data-create-composer-variant] textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, #d6a84f 72%, transparent);
+  outline-offset: 3px;
+}
+
+[data-create-composer-variant] .create-classification-action:hover,
+[data-create-composer-variant] .create-composer-tabs button:hover,
+[data-create-composer-variant] .create-footer-secondary button:hover,
+[data-create-composer-variant] .create-panel-actions button:hover {
+  color: var(--loombus-text);
+}
+
+@media (max-width: 40rem) {
+  [data-create-composer-variant="page"] {
+    padding: 0.75rem 0.85rem 5.5rem !important;
+  }
+
+  [data-create-composer-variant] .create-discussion-header h1 {
+    font-size: 1.2rem;
+  }
+
+  [data-create-composer-variant] .create-text-action,
+  [data-create-composer-variant] .create-save-state {
+    font-size: 0.72rem;
+  }
+
+  [data-create-composer-variant] .create-field-row {
+    padding: 0.72rem 0;
+  }
+
+  [data-create-composer-variant] .create-composer-tabs button {
+    min-height: 2.55rem;
+    padding-inline: 0.65rem;
+    font-size: 0.71rem;
+  }
+
+  [data-create-composer-variant] .create-composer-write textarea,
+  [data-create-composer-variant] .create-composer-panel {
+    min-height: 14.5rem;
+  }
+
+  [data-create-composer-variant] .create-footer-actions {
+    gap: 0.55rem;
+  }
+
+  [data-create-composer-variant] .create-publish-action {
+    min-height: 2.55rem;
+  }
+}
