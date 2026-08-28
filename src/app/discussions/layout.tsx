@@ -23,35 +23,11 @@ import "./discussion-compact-media-square.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",
-  description:
-    "Explore ideas through open discussions, debates, research questions, and problem solving with clearer context, evidence, and useful replies.",
-  openGraph: {
-    title: "Structured Discussions | Loombus",
-    description:
-      "Explore ideas through open discussions, debates, research questions, and problem solving with clearer context, evidence, and useful replies.",
-    url: "https://loombus.com/discussions",
-  },
-  twitter: {
-    title: "Structured Discussions | Loombus",
-    description:
-      "Explore ideas through structured discussion, evidence, and useful replies.",
-  },
+  description: "Explore ideas through open discussions, debates, research questions, and problem solving with clearer context, evidence, and useful replies.",
+  openGraph: { title: "Structured Discussions | Loombus", description: "Explore ideas through open discussions, debates, research questions, and problem solving with clearer context, evidence, and useful replies.", url: "https://loombus.com/discussions" },
+  twitter: { title: "Structured Discussions | Loombus", description: "Explore ideas through structured discussion, evidence, and useful replies." },
 };
 
-export default function DiscussionsLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <div className="discussion-feed-route">
-      <DiscussionAutoLinker />
-      <DiscussionFeedRefinements />
-      <DiscussionPublishToast />
-      <DiscussionVideoAutoplay />
-      <DiscussionsCreateComposerBridge />
-      <DiscussionViewModeControl />
-      {children}
-    </div>
-  );
+export default function DiscussionsLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <div className="discussion-feed-route"><DiscussionAutoLinker /><DiscussionFeedRefinements /><DiscussionPublishToast /><DiscussionVideoAutoplay /><DiscussionsCreateComposerBridge /><DiscussionViewModeControl />{children}</div>;
 }
