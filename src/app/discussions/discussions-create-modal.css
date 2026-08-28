@@ -48,7 +48,6 @@ body[data-discussions-create-open="true"] .loombus-adaptive-utility-root {
   min-height: 0 !important;
 }
 
-/* Keep the in-feed composer visually identical to the canonical /create surface. */
 .discussions-create-modal-shell [data-create-composer-variant] {
   --loombus-gold: #CBAB5B;
 }
