@@ -116,6 +116,15 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   box-shadow: none !important;
 }
 
+/* Explicitly eliminate any inherited light surface from the composer shell. */
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1),
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label,
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) input,
+[data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) textarea {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 /* Title should read like a post title field, not a headline preview. */
 [data-create-composer-variant="page"] form > div:first-child > section:nth-of-type(1) > label:first-child {
   padding-bottom: 0.95rem !important;
