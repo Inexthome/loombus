@@ -5,6 +5,7 @@ import CreateV2ClientPage from "./create-v2-client-page";
 import "./create-flat.css";
 import "./create-detail-refinement.css";
 import "./create-selector-polish.css";
+import "./create-selection-surfaces.css";
 
 export default function CreatePage() {
   return (
