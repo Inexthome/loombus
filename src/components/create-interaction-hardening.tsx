@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const CLEAR_LABELS = new Set(["clear", "clear draft"]);
+const enhancedDialogs = new WeakSet<HTMLElement>();
 
 function hasMeaningfulDraft(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")).some(
@@ -46,6 +47,13 @@ function enhanceDialogs() {
     dialog.setAttribute("role", "dialog");
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", title.id);
+
+    if (!enhancedDialogs.has(dialog)) {
+      enhancedDialogs.add(dialog);
+      window.requestAnimationFrame(() => {
+        dialog.querySelector<HTMLElement>("button:not([aria-label^='Close composer options'])")?.focus();
+      });
+    }
   });
 }
 
@@ -79,10 +87,31 @@ export function CreateInteractionHardening() {
       }
     };
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      const tab = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('[role="tab"]');
+      if (!tab || !root.contains(tab) || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.create-composer-tabs [role="tab"]'));
+      const index = tabs.indexOf(tab);
+      if (index < 0) return;
+      event.preventDefault();
+      const nextIndex =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? tabs.length - 1
+            : event.key === "ArrowRight"
+              ? (index + 1) % tabs.length
+              : (index - 1 + tabs.length) % tabs.length;
+      tabs[nextIndex]?.focus();
+      tabs[nextIndex]?.click();
+    };
+
     root.addEventListener("click", onClickCapture, true);
+    root.addEventListener("keydown", onKeyDown);
     return () => {
       observer.disconnect();
       root.removeEventListener("click", onClickCapture, true);
+      root.removeEventListener("keydown", onKeyDown);
     };
   }, []);
 
