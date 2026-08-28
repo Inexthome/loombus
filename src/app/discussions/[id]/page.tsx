@@ -4,6 +4,7 @@ import { DiscussionLibraryFeedbackLauncher } from "@/components/library/discussi
 import "./discussion-mobile-back-navigation.css";
 import DiscussionDetailActionsLayer from "./discussion-detail-actions-layer";
 import DiscussionDetailV2Client from "./discussion-detail-v2-client";
+import DiscussionInlinePointReplies from "./discussion-inline-point-replies";
 import DiscussionMobileBackNavigation from "./discussion-mobile-back-navigation";
 
 export default function DiscussionPage() {
@@ -11,6 +12,7 @@ export default function DiscussionPage() {
     <>
       <DiscussionMobileBackNavigation />
       <DiscussionDetailV2Client />
+      <DiscussionInlinePointReplies />
       <DiscussionViewersPanel />
       <DiscussionAudienceDetailBadge />
       <DiscussionDetailActionsLayer />
