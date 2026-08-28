@@ -32,6 +32,9 @@ export function ProfileWorkspaceController() {
   useEffect(() => {
     const content = document.querySelector<HTMLElement>(".profile-workspace-content");
     if (!content) return;
+
+    content.dataset.profileSection = active;
+
     const directSections = [
       ...content.querySelectorAll<HTMLElement>(":scope > section"),
     ];
@@ -50,21 +53,40 @@ export function ProfileWorkspaceController() {
       formSections.find((section) =>
         section.textContent?.includes("Public profile")
       ) ?? null;
+    const formFooterControls = form
+      ? [
+          ...form.querySelectorAll<HTMLElement>(
+            ":scope > button, :scope > p"
+          ),
+        ]
+      : [];
 
     const standaloneSection = active === "creator" || active === "viewers";
     content.style.display = standaloneSection ? "none" : "";
+
     if (publicLink) {
       publicLink.style.display =
         active === "overview" || active === "preview" ? "" : "none";
     }
+
     formSections.forEach((section) => {
       section.style.display = "none";
     });
+
     if (completion && active === "overview") completion.style.display = "";
     if (publicProfile && active === "public") publicProfile.style.display = "";
-    if (form) form.style.display = active === "preview" ? "none" : "";
+
+    if (form) {
+      form.style.display = active === "preview" ? "none" : "";
+    }
+
+    formFooterControls.forEach((control) => {
+      control.style.display = active === "public" ? "" : "none";
+    });
+
     if (preview) preview.style.display = active === "preview" ? "" : "none";
     if (grid) grid.classList.toggle("is-preview-only", active === "preview");
+
     const url = new URL(window.location.href);
     url.searchParams.set("section", active);
     window.history.replaceState({}, "", url);
