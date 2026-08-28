@@ -8,6 +8,7 @@ import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay"
 import "../create/create-flat.css";
 import "../create/create-detail-refinement.css";
 import "../create/create-selector-polish.css";
+import "../create/create-selection-surfaces.css";
 import "./discussion-feed-media.css";
 import "./discussion-feed-refinements.css";
 import "./discussion-index-polish.css";
