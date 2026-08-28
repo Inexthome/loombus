@@ -4,6 +4,7 @@ import {
   type ChangeEvent,
   type FormEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -13,7 +14,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   CheckCircle2,
   Circle,
-  Copy,
   MessageSquare,
   Paperclip,
   Puzzle,
@@ -524,7 +524,7 @@ export default function CreateDiscussionComposer({
     setAutosaveStatus(status);
   }
 
-  function saveLocalSnapshot() {
+  const saveLocalSnapshot = useCallback(() => {
     return writeLocalDraft({
       id: draftId ?? "local-create-draft",
       title,
@@ -533,7 +533,65 @@ export default function CreateDiscussionComposer({
       purpose_lane: purposeLane,
       body: buildDraftBody({ body, purpose, mode, tags }),
     });
-  }
+  }, [body, draftId, mode, purpose, purposeLane, realityLens, tags, title, topic]);
+
+  const saveDraft = useCallback(async ({ manual = true }: { manual?: boolean } = {}) => {
+    saveLocalSnapshot();
+    setDraftLoading(true);
+    if (manual) setMessage("");
+    setAutosaveStatus(manual ? "Saving draft..." : "Autosaving...");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) {
+      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+      if (manual) setMessage("Draft saved locally. Sign in is required for server sync.");
+      setDraftLoading(false);
+      return true;
+    }
+    try {
+      const response = await fetch("/api/discussion-drafts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          draftId,
+          title,
+          topic,
+          realityLens,
+          purposeLane,
+          body: buildDraftBody({ body, purpose, mode, tags }),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+        if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
+        return true;
+      }
+      const savedDraft = result.draft as { id: string; updated_at: string };
+      setDraftId(savedDraft.id);
+      writeLocalDraft({
+        id: savedDraft.id,
+        title,
+        topic,
+        reality_lens: realityLens,
+        purpose_lane: purposeLane,
+        body: buildDraftBody({ body, purpose, mode, tags }),
+        updated_at: savedDraft.updated_at,
+      });
+      setAutosaveStatus(manual ? "Draft saved" : "Autosaved");
+      if (manual) setMessage("Draft saved.");
+      return true;
+    } catch {
+      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+      if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
+      return true;
+    } finally {
+      setDraftLoading(false);
+    }
+  }, [body, draftId, mode, purpose, purposeLane, realityLens, saveLocalSnapshot, tags, title, topic]);
 
   useEffect(() => {
     async function loadLatestDraft() {
@@ -621,7 +679,7 @@ export default function CreateDiscussionComposer({
       void saveDraft({ manual: false });
     }, AUTOSAVE_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [draftFingerprint, draftHydrated, hasDraftContent, publishing]);
+  }, [draftFingerprint, draftHydrated, hasDraftContent, publishing, saveDraft]);
 
   useEffect(() => {
     if (!activePanel) return;
@@ -704,64 +762,6 @@ export default function CreateDiscussionComposer({
       `${files.length} attachment${files.length === 1 ? "" : "s"} staged.`
     );
     event.target.value = "";
-  }
-
-  async function saveDraft({ manual = true }: { manual?: boolean } = {}) {
-    const localDraft = saveLocalSnapshot();
-    setDraftLoading(true);
-    if (manual) setMessage("");
-    setAutosaveStatus(manual ? "Saving draft..." : "Autosaving...");
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData.session?.access_token;
-    if (!accessToken) {
-      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
-      if (manual) setMessage("Draft saved locally. Sign in is required for server sync.");
-      setDraftLoading(false);
-      return true;
-    }
-    try {
-      const response = await fetch("/api/discussion-drafts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          draftId,
-          title,
-          topic,
-          realityLens,
-          purposeLane,
-          body: buildDraftBody({ body, purpose, mode, tags }),
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
-        if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
-        return true;
-      }
-      const savedDraft = result.draft as { id: string; updated_at: string };
-      setDraftId(savedDraft.id);
-      writeLocalDraft({
-        id: savedDraft.id,
-        title,
-        topic,
-        reality_lens: realityLens,
-        purpose_lane: purposeLane,
-        body: buildDraftBody({ body, purpose, mode, tags }),
-        updated_at: savedDraft.updated_at,
-      });
-      setAutosaveStatus(manual ? "Draft saved" : "Autosaved");
-      if (manual) setMessage("Draft saved.");
-      return true;
-    } catch {
-      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
-      if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
-      return true;
-    } finally {
-      setDraftLoading(false);
-    }
   }
 
   async function clearDraft() {
@@ -1010,11 +1010,7 @@ export default function CreateDiscussionComposer({
 
   function openView(view: ComposerView) {
     setComposerView(view);
-    if (view === "quality") {
-      setFindings([]);
-      setAiMessage("");
-    }
-    if (view === "structure") {
+    if (view === "quality" || view === "structure") {
       setFindings([]);
       setAiMessage("");
     }
@@ -1098,32 +1094,16 @@ export default function CreateDiscussionComposer({
 
       <section className="create-composer" aria-label="Discussion composer">
         <nav className="create-composer-tabs" aria-label="Composer tools">
-          <button
-            type="button"
-            data-active={composerView === "write"}
-            onClick={() => openView("write")}
-          >
+          <button type="button" data-active={composerView === "write"} onClick={() => openView("write")}>
             Write
           </button>
-          <button
-            type="button"
-            data-active={composerView === "review"}
-            onClick={() => openView("review")}
-          >
+          <button type="button" data-active={composerView === "review"} onClick={() => openView("review")}>
             Review
           </button>
-          <button
-            type="button"
-            data-active={composerView === "quality"}
-            onClick={() => openView("quality")}
-          >
+          <button type="button" data-active={composerView === "quality"} onClick={() => openView("quality")}>
             Check Quality
           </button>
-          <button
-            type="button"
-            data-active={composerView === "structure"}
-            onClick={() => openView("structure")}
-          >
+          <button type="button" data-active={composerView === "structure"} onClick={() => openView("structure")}>
             Improve structure
           </button>
         </nav>
@@ -1178,11 +1158,7 @@ export default function CreateDiscussionComposer({
               <div className="create-findings">
                 {findings.map((finding) => (
                   <div key={finding.label} className="create-finding-row">
-                    {finding.done ? (
-                      <CheckCircle2 className="size-4" />
-                    ) : (
-                      <Circle className="size-4" />
-                    )}
+                    {finding.done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
                     <div>
                       <strong>{finding.label}</strong>
                       <p>{finding.detail}</p>
@@ -1226,9 +1202,7 @@ export default function CreateDiscussionComposer({
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  setContextItems((items) => items.filter((candidate) => candidate.id !== item.id))
-                }
+                onClick={() => setContextItems((items) => items.filter((candidate) => candidate.id !== item.id))}
                 aria-label={`Remove ${item.file.name}`}
               >
                 <X className="size-4" />
@@ -1253,11 +1227,7 @@ export default function CreateDiscussionComposer({
 
       <footer className="create-footer-actions">
         <div className="create-footer-secondary">
-          <button
-            type="button"
-            onClick={() => void saveDraft({ manual: true })}
-            disabled={draftLoading}
-          >
+          <button type="button" onClick={() => void saveDraft({ manual: true })} disabled={draftLoading}>
             <Save className="size-4" /> {draftLoading ? "Saving..." : "Save draft"}
           </button>
           <button type="button" onClick={clearDraft} disabled={draftLoading || publishing}>
@@ -1269,9 +1239,7 @@ export default function CreateDiscussionComposer({
             onClick={() => attachmentInputRef.current?.click()}
           >
             <Paperclip className="size-4" />
-            {contextItems.length > 0
-              ? `Add files / evidence · ${contextItems.length}`
-              : "Add files / evidence"}
+            {contextItems.length > 0 ? `Add files / evidence · ${contextItems.length}` : "Add files / evidence"}
           </button>
         </div>
         <button
