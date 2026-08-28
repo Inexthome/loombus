@@ -22,47 +22,61 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
   }
 }
 
+/*
+ * /create follows the same visual grammar as /discussions/[id]:
+ * one editorial column, thin dividers, compact controls, restrained actions,
+ * and no dashboard/card rail competing with the composer.
+ */
 [data-create-composer-variant="page"] > section {
-  max-width: 80rem !important;
+  max-width: 58rem !important;
 }
 
 [data-create-composer-variant="page"] form {
-  gap: 2rem !important;
+  display: block !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child {
   gap: 0 !important;
 }
 
+[data-create-composer-variant="page"] form > aside {
+  display: none !important;
+}
+
 [data-create-composer-variant="page"] [data-create-composer-header] {
   margin-bottom: 0 !important;
   border-bottom: 1px solid var(--loombus-border);
-  padding: 0 0 1rem !important;
+  padding: 0 0 0.8rem !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
-  letter-spacing: -0.035em !important;
+  font-size: clamp(1.45rem, 3vw, 1.95rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
 }
 
 [data-create-composer-variant="page"] [data-create-composer-header] button {
   min-height: 2.5rem !important;
+  padding-inline: 0 !important;
   font-size: 0.78rem !important;
+  font-weight: 700 !important;
 }
 
+/* Compact classification row. */
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) {
   gap: 0 !important;
   border-bottom: 1px solid var(--loombus-border);
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-  min-height: 2.9rem !important;
+  min-height: 2.85rem !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.8rem 0.65rem !important;
+  padding: 0.72rem 0.8rem !important;
   color: var(--loombus-text-muted) !important;
   font-size: 0.78rem !important;
+  font-weight: 700 !important;
   box-shadow: none !important;
 }
 
@@ -71,10 +85,11 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button:hover {
-  background: color-mix(in srgb, var(--loombus-surface) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 58%, transparent) !important;
   color: var(--loombus-text) !important;
 }
 
+/* Main create composer: flat, divider-led, not a large card. */
 [data-create-composer-variant="page"] form > div:first-child > section {
   border: 0 !important;
   border-bottom: 1px solid var(--loombus-border) !important;
@@ -84,126 +99,161 @@ html[data-loombus-theme="dark"] [data-create-composer-variant="page"] {
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label {
-  padding: 1.15rem 0 !important;
+  padding: 1rem 0 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section > label + label {
-  border-top: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section > label > span,
+[data-create-composer-variant="page"] form > div:first-child > section > label > div:first-child span:first-child {
+  font-size: 0.82rem !important;
+  font-weight: 750 !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section input,
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  border-color: var(--loombus-border) !important;
-  border-radius: 0.75rem !important;
-  background: color-mix(in srgb, var(--loombus-surface) 54%, transparent) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
   box-shadow: none !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section input {
+  min-height: 2.8rem !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section textarea {
-  min-height: 18rem !important;
+  min-height: 17rem !important;
+  padding-top: 0.35rem !important;
+  padding-right: 3.5rem !important;
+  line-height: 1.7 !important;
 }
 
-[data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
-  right: 0.9rem !important;
-  bottom: 4.75rem !important;
-  width: 2.65rem !important;
-  height: 2.65rem !important;
-  border-radius: 0.75rem !important;
+[data-create-composer-variant="page"] form > div:first-child > section input:focus,
+[data-create-composer-variant="page"] form > div:first-child > section textarea:focus {
+  outline: none !important;
   box-shadow: none !important;
 }
 
+[data-create-composer-variant="page"] form > div:first-child > section p {
+  margin-top: 0.3rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.45 !important;
+}
+
+[data-create-composer-variant="page"] form > div:first-child > section button[aria-label="Open Draft Guidance"] {
+  right: 0 !important;
+  bottom: 3.75rem !important;
+  width: 2.3rem !important;
+  height: 2.3rem !important;
+  border: 0 !important;
+  border-radius: 0.45rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Notices read as inline status rows rather than cards. */
 [data-create-composer-variant="page"] form > div:first-child > div[class*="rounded-2xl"][class*="border"] {
   border-width: 0 0 1px !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 0.85rem 0 !important;
+  padding: 0.72rem 0 !important;
+  font-size: 0.78rem !important;
+  box-shadow: none !important;
 }
 
+/* Footer actions mirror reply composer actions: restrained secondary actions,
+ * one clear primary publish action. */
 [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-  grid-template-columns: 1fr 1fr 1.2fr !important;
-  gap: 0.5rem !important;
-  padding: 0.8rem 0 0 !important;
+  grid-template-columns: auto auto 1fr !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 0.7rem 0 0 !important;
   border-bottom: 0 !important;
+  background: transparent !important;
 }
 
 [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
-  min-height: 2.85rem !important;
-  border-radius: 0.7rem !important;
-  box-shadow: none !important;
-}
-
-[data-create-composer-variant="page"] form > aside {
-  gap: 0 !important;
-}
-
-[data-create-composer-variant="page"] form > aside > section {
-  margin: 0 !important;
+  min-height: 2.55rem !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 1rem 0 !important;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 750 !important;
   box-shadow: none !important;
 }
 
-[data-create-composer-variant="page"] form > aside > section:first-child {
-  padding-top: 0 !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:first-child {
+  padding-left: 0 !important;
+  color: var(--loombus-text-muted) !important;
 }
 
-[data-create-composer-variant="page"] form > aside > section:last-child {
-  border-bottom: 0 !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:nth-child(2) {
+  color: var(--loombus-text) !important;
 }
 
-[data-create-composer-variant="page"] form > aside h2 {
-  font-size: 0.95rem !important;
-}
-
-[data-create-composer-variant="page"] form > aside button {
-  border-radius: 0.65rem !important;
-  box-shadow: none !important;
+[data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child {
+  justify-self: end !important;
+  min-width: 7.5rem !important;
+  border-radius: 0.55rem !important;
+  padding-inline: 1rem !important;
+  color: #17140c !important;
+  background: #d6a84f !important;
 }
 
 @media (max-width: 63.99rem) {
   [data-create-composer-variant="page"] {
-    padding-left: 0.8rem !important;
-    padding-right: 0.8rem !important;
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    min-height: 16rem !important;
+    min-height: 15rem !important;
   }
 }
 
 @media (max-width: 40rem) {
   [data-create-composer-variant="page"] {
-    padding-top: 1rem !important;
+    padding-top: 0.8rem !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] {
     grid-template-columns: auto minmax(0, 1fr) auto !important;
-    gap: 0.35rem !important;
+    gap: 0.4rem !important;
   }
 
   [data-create-composer-variant="page"] [data-create-composer-header] h1 {
-    font-size: 1.25rem !important;
+    font-size: 1.16rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > div:nth-child(2) > button {
-    min-height: 2.75rem !important;
-    padding-inline: 0.4rem !important;
-    font-size: 0.72rem !important;
+    min-height: 2.65rem !important;
+    padding-inline: 0.45rem !important;
+    font-size: 0.7rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section > label {
-    padding: 1rem 0 !important;
+    padding: 0.9rem 0 !important;
   }
 
-  [data-create-composer-variant="page"] form > div:first-child > section input,
   [data-create-composer-variant="page"] form > div:first-child > section textarea {
-    border-radius: 0.65rem !important;
+    min-height: 13.5rem !important;
   }
 
   [data-create-composer-variant="page"] form > div:first-child > section:last-child {
-    grid-template-columns: 0.9fr 1fr 1.15fr !important;
+    grid-template-columns: auto auto 1fr !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button {
+    padding-inline: 0.55rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  [data-create-composer-variant="page"] form > div:first-child > section:last-child > button:last-child {
+    min-width: 6.5rem !important;
   }
 }
