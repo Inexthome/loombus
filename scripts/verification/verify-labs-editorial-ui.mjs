@@ -46,9 +46,14 @@ assertIncludes(css, "@media (prefers-reduced-motion: reduce)", "reduced-motion s
 assertIncludes(css, ":focus-visible", "keyboard focus treatment");
 assertIncludes(css, "overflow-x: clip", "mobile overflow protection");
 assertExcludes(css, "radial-gradient", "dashboard gradient chrome");
-if (/box-shadow\s*:\s*(?!none\s*[;}])/i.test(css)) {
-  throw new Error("Unexpected dashboard card shadows: non-none box-shadow declaration");
+
+for (const match of css.matchAll(/box-shadow\s*:\s*([^;}]+)/gi)) {
+  const value = match[1].trim().toLowerCase();
+  if (value !== "none") {
+    throw new Error(`Unexpected dashboard card shadow: box-shadow: ${match[1].trim()}`);
+  }
 }
+
 assertExcludes(page, "No separate experiment enrollment catalog is published here.", "defensive experiment placeholder panel");
 
 console.log("Labs Editorial UI verification passed.");
