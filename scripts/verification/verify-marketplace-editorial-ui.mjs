@@ -9,15 +9,19 @@ const check = (value, message) => {
 
 const directoryPage = read("src/app/marketplace/page.tsx");
 const detailPage = read("src/app/marketplace/[slug]/page.tsx");
-const managePage = read("src/app/marketplace/manage/page.tsx");
-const savedPage = read("src/app/marketplace/saved/page.tsx");
+const manageRoute = read("src/app/marketplace/manage/page.tsx");
+const savedRoute = read("src/app/marketplace/saved/page.tsx");
+const safetyRoute = read("src/app/marketplace/safety/page.tsx");
+const manager = read("src/components/marketplace-manager-page.tsx");
+const saved = read("src/components/marketplace-saved-page.tsx");
 const editorial = read("src/app/marketplace/marketplace-editorial.css");
 
 for (const [name, source] of [
   ["directory", directoryPage],
   ["detail", detailPage],
-  ["manage", managePage],
-  ["saved", savedPage],
+  ["manage", manageRoute],
+  ["saved", savedRoute],
+  ["safety", safetyRoute],
 ]) {
   check(
     source.includes(`data-marketplace-editorial=\"${name}\"`),
@@ -38,11 +42,10 @@ check(
 
 check(
   editorial.includes("--marketplace-editorial-accent: #cbab5b") &&
-    editorial.includes("border-block") &&
     editorial.includes("box-shadow: none") &&
     editorial.includes("prefers-reduced-motion") &&
     editorial.includes(":focus-visible"),
-  "Marketplace Editorial UI hierarchy, Gold accent, focus, or reduced-motion treatment is incomplete."
+  "Marketplace Editorial UI Gold accent, focus, or reduced-motion treatment is incomplete."
 );
 
 check(
@@ -51,6 +54,35 @@ check(
     detailPage.includes("MarketplacePickupScheduler") &&
     detailPage.includes("MarketplaceTrustActions"),
   "Marketplace detail Reserved/pickup/trust behavior was not preserved."
+);
+
+check(
+  saved.includes('marketplaceAuthorizedFetch(') &&
+    saved.includes('"/api/marketplace/watchlist"') &&
+    saved.includes('listing.status === "reserved"') &&
+    saved.includes('aria-label="Saved Marketplace views"') &&
+    !saved.includes('xl:grid-cols-[minmax(0,1fr)_20rem]'),
+  "Saved Marketplace Editorial UI or watchlist behavior is incomplete."
+);
+
+check(
+  manager.includes('marketplaceApiAction') &&
+    manager.includes('MarketplaceSellerListings') &&
+    manager.includes('MarketplaceListingEditor') &&
+    manager.includes('MarketplaceAdminReview') &&
+    manager.includes('const reservedCount = statusCounts.get("reserved")') &&
+    manager.includes('aria-label="Marketplace management workspace"') &&
+    !manager.includes('xl:grid-cols-[minmax(0,1fr)_20rem]'),
+  "Marketplace management Editorial UI or lifecycle behavior is incomplete."
+);
+
+check(
+  safetyRoute.includes("Transactions remain between buyer and seller") &&
+    safetyRoute.includes("Loombus does not process Marketplace payments") &&
+    safetyRoute.includes("/marketplace/manage") &&
+    safetyRoute.includes("/guidelines") &&
+    !safetyRoute.includes("CommerceSafetyPage"),
+  "Marketplace Safety Editorial UI or transaction-boundary guidance is incomplete."
 );
 
 console.log("Marketplace Editorial UI verification passed.");

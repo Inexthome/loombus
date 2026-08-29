@@ -3,15 +3,9 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
-  Bookmark,
-  ChevronRight,
-  Flag,
   Loader2,
-  PackageCheck,
   Plus,
   RefreshCw,
-  ShieldCheck,
-  Store,
 } from "lucide-react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -39,7 +33,7 @@ import { MarketplaceSellerListings } from "@/components/marketplace-seller-listi
 type WorkspaceView = "listings" | "editor" | "moderation";
 
 const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:bg-[color:var(--loombus-surface-muted)] disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-transparent px-1 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-text)] disabled:opacity-50";
 const primaryButton =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50";
 
@@ -105,6 +99,7 @@ export default function MarketplaceManagerPage() {
   const draftCount = statusCounts.get("draft") ?? 0;
   const pendingCount = statusCounts.get("pending") ?? 0;
   const publishedCount = statusCounts.get("published") ?? 0;
+  const reservedCount = statusCounts.get("reserved") ?? 0;
   const closedCount =
     (statusCounts.get("sold") ?? 0) +
     (statusCounts.get("expired") ?? 0) +
@@ -398,7 +393,7 @@ export default function MarketplaceManagerPage() {
   if (loading && !data) {
     return (
       <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-        <div className="mx-auto grid min-h-64 max-w-[82rem] place-items-center rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
+        <div className="mx-auto grid min-h-64 max-w-6xl place-items-center border-y border-[color:var(--loombus-border-muted)]">
           <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)]">
             <Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={18} /> Loading Marketplace management
           </span>
@@ -419,173 +414,117 @@ export default function MarketplaceManagerPage() {
       : []),
   ];
 
+  const statusSummary = [
+    ["Published", publishedCount],
+    ["Reserved", reservedCount],
+    ["Drafts", draftCount],
+    ["Pending", pendingCount],
+    ["Closed", closedCount],
+  ] as const;
+
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-16 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[82rem]">
-        <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">{data?.isAdmin ? "Marketplace operations" : "Manage Marketplace"}</h1>
-            <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
-              {data?.isAdmin
-                ? "Review Marketplace records, seller attribution, moderation states, and reports from one operational workspace."
-                : "Create attributable listings, save private drafts, manage publication states, and close the lifecycle when an item sells."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/marketplace" className={secondaryButton}>Browse Marketplace <ArrowUpRight size={15} /></Link>
-            <button type="button" onClick={() => void load()} className={secondaryButton} disabled={loading}>
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
-            </button>
-            <button type="button" onClick={startNew} className={primaryButton}><Plus size={16} /> New listing</button>
+    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-20 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <header className="border-b border-[color:var(--loombus-border-muted)] pb-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Seller workspace</p>
+              <h1 className="mt-2 text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">{data?.isAdmin ? "Marketplace operations" : "Manage Marketplace"}</h1>
+              <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
+                {data?.isAdmin
+                  ? "Review listings, seller attribution, moderation states, and reports in one focused workspace."
+                  : "Create attributable listings, manage publication states, and close the lifecycle when an item sells."}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/marketplace" className={secondaryButton}>Browse <ArrowUpRight size={15} /></Link>
+              <button type="button" onClick={() => void load()} className={secondaryButton} disabled={loading}>
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
+              </button>
+              <button type="button" onClick={startNew} className={primaryButton}><Plus size={16} /> New listing</button>
+            </div>
           </div>
         </header>
 
-        <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-4 text-[color:var(--loombus-cream-contrast)] shadow-sm dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Published</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{publishedCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Private drafts</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{draftCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Pending review</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{pendingCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Closed lifecycle</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{closedCount}</strong>
-          </article>
+        <section className="grid grid-cols-2 border-b border-[color:var(--loombus-border-muted)] sm:grid-cols-5" aria-label="Marketplace listing status summary">
+          {statusSummary.map(([label, value]) => (
+            <div key={label} className="border-b border-r border-[color:var(--loombus-border-muted)] px-4 py-4 last:border-r-0 sm:border-b-0">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">{label}</span>
+              <strong className="mt-1 block text-2xl tracking-[-0.03em]">{value}</strong>
+            </div>
+          ))}
         </section>
 
-        {message ? <div className="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-800 dark:text-emerald-200">{message}</div> : null}
-        {error ? <div className="mb-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">{error}</div> : null}
+        {message ? <div className="border-b border-emerald-500/30 py-4 text-sm text-emerald-800 dark:text-emerald-200" role="status">{message}</div> : null}
+        {error ? <div className="border-b border-red-500/30 py-4 text-sm text-red-700 dark:text-red-300" role="alert">{error}</div> : null}
 
-        <nav className="mb-6 flex gap-2 overflow-x-auto rounded-[1.5rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-2 shadow-sm" aria-label="Marketplace management workspace">
+        <nav className="flex gap-7 overflow-x-auto border-b border-[color:var(--loombus-border-muted)]" aria-label="Marketplace management workspace">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setView(tab.key)}
-              className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                view === tab.key
-                  ? "bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
-                  : "hover:bg-[color:var(--loombus-surface-muted)]"
-              }`}
+              className={`relative flex min-h-12 shrink-0 items-center gap-2 py-3 text-sm font-semibold transition ${view === tab.key ? "text-[color:var(--loombus-text)]" : "text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"}`}
+              aria-current={view === tab.key ? "page" : undefined}
             >
               {tab.label}
-              {tab.count > 0 ? <span className="rounded-full bg-[color:var(--loombus-page-bg)] px-2 py-0.5 text-xs">{tab.count}</span> : null}
+              {tab.count > 0 ? <span className="text-xs text-[color:var(--loombus-text-subtle)]">{tab.count}</span> : null}
+              {view === tab.key ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[color:var(--loombus-gold)]" /> : null}
             </button>
           ))}
         </nav>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <section className="min-w-0">
-            {view === "listings" ? (
-              <MarketplaceSellerListings
-                listings={data?.listings ?? []}
-                working={working}
-                onRefresh={load}
-                startEdit={startEdit}
-                sellerAction={sellerAction}
-              />
-            ) : null}
+        <section className="min-w-0 py-6">
+          {view === "listings" ? (
+            <MarketplaceSellerListings
+              listings={data?.listings ?? []}
+              working={working}
+              onRefresh={load}
+              startEdit={startEdit}
+              sellerAction={sellerAction}
+            />
+          ) : null}
 
-            {view === "editor" ? (
-              <MarketplaceListingEditor
-                data={data}
-                draft={draft}
-                editing={editing}
-                formOpen={formOpen}
-                setFormOpen={setFormOpen}
-                usedCategories={usedCategories}
-                working={working}
-                uploading={uploading}
-                updateDraft={updateDraft}
-                uploadPhotos={uploadPhotos}
-                removePhoto={removePhoto}
-                saveDraft={saveDraft}
-                submitListing={submitListing}
-                startNew={startNew}
-              />
-            ) : null}
+          {view === "editor" ? (
+            <MarketplaceListingEditor
+              data={data}
+              draft={draft}
+              editing={editing}
+              formOpen={formOpen}
+              setFormOpen={setFormOpen}
+              usedCategories={usedCategories}
+              working={working}
+              uploading={uploading}
+              updateDraft={updateDraft}
+              uploadPhotos={uploadPhotos}
+              removePhoto={removePhoto}
+              saveDraft={saveDraft}
+              submitListing={submitListing}
+              startNew={startNew}
+            />
+          ) : null}
 
-            {view === "moderation" && data?.isAdmin ? (
-              <MarketplaceAdminReview
-                data={data}
-                working={working}
-                moderationNotes={moderationNotes}
-                setModerationNotes={setModerationNotes}
-                reportNotes={reportNotes}
-                setReportNotes={setReportNotes}
-                moderate={moderate}
-                reviewReport={reviewReport}
-              />
-            ) : null}
-          </section>
+          {view === "moderation" && data?.isAdmin ? (
+            <MarketplaceAdminReview
+              data={data}
+              working={working}
+              moderationNotes={moderationNotes}
+              setModerationNotes={setModerationNotes}
+              reportNotes={reportNotes}
+              setReportNotes={setReportNotes}
+              moderate={moderate}
+              reviewReport={reviewReport}
+            />
+          ) : null}
+        </section>
 
-          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-[0.3em]">Workspace status</p>
-                <Store className="h-5 w-5 text-[color:var(--loombus-gold)]" />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {[
-                  ["All", data?.listings.length ?? 0],
-                  ["Drafts", draftCount],
-                  ["Published", publishedCount],
-                  ["Pending", pendingCount],
-                ].map(([label, value]) => (
-                  <article key={String(label)} className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-                    <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">{label}</span>
-                    <strong className="mt-1 block text-2xl">{value}</strong>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Marketplace actions</p>
-              <div className="mt-4 space-y-2">
-                <button type="button" onClick={startNew} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-cream)] px-4 py-3 text-left text-sm font-semibold text-[color:var(--loombus-cream-contrast)] transition hover:opacity-90 dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]">
-                  Create listing <Plus className="h-4 w-4" />
-                </button>
-                <button type="button" onClick={() => setView("listings")} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-left text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
-                  Listing records <PackageCheck className="h-4 w-4 text-[color:var(--loombus-gold)]" />
-                </button>
-                {data?.isAdmin ? <button type="button" onClick={() => setView("moderation")} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-left text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Moderation queue <Flag className="h-4 w-4 text-[color:var(--loombus-gold)]" /></button> : null}
-                <Link href="/marketplace/saved" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
-                  Saved items <Bookmark className="h-4 w-4 text-[color:var(--loombus-gold)]" />
-                </Link>
-                <Link href="/marketplace" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
-                  Browse Marketplace <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" />
-                </Link>
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]">
-                  <ShieldCheck className="h-5 w-5" />
-                </span>
-                <div>
-                  <h3 className="font-semibold">Attribution and lifecycle remain explicit</h3>
-                  <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    Personal and approved business attribution remain separate. Draft, review, publication, sold, reopened, and removed states stay visible to the seller.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                Loombus does not process Marketplace payments. Confirm identity, item condition, ownership, delivery, and payment terms before completing a transaction.
-              </p>
-            </section>
-          </aside>
-        </div>
+        <footer className="flex flex-col gap-3 border-t border-[color:var(--loombus-border-muted)] py-6 text-sm text-[color:var(--loombus-text-muted)] sm:flex-row sm:items-center sm:justify-between">
+          <p>Attribution, review, Reserved, sold, reopened, and removed states remain explicit.</p>
+          <div className="flex flex-wrap gap-5">
+            <Link href="/marketplace/saved" className="font-semibold hover:text-[color:var(--loombus-gold)]">Saved items</Link>
+            <Link href="/marketplace/safety" className="font-semibold hover:text-[color:var(--loombus-gold)]">Safety and policy</Link>
+          </div>
+        </footer>
       </div>
     </main>
   );
