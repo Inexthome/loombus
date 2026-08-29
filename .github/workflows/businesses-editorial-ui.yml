@@ -1,0 +1,24 @@
+name: Businesses Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/businesses/**"
+      - "src/app/services/manage/**"
+      - "src/components/business-*.tsx"
+      - "src/components/services-manager-page.tsx"
+      - "scripts/verification/verify-businesses-editorial-ui.mjs"
+      - ".github/workflows/businesses-editorial-ui.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Businesses and Services management Editorial UI
+        run: node scripts/verification/verify-businesses-editorial-ui.mjs
