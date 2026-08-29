@@ -131,10 +131,7 @@ export default function PeopleFollowRequestsPanel() {
 
     const response = await fetch("/api/follows/requests", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ requestId: request.id, action }),
     });
     const payload = await response.json().catch(() => ({}));
@@ -166,10 +163,7 @@ export default function PeopleFollowRequestsPanel() {
 
     const response = await fetch("/api/follows/toggle", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ targetUserId: request.target.id }),
     });
     const payload = await response.json().catch(() => ({}));
@@ -188,82 +182,48 @@ export default function PeopleFollowRequestsPanel() {
   const rows = useMemo(() => (tab === "received" ? received : sent), [received, sent, tab]);
 
   return (
-    <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 sm:p-6" aria-labelledby="people-follow-requests-heading">
-      <div className="flex flex-col gap-4 border-b border-[var(--loombus-border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
+    <section className="border-b border-[var(--loombus-border)] py-7" aria-labelledby="people-follow-requests-heading">
+      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--loombus-gold)]">Requests</p>
-          <h2 id="people-follow-requests-heading" className="mt-1 text-2xl font-bold">Manage follow requests</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-            Approve or decline people asking to follow you, or review requests you sent to private accounts.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[.18em] text-[var(--loombus-gold)]">Follow requests</p>
+          <h2 id="people-follow-requests-heading" className="mt-2 text-3xl font-semibold tracking-[-.03em]">Manage who can follow you.</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Approve or decline people asking to follow you, or review requests you sent to private accounts.</p>
         </div>
-        <Link href="/settings?section=privacy-safety" className="text-sm font-semibold text-[var(--loombus-text-muted)] underline decoration-[var(--loombus-border)] underline-offset-4">
-          Privacy settings
-        </Link>
+        <Link href="/settings?section=privacy-safety" className="w-fit border-b border-[var(--loombus-border)] pb-1 text-sm font-semibold text-[var(--loombus-text-muted)]">Privacy settings</Link>
       </div>
 
-      <div className="mt-4 flex gap-2" role="tablist" aria-label="Follow request direction">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "received"}
-          onClick={() => setTab("received")}
-          className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${tab === "received" ? "border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}
-        >
-          Received {received.length ? `(${received.length})` : ""}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "sent"}
-          onClick={() => setTab("sent")}
-          className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${tab === "sent" ? "border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}
-        >
-          Sent {sent.length ? `(${sent.length})` : ""}
-        </button>
+      <div className="mt-7 flex gap-6 border-b border-[var(--loombus-border)]" role="tablist" aria-label="Follow request direction">
+        <button type="button" role="tab" aria-selected={tab === "received"} onClick={() => setTab("received")} className={`min-h-11 border-b-2 px-0 text-sm font-semibold ${tab === "received" ? "border-[var(--loombus-gold)] text-[var(--loombus-text)]" : "border-transparent text-[var(--loombus-text-muted)]"}`}>Received {received.length ? `(${received.length})` : ""}</button>
+        <button type="button" role="tab" aria-selected={tab === "sent"} onClick={() => setTab("sent")} className={`min-h-11 border-b-2 px-0 text-sm font-semibold ${tab === "sent" ? "border-[var(--loombus-gold)] text-[var(--loombus-text)]" : "border-transparent text-[var(--loombus-text-muted)]"}`}>Sent {sent.length ? `(${sent.length})` : ""}</button>
       </div>
 
-      {notice ? (
-        <div className="mt-4 rounded-xl border border-[var(--loombus-border)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]" role="status">
-          {notice}
-        </div>
-      ) : null}
+      {notice ? <div className="border-b border-[var(--loombus-border)] py-4 text-sm text-[var(--loombus-text-muted)]" role="status">{notice}</div> : null}
 
       {loading ? (
-        <p className="py-8 text-sm text-[var(--loombus-text-muted)]">Loading follow requests…</p>
+        <p className="py-10 text-sm text-[var(--loombus-text-muted)]">Loading follow requests…</p>
       ) : rows.length === 0 ? (
-        <div className="py-10 text-center">
+        <div className="py-12 text-center">
           <Clock3 className="mx-auto size-8 text-[var(--loombus-gold)]" aria-hidden="true" />
-          <h3 className="mt-3 text-lg font-bold">{tab === "received" ? "No requests are waiting." : "No sent requests are pending."}</h3>
-          <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
-            {tab === "received"
-              ? "New requests to follow your private account will appear here and in Notifications."
-              : "Requests you send to private accounts will remain here until accepted, declined, or cancelled."}
-          </p>
+          <h3 className="mt-3 text-xl font-semibold">{tab === "received" ? "No requests are waiting." : "No sent requests are pending."}</h3>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-[var(--loombus-text-muted)]">{tab === "received" ? "New requests to follow your private account will appear here and in Notifications." : "Requests you send to private accounts will remain here until accepted, declined, or cancelled."}</p>
         </div>
       ) : (
-        <div className="mt-4 divide-y divide-[var(--loombus-border)]">
+        <div className="divide-y divide-[var(--loombus-border)]">
           {tab === "received"
             ? received.map((request) => {
                 const busy = workingId === request.id;
                 return (
-                  <article key={request.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
-                    <Link href={profileHref(request.requester)} className="flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#CBAB5B] focus-visible:ring-offset-2">
+                  <article key={request.id} className="grid gap-4 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <Link href={profileHref(request.requester)} className="flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2">
                       <ProfileAvatar profile={request.requester} size="lg" />
                       <span className="min-w-0">
                         <strong className="block truncate text-sm">{profileName(request.requester)}</strong>
-                        <span className="block truncate text-xs text-[var(--loombus-text-muted)]">
-                          {request.requester.username ? `@${request.requester.username} · ` : ""}{formatRequestDate(request.createdAt)}
-                        </span>
+                        <span className="block truncate text-xs text-[var(--loombus-text-muted)]">{request.requester.username ? `@${request.requester.username} · ` : ""}{formatRequestDate(request.createdAt)}</span>
                       </span>
                     </Link>
-                    <div className="flex gap-2 sm:justify-end">
-                      <button type="button" disabled={Boolean(workingId)} onClick={() => void respond(request, "decline")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-semibold disabled:opacity-50">
-                        <X className="size-4" aria-hidden="true" /> Decline
-                      </button>
-                      <button type="button" disabled={Boolean(workingId)} onClick={() => void respond(request, "accept")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--loombus-gold-strong)] px-4 text-sm font-semibold text-[var(--loombus-gold-contrast)] disabled:opacity-50">
-                        <Check className="size-4" aria-hidden="true" /> {busy ? "Working…" : "Approve"}
-                      </button>
+                    <div className="flex gap-4 sm:justify-end">
+                      <button type="button" disabled={Boolean(workingId)} onClick={() => void respond(request, "decline")} className="inline-flex min-h-11 items-center gap-2 border-b border-[var(--loombus-border)] px-1 text-sm font-semibold disabled:opacity-50"><X className="size-4" aria-hidden="true" /> Decline</button>
+                      <button type="button" disabled={Boolean(workingId)} onClick={() => void respond(request, "accept")} className="inline-flex min-h-11 items-center gap-2 border-b-2 border-[var(--loombus-gold)] px-1 text-sm font-semibold disabled:opacity-50"><Check className="size-4" aria-hidden="true" /> {busy ? "Working…" : "Approve"}</button>
                     </div>
                   </article>
                 );
@@ -271,19 +231,15 @@ export default function PeopleFollowRequestsPanel() {
             : sent.map((request) => {
                 const busy = workingId === request.id;
                 return (
-                  <article key={request.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
-                    <Link href={profileHref(request.target)} className="flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#CBAB5B] focus-visible:ring-offset-2">
+                  <article key={request.id} className="grid gap-4 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <Link href={profileHref(request.target)} className="flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2">
                       <ProfileAvatar profile={request.target} size="lg" />
                       <span className="min-w-0">
                         <strong className="block truncate text-sm">{profileName(request.target)}</strong>
-                        <span className="block truncate text-xs text-[var(--loombus-text-muted)]">
-                          {request.target.username ? `@${request.target.username} · ` : ""}Pending since {formatRequestDate(request.createdAt)}
-                        </span>
+                        <span className="block truncate text-xs text-[var(--loombus-text-muted)]">{request.target.username ? `@${request.target.username} · ` : ""}Pending since {formatRequestDate(request.createdAt)}</span>
                       </span>
                     </Link>
-                    <button type="button" disabled={Boolean(workingId)} onClick={() => void cancel(request)} className="min-h-11 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-semibold text-[var(--loombus-text-muted)] disabled:opacity-50">
-                      {busy ? "Cancelling…" : "Cancel request"}
-                    </button>
+                    <button type="button" disabled={Boolean(workingId)} onClick={() => void cancel(request)} className="min-h-11 border-b border-[var(--loombus-border)] px-1 text-sm font-semibold text-[var(--loombus-text-muted)] disabled:opacity-50">{busy ? "Cancelling…" : "Cancel request"}</button>
                   </article>
                 );
               })}
