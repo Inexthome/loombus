@@ -34,6 +34,7 @@ export function ConversationIdentity({
   size?: "sm" | "md" | "lg";
   compact?: boolean;
 }) {
+  const marketplace = Boolean(conversation.marketplaceContexts?.length);
   const content = (
     <>
       <ProfileAvatar
@@ -46,7 +47,12 @@ export function ConversationIdentity({
       />
       <span className="messages-v2-identity-copy">
         <strong>{getConversationName(conversation)}</strong>
-        {!compact ? <span>{getConversationHandle(conversation)}</span> : null}
+        {!compact ? (
+          <span>
+            {getConversationHandle(conversation)}
+            {marketplace ? " · Marketplace inquiry" : ""}
+          </span>
+        ) : null}
       </span>
     </>
   );
@@ -69,6 +75,7 @@ export function ConversationListItem({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const marketplace = Boolean(conversation.marketplaceContexts?.length);
   return (
     <button
       type="button"
@@ -95,7 +102,7 @@ export function ConversationListItem({
           <time>{formatConversationTime(conversation.lastMessageAt)}</time>
         </span>
         <span className="messages-v2-conversation-preview">
-          <span>{getConversationPreview(conversation)}</span>
+          <span>{marketplace ? "Marketplace · " : ""}{getConversationPreview(conversation)}</span>
           {conversation.mutedAt ? (
             <BellOff aria-label="Muted" size={13} />
           ) : null}
@@ -254,8 +261,8 @@ export function PrivateMessagingNote() {
     <div className="messages-v2-private-note">
       <LockKeyhole aria-hidden="true" size={16} />
       <span>
-        <strong>Mutual connections only</strong>
-        <small>Private conversations open when both members follow each other.</small>
+        <strong>Private conversations</strong>
+        <small>New member messages normally require mutual following. Marketplace inquiries use listing-specific contact.</small>
       </span>
     </div>
   );
