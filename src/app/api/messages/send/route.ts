@@ -141,6 +141,29 @@ async function usersMutuallyFollow(
   return Boolean(viewerFollow && otherFollow);
 }
 
+async function hasMarketplaceContactThread(
+  service: ReturnType<typeof getSupabaseServiceRole>,
+  conversationId: string,
+  userId: string,
+  otherUserId: string
+) {
+  const { data, error } = await service
+    .from("marketplace_contact_threads")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .or(
+      `and(buyer_id.eq.${userId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${userId})`
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Marketplace message context lookup failed:", error.message);
+    return false;
+  }
+  return Boolean(data?.id);
+}
+
 function normalizeAgeBand(value: unknown) {
   if (
     value === "unknown" ||
@@ -344,20 +367,30 @@ export async function POST(request: NextRequest) {
     return jsonError("You cannot message this member.", 403);
   }
 
+  let marketplaceConversation = false;
   const messagingDecision = await getSubscriptionEntitlementDecisionForUser(
     user.id,
     "unlimited_messaging"
   );
 
   if (!messagingDecision.allowed) {
-    const mutualFollow = await usersMutuallyFollow(supabase, user.id, recipientId);
+    marketplaceConversation = await hasMarketplaceContactThread(
+      serviceSupabaseForSafety,
+      conversationId,
+      user.id,
+      recipientId
+    );
 
-    if (!mutualFollow) {
-      return jsonError(
-        "Private messages require mutual following.",
-        403,
-        "subscription_entitlement_required"
-      );
+    if (!marketplaceConversation) {
+      const mutualFollow = await usersMutuallyFollow(supabase, user.id, recipientId);
+
+      if (!mutualFollow) {
+        return jsonError(
+          "Private messages require mutual following unless this is an active Marketplace inquiry.",
+          403,
+          "subscription_entitlement_required"
+        );
+      }
     }
   }
 
@@ -388,6 +421,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         ...teenMessagingContext,
         recipient_id: recipientId,
+        marketplace_conversation: marketplaceConversation,
       },
     });
 
@@ -511,6 +545,7 @@ export async function POST(request: NextRequest) {
       recipient_id: recipientId,
       private_message_safety_checked: Boolean(rawBody),
       teen_safety_checked: true,
+      marketplace_conversation: marketplaceConversation,
       ...teenMessagingContext,
     },
   });
