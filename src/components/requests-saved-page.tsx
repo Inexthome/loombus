@@ -1,15 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Bookmark, BriefcaseBusiness, Clock3, HandHeart, Loader2, MapPin, Search, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bookmark,
+  BriefcaseBusiness,
+  Clock3,
+  HandHeart,
+  Loader2,
+  MapPin,
+  RefreshCw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatRequestBudget, formatRequestDate, requestLocationLabel, requestTypeLabel, requestUrgencyLabel, type PublicServiceRequest } from "@/lib/service-requests";
+import {
+  formatRequestBudget,
+  formatRequestDate,
+  requestLocationLabel,
+  requestTypeLabel,
+  requestUrgencyLabel,
+  type PublicServiceRequest,
+} from "@/lib/service-requests";
 import { serviceRequestsAuthorizedFetch } from "@/lib/service-requests-client";
-import { SavedControls, SavedEmpty, SavedHeader, SavedLoading, SavedMetrics, SavedRail, type SavedViewOption } from "@/components/saved-directory-ui";
 
 type SavedRequestView = "all" | "active" | "finished";
-const activeStatuses = new Set<PublicServiceRequest["status"]>(["open", "reviewing", "in_progress"]);
-const statusLabel = (status: PublicServiceRequest["status"]) => status.replaceAll("_", " ");
+
+const activeStatuses = new Set<PublicServiceRequest["status"]>([
+  "open",
+  "reviewing",
+  "in_progress",
+]);
+
+const statusLabel = (status: PublicServiceRequest["status"]) =>
+  status.replaceAll("_", " ");
+
+const secondary =
+  "inline-flex items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-0 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:opacity-50";
 
 export default function RequestsSavedPage() {
   const [requests, setRequests] = useState<PublicServiceRequest[]>([]);
@@ -20,33 +47,71 @@ export default function RequestsSavedPage() {
   const [view, setView] = useState<SavedRequestView>("all");
 
   const load = useCallback(async () => {
-    setLoading(true); setNotice("");
+    setLoading(true);
+    setNotice("");
     try {
-      const response = await serviceRequestsAuthorizedFetch("/api/requests?saved=1", { cache: "no-store" }, "/requests/saved");
+      const response = await serviceRequestsAuthorizedFetch(
+        "/api/requests?saved=1",
+        { cache: "no-store" },
+        "/requests/saved",
+      );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error ?? "Unable to load saved Requests.");
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to load saved Requests.");
+      }
       setRequests(Array.isArray(payload.requests) ? payload.requests : []);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to load saved Requests."); setRequests([]);
-    } finally { setLoading(false); }
+      setNotice(
+        error instanceof Error ? error.message : "Unable to load saved Requests.",
+      );
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function remove(requestId: string) {
     if (working) return;
-    setWorking(requestId); setNotice("");
+    setWorking(requestId);
+    setNotice("");
     try {
-      const response = await serviceRequestsAuthorizedFetch("/api/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "unsave", requestId }) }, "/requests/saved");
+      const response = await serviceRequestsAuthorizedFetch(
+        "/api/requests",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "unsave", requestId }),
+        },
+        "/requests/saved",
+      );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error ?? "Unable to remove the saved Request.");
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to remove the saved Request.");
+      }
       setRequests((current) => current.filter((item) => item.id !== requestId));
-    } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to remove the saved Request."); }
-    finally { setWorking(""); }
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Unable to remove the saved Request.",
+      );
+    } finally {
+      setWorking("");
+    }
   }
 
-  const activeCount = useMemo(() => requests.filter((item) => activeStatuses.has(item.status)).length, [requests]);
-  const responseCount = useMemo(() => requests.reduce((sum, item) => sum + item.responseCount, 0), [requests]);
+  const activeCount = useMemo(
+    () => requests.filter((item) => activeStatuses.has(item.status)).length,
+    [requests],
+  );
+  const responseCount = useMemo(
+    () => requests.reduce((sum, item) => sum + item.responseCount, 0),
+    [requests],
+  );
   const filteredRequests = useMemo(() => {
     const clean = query.trim().toLowerCase();
     return requests.filter((item) => {
@@ -54,31 +119,280 @@ export default function RequestsSavedPage() {
       if (view === "active" && !active) return false;
       if (view === "finished" && active) return false;
       if (!clean) return true;
-      return [item.title, item.description, item.category, item.requesterName, item.businessName, item.city, item.region, item.status, requestTypeLabel(item.requestType), ...item.tags].filter(Boolean).some((value) => String(value).toLowerCase().includes(clean));
+      return [
+        item.title,
+        item.description,
+        item.category,
+        item.requesterName,
+        item.businessName,
+        item.city,
+        item.region,
+        item.status,
+        requestTypeLabel(item.requestType),
+        ...item.tags,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(clean));
     });
   }, [query, requests, view]);
-  const options: SavedViewOption<SavedRequestView>[] = [
+
+  const options: Array<{ value: SavedRequestView; label: string; count: number }> = [
     { value: "all", label: "All saved", count: requests.length },
     { value: "active", label: "Active", count: activeCount },
-    { value: "finished", label: "Finished or unavailable", count: requests.length - activeCount },
+    {
+      value: "finished",
+      label: "Finished or unavailable",
+      count: requests.length - activeCount,
+    },
   ];
-  const clear = () => { setQuery(""); setView("all"); };
 
-  return <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"><div className="mx-auto max-w-[86rem]">
-    <SavedHeader eyebrow="Private follow-up list" title="Saved Requests" copy="Keep public needs within reach without notifying the requester. Saving is private and does not create a response, message, or commitment." browseHref="/requests" browseLabel="Browse Requests" browseIcon={<HandHeart size={16} className="text-[color:var(--loombus-gold)]"/>} loading={loading} refresh={() => void load()}/>
-    <SavedMetrics items={[{ label: "Saved Requests", value: requests.length }, { label: "Active now", value: activeCount }, { label: "Responses across saved", value: responseCount }]}/>
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]"><section className="min-w-0">
-      <SavedControls query={query} setQuery={setQuery} placeholder="Search saved Request, category, requester, or place" view={view} setView={setView} options={options}/>
-      {notice ? <section className="mb-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm" role="alert">{notice}</section> : null}
-      {loading ? <SavedLoading label="Loading your private Request list…"/> : requests.length === 0 ? <SavedEmpty icon={<Bookmark size={42}/>} title="No saved Requests yet." copy="Save a Request from the public directory to follow it here without notifying the requester." action={<Link href="/requests" className="inline-flex rounded-full bg-[color:var(--loombus-gold)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-gold-contrast)]">Browse Requests</Link>}/> : filteredRequests.length === 0 ? <SavedEmpty icon={<Search size={38}/>} title="No saved Requests match this view." copy="Clear the search or return to all saved Requests." action={<button type="button" onClick={clear} className="rounded-full border border-[color:var(--loombus-border)] px-5 py-2.5 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]">Clear search and filters</button>}/> : <section>
-        <div className="mb-4"><p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Follow-up list</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">{filteredRequests.length} Request{filteredRequests.length === 1 ? "" : "s"} in view</h2></div>
-        <div className="grid gap-4 lg:grid-cols-2" aria-label="Saved Requests">{filteredRequests.map((item) => { const deadline = item.deadline ? formatRequestDate(item.deadline) : ""; return <article key={item.id} className="flex min-h-[365px] flex-col rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-lg shadow-black/5 transition hover:border-[color:var(--loombus-gold)] hover:shadow-xl">
-          <div className="flex items-start justify-between gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]"><HandHeart size={20}/></span><div className="flex flex-wrap justify-end gap-2 text-[11px] font-semibold text-[color:var(--loombus-text-muted)]"><span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1">{requestTypeLabel(item.requestType)}</span><span className={`rounded-full px-3 py-1 ${item.urgency === "urgent" ? "bg-red-500/10 text-red-500" : "border border-[color:var(--loombus-border)]"}`}>{requestUrgencyLabel(item.urgency)}</span><span className="rounded-full bg-[color:var(--loombus-surface-muted)] px-3 py-1 capitalize">{statusLabel(item.status)}</span></div></div>
-          <Link href={`/requests/${item.slug}`} className="mt-5 text-2xl font-semibold leading-tight tracking-[-0.035em] hover:underline">{item.title}</Link><p className="mt-3 line-clamp-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">{item.description}</p>
-          <div className="mt-auto space-y-3 pt-6 text-sm text-[color:var(--loombus-text-muted)]"><span className="flex items-start gap-3"><MapPin className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16}/>{requestLocationLabel(item)}</span><span className="flex items-start gap-3"><BriefcaseBusiness className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16}/>{formatRequestBudget(item)}</span>{deadline ? <span className="flex items-start gap-3"><Clock3 className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16}/>Deadline {deadline}</span> : null}</div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--loombus-border-muted)] pt-4 text-xs text-[color:var(--loombus-text-muted)]"><span>{item.businessName || item.requesterName}</span><span>{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</span><div className="flex items-center gap-3"><Link href={`/requests/${item.slug}`} className="inline-flex items-center gap-1 font-semibold text-[color:var(--loombus-gold)] hover:underline">Open Request <ArrowUpRight size={13}/></Link><button type="button" onClick={() => void remove(item.id)} disabled={Boolean(working)} className="inline-flex items-center gap-1.5 rounded-full border border-red-500/25 px-3 py-2 font-semibold text-red-500 transition hover:bg-red-500/10 disabled:opacity-50" aria-label={`Remove ${item.title} from saved Requests`}>{working === item.id ? <Loader2 className="animate-spin" size={14}/> : <Trash2 size={14}/>}Remove</button></div></div>
-        </article>; })}</div>
-      </section>}
-    </section><SavedRail privacyCopy="Requesters cannot see who saved a Request. Saving does not send a response, message, or notification." tools={[["Browse Requests", "/requests"], ["Create or manage Requests", "/requests/manage"], ["Saved Services", "/services/saved"], ["Everything Search", "/search"]]} safetyTitle="Review before responding" safetyCopy="Confirm scope, identity, qualifications, pricing, timing, and payment terms before moving a Request into private conversation."/></div>
-  </div></main>;
+  function clear() {
+    setQuery("");
+    setView("all");
+  }
+
+  return (
+    <main
+      data-requests-editorial="saved"
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+    >
+      <div className="mx-auto max-w-[82rem]">
+        <header className="border-b border-[color:var(--loombus-border)] pb-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
+                Private follow-up list
+              </p>
+              <h1 className="mt-2 text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">
+                Saved Requests
+              </h1>
+              <p className="mt-3 max-w-2xl text-base leading-7 text-[color:var(--loombus-text-muted)]">
+                Keep public needs within reach without notifying the requester. Saving is
+                private and does not create a response, message, or commitment.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Link href="/requests" className={secondary}>
+                <HandHeart size={16} className="text-[color:var(--loombus-gold)]" />
+                Browse Requests
+              </Link>
+              <button type="button" onClick={() => void load()} className={secondary}>
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <section
+          className="grid border-b border-[color:var(--loombus-border)] sm:grid-cols-3"
+          aria-label="Saved Request signals"
+        >
+          {[
+            ["Saved Requests", requests.length],
+            ["Active now", activeCount],
+            ["Responses across saved", responseCount],
+          ].map(([label, value], index) => (
+            <div
+              key={String(label)}
+              className={`py-5 sm:px-5 ${index > 0 ? "border-t border-[color:var(--loombus-border)] sm:border-l sm:border-t-0" : ""}`}
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+                {label}
+              </p>
+              <strong className="mt-2 block text-3xl tracking-[-0.04em]">{value}</strong>
+            </div>
+          ))}
+        </section>
+
+        <section className="border-b border-[color:var(--loombus-border)] py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <label className="block min-w-0 flex-1">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+                Search saved Requests
+              </span>
+              <span className="flex items-center gap-3 border-b border-[color:var(--loombus-border)] pb-2 focus-within:border-[color:var(--loombus-gold)]">
+                <Search size={17} className="shrink-0 text-[color:var(--loombus-gold)]" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Request, category, requester, or place"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[color:var(--loombus-text-subtle)]"
+                />
+              </span>
+            </label>
+            <nav className="flex gap-5 overflow-x-auto" aria-label="Saved Request filters">
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setView(option.value)}
+                  className={`shrink-0 border-b-2 pb-2 text-sm font-semibold transition ${
+                    view === option.value
+                      ? "border-[color:var(--loombus-gold)] text-[color:var(--loombus-gold)]"
+                      : "border-transparent text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"
+                  }`}
+                >
+                  {option.label} <span className="ml-1 text-xs">{option.count}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </section>
+
+        {notice ? (
+          <section
+            className="border-b border-red-500/30 py-4 text-sm text-red-500"
+            role="alert"
+          >
+            {notice}
+          </section>
+        ) : null}
+
+        {loading ? (
+          <section className="py-14 text-center text-[color:var(--loombus-text-muted)]">
+            <Loader2 className="mx-auto animate-spin text-[color:var(--loombus-gold)]" size={28} />
+            <p className="mt-3">Loading your private Request list…</p>
+          </section>
+        ) : requests.length === 0 ? (
+          <section className="py-14 text-center">
+            <Bookmark className="mx-auto text-[color:var(--loombus-gold)]" size={40} />
+            <h2 className="mt-4 text-2xl font-semibold">No saved Requests yet.</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+              Save a Request from the public directory to follow it here without notifying
+              the requester.
+            </p>
+            <Link href="/requests" className="mt-5 inline-flex border-b-2 border-[color:var(--loombus-gold)] pb-1 text-sm font-semibold text-[color:var(--loombus-gold)]">
+              Browse Requests
+            </Link>
+          </section>
+        ) : filteredRequests.length === 0 ? (
+          <section className="py-14 text-center">
+            <Search className="mx-auto text-[color:var(--loombus-gold)]" size={36} />
+            <h2 className="mt-4 text-2xl font-semibold">No saved Requests match this view.</h2>
+            <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
+              Clear the search or return to all saved Requests.
+            </p>
+            <button type="button" onClick={clear} className={`${secondary} mt-4`}>
+              Clear search and filters
+            </button>
+          </section>
+        ) : (
+          <section className="py-6">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
+                  Follow-up list
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
+                  {filteredRequests.length} Request{filteredRequests.length === 1 ? "" : "s"} in view
+                </h2>
+              </div>
+              <p className="text-xs text-[color:var(--loombus-text-subtle)]">
+                Saving remains private until you choose to respond.
+              </p>
+            </div>
+
+            <div className="divide-y divide-[color:var(--loombus-border)]" aria-label="Saved Requests">
+              {filteredRequests.map((item) => {
+                const deadline = item.deadline ? formatRequestDate(item.deadline) : "";
+                return (
+                  <article key={item.id} className="py-6">
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                          <span className="text-[color:var(--loombus-gold)]">
+                            {requestTypeLabel(item.requestType)}
+                          </span>
+                          <span>{requestUrgencyLabel(item.urgency)}</span>
+                          <span className="capitalize">{statusLabel(item.status)}</span>
+                        </div>
+                        <Link
+                          href={`/requests/${item.slug}`}
+                          className="mt-2 block text-2xl font-semibold leading-tight tracking-[-0.035em] hover:text-[color:var(--loombus-gold)]"
+                        >
+                          {item.title}
+                        </Link>
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                          {item.description}
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[color:var(--loombus-text-muted)]">
+                          <span className="inline-flex items-center gap-2">
+                            <MapPin size={15} className="text-[color:var(--loombus-gold)]" />
+                            {requestLocationLabel(item)}
+                          </span>
+                          <span className="inline-flex items-center gap-2">
+                            <BriefcaseBusiness size={15} className="text-[color:var(--loombus-gold)]" />
+                            {formatRequestBudget(item)}
+                          </span>
+                          {deadline ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Clock3 size={15} className="text-[color:var(--loombus-gold)]" />
+                              Deadline {deadline}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-between gap-4 border-t border-[color:var(--loombus-border)] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                        <div className="text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+                          <p>{item.businessName || item.requesterName}</p>
+                          <p className="mt-1">{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                          <Link
+                            href={`/requests/${item.slug}`}
+                            className="inline-flex items-center gap-1 border-b border-[color:var(--loombus-gold)] pb-1 text-xs font-semibold text-[color:var(--loombus-gold)]"
+                          >
+                            Open Request <ArrowUpRight size={13} />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => void remove(item.id)}
+                            disabled={Boolean(working)}
+                            className="inline-flex items-center gap-1.5 border-b border-red-500/40 pb-1 text-xs font-semibold text-red-500 disabled:opacity-50"
+                            aria-label={`Remove ${item.title} from saved Requests`}
+                          >
+                            {working === item.id ? (
+                              <Loader2 className="animate-spin" size={14} />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <footer className="grid gap-6 border-t border-[color:var(--loombus-border)] py-6 lg:grid-cols-2">
+          <section>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+              Privacy
+            </p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+              Requesters cannot see who saved a Request. Saving does not send a response,
+              message, or notification.
+            </p>
+          </section>
+          <section>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+              Connected workspaces
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+              <Link href="/requests" className="hover:text-[color:var(--loombus-gold)]">Browse Requests</Link>
+              <Link href="/requests/manage" className="hover:text-[color:var(--loombus-gold)]">Manage Requests</Link>
+              <Link href="/services/saved" className="hover:text-[color:var(--loombus-gold)]">Saved Services</Link>
+              <Link href="/search" className="hover:text-[color:var(--loombus-gold)]">Everything Search</Link>
+            </div>
+          </section>
+        </footer>
+      </div>
+    </main>
+  );
 }
