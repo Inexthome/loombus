@@ -395,14 +395,23 @@ export async function POST(request: NextRequest) {
       return jsonError(contactError?.message ?? "Unable to save the inquiry.", 500);
     }
 
-    const messageId = await sendInquiryMessage({
-      service,
-      conversationId,
-      buyerId: access.user.id,
-      sellerId: listing.sellerId,
-      listing,
-      type,
-    });
+    let messageId: string;
+    try {
+      messageId = await sendInquiryMessage({
+        service,
+        conversationId,
+        buyerId: access.user.id,
+        sellerId: listing.sellerId,
+        listing,
+        type,
+      });
+    } catch (error) {
+      await service
+        .from("marketplace_contact_threads")
+        .delete()
+        .eq("id", contactThread.id);
+      throw error;
+    }
 
     return NextResponse.json({
       conversationId,
