@@ -2,6 +2,7 @@ import { LibraryKnowledgeGraphPromotionContext } from "@/components/library/libr
 import { LibraryKnowledgeGraphV7Surface } from "@/components/library/library-knowledge-graph-v7-surface";
 import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
 import "./library-knowledge-graph-editorial.css";
+import "./library-knowledge-graph-editorial-v6.css";
 
 export default function LibraryKnowledgeGraphPage() {
   return (
