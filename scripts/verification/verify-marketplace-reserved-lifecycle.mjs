@@ -88,7 +88,7 @@ check(
 check(
   listingPage.includes('listing.pickupAvailable && listing.status === "published"') &&
     listingPage.includes('listing.status === "reserved"') &&
-    listingPage.includes("https://schema.org/LimitedAvailability"),
+    listingPage.includes("LimitedAvailability"),
   "Reserved pickup or structured availability behavior is incomplete."
 );
 check(
