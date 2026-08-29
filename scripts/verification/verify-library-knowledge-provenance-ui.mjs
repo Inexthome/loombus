@@ -4,6 +4,7 @@ const files = {
   page: "src/app/library/research/evidence/provenance/page.tsx",
   surface: "src/components/library/library-knowledge-provenance-surface.tsx",
   evidencePage: "src/app/library/research/evidence/page.tsx",
+  researchNav: "src/components/library/library-research-editorial-nav.tsx",
 };
 
 for (const path of Object.values(files)) {
@@ -13,6 +14,7 @@ for (const path of Object.values(files)) {
 const page = fs.readFileSync(files.page, "utf8");
 const surface = fs.readFileSync(files.surface, "utf8");
 const evidencePage = fs.readFileSync(files.evidencePage, "utf8");
+const researchNav = fs.readFileSync(files.researchNav, "utf8");
 
 const requiredTables = [
   "library_research_claims",
@@ -32,12 +34,16 @@ for (const table of requiredTables) {
   if (!surface.includes(`from(\"${table}\")`)) throw new Error(`Provenance surface does not read ${table}`);
 }
 
+if (!evidencePage.includes('<LibraryResearchEditorialNav active="evidence" />')) {
+  throw new Error("Evidence page must wire the shared Research navigation");
+}
 for (const token of [
-  "/library/research/evidence/provenance",
-  "Provenance",
-  "Promote to Discussion",
+  'href: "/library/research/evidence/provenance"',
+  'label: "Provenance"',
+  'href: "/library/research/evidence/promote"',
+  'label: "Promote"',
 ]) {
-  if (!evidencePage.includes(token)) throw new Error(`Evidence page missing ${token}`);
+  if (!researchNav.includes(token)) throw new Error(`Research navigation missing ${token}`);
 }
 
 for (const token of [

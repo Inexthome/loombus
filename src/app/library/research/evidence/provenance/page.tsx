@@ -1,5 +1,7 @@
 import { LibraryFocusedProvenanceSurface } from "@/components/library/library-focused-provenance-surface";
 import { LibraryKnowledgeProvenanceSurface } from "@/components/library/library-knowledge-provenance-surface";
+import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
+import "../../library-research-editorial.css";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -9,9 +11,14 @@ export default async function LibraryKnowledgeProvenancePage({ searchParams }: {
   const focusId = typeof params.focusId === "string" ? params.focusId : "";
   const relation = typeof params.relation === "string" ? params.relation : "";
 
-  if ((focusKind === "claim" || focusKind === "knowledge") && focusId && relation) {
-    return <LibraryFocusedProvenanceSurface focusKind={focusKind} focusId={focusId} relation={relation} />;
-  }
-
-  return <LibraryKnowledgeProvenanceSurface />;
+  return (
+    <div data-library-research-editorial="provenance">
+      <LibraryResearchEditorialNav active="provenance" />
+      {(focusKind === "claim" || focusKind === "knowledge") && focusId && relation ? (
+        <LibraryFocusedProvenanceSurface focusKind={focusKind} focusId={focusId} relation={relation} />
+      ) : (
+        <LibraryKnowledgeProvenanceSurface />
+      )}
+    </div>
+  );
 }
