@@ -6,6 +6,7 @@
   details
   > summary[aria-label^="More options for "] {
   background: transparent !important;
+  color: #fff !important;
   box-shadow: none !important;
 }
 
@@ -14,24 +15,6 @@
   details
   > summary[aria-label^="More options for "]:hover {
   background: transparent !important;
+  color: #fff !important;
   box-shadow: none !important;
-}
-
-/* Keep the dots readable in Light and System-light. */
-html[data-loombus-theme="light"]
-  [data-library-editorial-home]
-  main
-  details
-  > summary[aria-label^="More options for "] {
-  color: #17140c !important;
-}
-
-@media (prefers-color-scheme: light) {
-  html[data-loombus-theme="system"]
-    [data-library-editorial-home]
-    main
-    details
-    > summary[aria-label^="More options for "] {
-    color: #17140c !important;
-  }
 }
