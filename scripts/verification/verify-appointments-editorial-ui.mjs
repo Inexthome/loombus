@@ -18,8 +18,10 @@ requireText(files.route, 'data-appointments-editorial="route"', "Appointments ro
 requireText(files.schedule, 'data-appointments-editorial="schedule"', "Unified schedule Editorial marker missing.");
 requireText(files.manage, 'data-appointments-editorial="manage"', "Appointments manager Editorial marker missing.");
 
+requireText(files.route, "var(--loombus-page-bg)", "Appointments route must preserve the Loombus page background.");
+requireText(files.manage, "var(--loombus-page-bg)", "Appointments manager must preserve the Loombus page background.");
+
 for (const [name, source] of Object.entries(files)) {
-  requireText(source, "var(--loombus-page-bg)", `${name} must preserve the Loombus page background.`);
   forbidText(source, "shadow-xl", `${name} still contains legacy shadow-xl dashboard styling.`);
   forbidText(source, "shadow-2xl", `${name} still contains legacy shadow-2xl dashboard styling.`);
   forbidText(source, "rounded-[1.75rem]", `${name} still contains legacy large rounded card styling.`);
