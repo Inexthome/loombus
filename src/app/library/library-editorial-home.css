@@ -1,0 +1,329 @@
+/* Loombus Editorial UI — /library landing and in-page views only. */
+
+[data-library-editorial-home] {
+  --library-editorial-gold: #CBAB5B;
+  --library-editorial-cream: #FEFBEC;
+  --loombus-gold: #CBAB5B;
+  color: var(--loombus-text);
+}
+
+[data-library-editorial-home] > main { background: var(--loombus-page-bg) !important; }
+html[data-loombus-theme="light"] [data-library-editorial-home] > main { background: var(--library-editorial-cream) !important; }
+html[data-loombus-theme="dark"] [data-library-editorial-home] > main { background: var(--loombus-page-bg) !important; }
+@media (prefers-color-scheme: light) { html[data-loombus-theme="system"] [data-library-editorial-home] > main { background: var(--library-editorial-cream) !important; } }
+@media (prefers-color-scheme: dark) { html[data-loombus-theme="system"] [data-library-editorial-home] > main { background: var(--loombus-page-bg) !important; } }
+
+[data-library-editorial-home] > main > div:first-child { max-width: 84rem !important; }
+
+/* Desktop navigation becomes a quiet editorial rail. */
+[data-library-editorial-home] > main > div:first-child > aside:first-child {
+  width: 13.75rem !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  padding: 1.45rem 1.15rem 2rem 0 !important;
+}
+
+[data-library-editorial-home] > main > div:first-child > aside:first-child > label {
+  min-height: 2.75rem !important;
+  margin-bottom: 1.4rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav { gap: 1.45rem !important; }
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav p {
+  margin-bottom: 0.3rem !important;
+  padding: 0 !important;
+  color: var(--loombus-text-subtle) !important;
+  font-size: 0.64rem !important;
+  letter-spacing: 0.13em !important;
+}
+
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav button,
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav a {
+  position: relative;
+  min-height: 2.45rem !important;
+  gap: 0.65rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0.1rem 0 0 !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 750 !important;
+  box-shadow: none !important;
+}
+
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav button:hover,
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav a:hover,
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav button:focus-visible,
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav a:focus-visible { color: var(--loombus-text) !important; }
+
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav button[class*="bg-[var(--loombus-text)]"] { color: var(--loombus-text) !important; }
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav button[class*="bg-[var(--loombus-text)]"]::before {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  left: -0.72rem;
+  width: 2px;
+  background: var(--library-editorial-gold);
+}
+[data-library-editorial-home] > main > div:first-child > aside:first-child nav svg { width: 0.95rem !important; height: 0.95rem !important; }
+
+/* Main reading / discovery column. */
+[data-library-editorial-home] > main > div:first-child > div:last-child { padding: 1.5rem 1.5rem 2rem 2.1rem !important; }
+
+/* Search becomes an editorial field. */
+[data-library-editorial-home] input[type="search"] { border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; }
+[data-library-editorial-home] main label:has(> input[aria-label="Search the Loombus Library"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+[data-library-editorial-home] main label:has(> input[aria-label="Search the Loombus Library"]):focus-within { border-bottom-color: var(--library-editorial-gold) !important; }
+
+/* Mobile navigation is text-led with a gold active indicator. */
+[data-library-editorial-home] nav[aria-label="Library sections"] { gap: 0 !important; border-bottom: 1px solid var(--loombus-border); padding-bottom: 0 !important; }
+[data-library-editorial-home] nav[aria-label="Library sections"] button,
+[data-library-editorial-home] nav[aria-label="Library sections"] a {
+  position: relative;
+  min-height: 2.75rem !important;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0.8rem !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 750 !important;
+  white-space: nowrap;
+}
+[data-library-editorial-home] nav[aria-label="Library sections"] > :first-child { padding-left: 0 !important; }
+[data-library-editorial-home] nav[aria-label="Library sections"] > :last-child { border-right: 0 !important; }
+[data-library-editorial-home] nav[aria-label="Library sections"] button[class*="bg-[var(--loombus-text)]"] { color: var(--loombus-text) !important; }
+[data-library-editorial-home] nav[aria-label="Library sections"] button[class*="bg-[var(--loombus-text)]"]::after {
+  content: "";
+  position: absolute;
+  right: 0.8rem;
+  bottom: -1px;
+  left: 0.8rem;
+  height: 2px;
+  background: var(--library-editorial-gold);
+}
+
+/* Editorial hierarchy. */
+[data-library-editorial-home] main h1 {
+  color: var(--loombus-text);
+  font-size: clamp(1.85rem, 4vw, 2.55rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.08 !important;
+}
+[data-library-editorial-home] main h2 { letter-spacing: -0.018em; }
+[data-library-editorial-home] main p[class*="uppercase"] { color: var(--library-editorial-gold) !important; }
+
+/* Feedback is inline, not a notice card. */
+[data-library-editorial-home] main [role="alert"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Book covers are legitimate discrete objects; remove ornamental lift. */
+[data-library-editorial-home] article.group > a > span:first-child {
+  border-radius: 0.35rem !important;
+  box-shadow: none !important;
+  --tw-ring-color: var(--loombus-border) !important;
+}
+[data-library-editorial-home] article.group:hover > a > span:first-child {
+  transform: none !important;
+  box-shadow: none !important;
+  --tw-ring-color: color-mix(in srgb, var(--library-editorial-gold) 55%, var(--loombus-border)) !important;
+}
+
+/* Continue Reading becomes a reading sequence instead of dashboard cards. */
+[data-library-editorial-home] a.w-72 {
+  width: 17rem !important;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 1rem 0.8rem 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+[data-library-editorial-home] a.w-72:last-child { border-right: 0 !important; }
+[data-library-editorial-home] a.w-72 span[class*="h-1"] { height: 2px !important; border-radius: 0 !important; }
+
+/* Empty states are quiet editorial separators. */
+[data-library-editorial-home] main .border-dashed {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2rem 0 !important;
+  box-shadow: none !important;
+}
+[data-library-editorial-home] main .border-dashed > svg,
+[data-library-editorial-home] main .border-dashed > h2,
+[data-library-editorial-home] main .border-dashed > h3,
+[data-library-editorial-home] main .border-dashed > p { margin-left: 0 !important; margin-right: 0 !important; }
+
+/* Home shortcuts become flat editorial actions. */
+[data-library-editorial-home] section.grid[class*="sm:grid-cols-2"] > button {
+  min-height: 6rem;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+[data-library-editorial-home] section.grid[class*="sm:grid-cols-2"] > button:first-child { border-top: 1px solid var(--loombus-border) !important; }
+
+/* Secondary actions remain available without competing with content. */
+[data-library-editorial-home] main button.rounded-full.border,
+[data-library-editorial-home] main a.rounded-full.border {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+[data-library-editorial-home] main button.rounded-full.border:hover,
+[data-library-editorial-home] main a.rounded-full.border:hover { color: var(--loombus-text) !important; }
+
+/* Compact filters. */
+[data-library-editorial-home] main select {
+  min-height: 2.55rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 1.4rem 0 0 !important;
+  color: var(--loombus-text) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+[data-library-editorial-home] main select:focus { border-bottom-color: var(--library-editorial-gold) !important; }
+
+/* Author records are flat rows. */
+[data-library-editorial-home] main article.flex.items-center {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 !important;
+  box-shadow: none !important;
+}
+[data-library-editorial-home] main article.flex.items-center > span:first-child {
+  background: color-mix(in srgb, var(--library-editorial-gold) 9%, transparent) !important;
+  color: var(--library-editorial-gold) !important;
+}
+
+/* Collections retain all behavior but lose dashboard card chrome. */
+[data-library-editorial-home] main aside form.rounded-2xl {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+[data-library-editorial-home] main aside form.rounded-2xl input,
+[data-library-editorial-home] main section form input {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+[data-library-editorial-home] main aside form.rounded-2xl input:focus,
+[data-library-editorial-home] main section form input:focus { border-bottom-color: var(--library-editorial-gold) !important; }
+[data-library-editorial-home] main aside button[class*="bg-[var(--loombus-text)]"] {
+  position: relative;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+[data-library-editorial-home] main aside button[class*="bg-[var(--loombus-text)]"]::before {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: -0.55rem;
+  width: 2px;
+  background: var(--library-editorial-gold);
+}
+
+/* Highlights and notes read like annotation records. */
+[data-library-editorial-home] main .space-y-4 > article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.15rem 0 !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+[data-library-editorial-home] main .space-y-4 > article:first-child { border-top: 1px solid var(--loombus-border) !important; }
+
+/* Menus remain discrete overlays. */
+[data-library-editorial-home] main details > div {
+  border-radius: 0.7rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.16) !important;
+}
+
+/* Canonical primary action color. */
+[data-library-editorial-home] main button[class*="bg-[var(--loombus-gold)]"] {
+  background: var(--library-editorial-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+[data-library-editorial-home] main button:focus-visible,
+[data-library-editorial-home] main a:focus-visible,
+[data-library-editorial-home] main input:focus-visible,
+[data-library-editorial-home] main select:focus-visible {
+  outline: 2px solid var(--library-editorial-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-library-editorial-home] *,
+  [data-library-editorial-home] *::before,
+  [data-library-editorial-home] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  [data-library-editorial-home] > main { padding-top: 4.8rem !important; }
+  [data-library-editorial-home] > main > div:first-child > div:last-child { padding: 0.8rem 1rem calc(7rem + env(safe-area-inset-bottom)) !important; }
+}
+
+@media (max-width: 40rem) {
+  [data-library-editorial-home] main h1 { font-size: 1.75rem !important; }
+  [data-library-editorial-home] main .grid[class*="grid-cols-3"] { column-gap: 0.85rem !important; row-gap: 1.6rem !important; }
+  [data-library-editorial-home] section.grid[class*="sm:grid-cols-2"] { gap: 0 !important; }
+}
