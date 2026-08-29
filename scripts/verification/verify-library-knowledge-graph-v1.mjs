@@ -4,6 +4,7 @@ const files = {
   page: "src/app/library/research/evidence/graph/page.tsx",
   surface: "src/components/library/library-knowledge-graph-surface.tsx",
   entry: "src/app/library/research/evidence/page.tsx",
+  researchNav: "src/components/library/library-research-editorial-nav.tsx",
 };
 
 for (const path of Object.values(files)) {
@@ -12,6 +13,7 @@ for (const path of Object.values(files)) {
 
 const surface = fs.readFileSync(files.surface, "utf8");
 const entry = fs.readFileSync(files.entry, "utf8");
+const researchNav = fs.readFileSync(files.researchNav, "utf8");
 
 const requiredTables = [
   "library_research_claims",
@@ -44,7 +46,10 @@ for (const relation of ["derived from opening post", "derived from reply", "prom
 
 if (!surface.includes("supabase.auth.getUser()")) throw new Error("Knowledge Graph must require authenticated member context");
 if (!surface.includes("This graph is private and read-only")) throw new Error("Private/read-only boundary must be visible");
-if (!entry.includes("/library/research/evidence/graph") || !entry.includes("Knowledge Graph")) throw new Error("Evidence workspace must expose Knowledge Graph entry");
+if (!entry.includes('<LibraryResearchEditorialNav active="evidence" />')) throw new Error("Evidence workspace must wire shared Research navigation");
+if (!researchNav.includes('href: "/library/research/evidence/graph"') || !researchNav.includes('label: "Knowledge Graph"')) {
+  throw new Error("Evidence workspace must expose Knowledge Graph entry");
+}
 
 const forbidden = ["SUPABASE_SERVICE_ROLE", "service_role", "library_publication_sources", "library-publication-originals", "dangerouslySetInnerHTML"];
 for (const token of forbidden) {
