@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Loader2,
   MapPin,
-  MessageCircle,
   PackageCheck,
   ShieldCheck,
   Store,
@@ -28,13 +27,12 @@ import {
   type MarketplaceListing,
 } from "@/lib/marketplace";
 import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
+import MarketplaceSellerContactActions from "@/components/marketplace-seller-contact-actions";
 
 const inputClass =
   "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
 const secondaryButton =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:bg-[color:var(--loombus-surface-muted)] disabled:opacity-50";
-const primaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50";
 
 export default function MarketplaceListingPage() {
   const params = useParams<{ slug: string }>();
@@ -163,8 +161,10 @@ export default function MarketplaceListingPage() {
           <Fact icon={<PackageCheck size={18} />} label="Condition" value={marketplaceConditionLabel(listing.condition)} featured />
           <Fact icon={<MapPin size={18} />} label="Location" value={marketplaceLocationLabel(listing)} />
           <Fact icon={<Truck size={18} />} label="Fulfillment" value={fulfillment.join(" · ") || "Confirm with seller"} />
-          <Fact icon={<CalendarClock size={18} />} label="Availability" value={expires ? `Through ${expires}, unless sold sooner` : "Until sold or removed"} />
+          <Fact icon={<CalendarClock size={18} />} label="Listing active through" value={expires ? `${expires}, unless sold sooner` : "Until sold or removed"} />
         </section>
+
+        <MarketplaceSellerContactActions listing={listing} />
 
         {reportState ? (
           <p className="mb-6 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm shadow-sm" role="status">{reportState}</p>
@@ -276,7 +276,7 @@ export default function MarketplaceListingPage() {
                 {listing.businessVerificationStatus === "verified" ? <BadgeCheck className="ml-auto shrink-0 text-[color:var(--loombus-gold)]" size={20} aria-label="Verified business" /> : null}
               </div>
               <div className="mt-4 grid gap-2">
-                <Link href={sellerHref} className={primaryButton}><MessageCircle size={16} /> Contact through profile</Link>
+                <Link href={sellerHref} className={secondaryButton}><ArrowUpRight size={16} /> View seller profile</Link>
                 {listing.businessSlug ? (
                   <Link href={`/businesses/${listing.businessSlug}`} className={secondaryButton}><Store size={16} /> Business profile</Link>
                 ) : null}
@@ -284,8 +284,9 @@ export default function MarketplaceListingPage() {
             </section>
 
             <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Before contacting</p>
+              <p className="text-xs font-bold uppercase tracking-[0.3em]">Before making plans</p>
               <div className="mt-4 space-y-2 text-sm text-[color:var(--loombus-text-muted)]">
+                <span className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3"><span>Status</span><strong className="text-[color:var(--loombus-text)]">Listed as available</strong></span>
                 <span className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3"><span>Condition</span><strong className="text-[color:var(--loombus-text)]">{marketplaceConditionLabel(listing.condition)}</strong></span>
                 <span className="flex items-center justify-between gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3"><span>Location</span><strong className="text-right text-[color:var(--loombus-text)]">{marketplaceLocationLabel(listing)}</strong></span>
                 <span className="flex items-center justify-between gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3"><span>Fulfillment</span><strong className="text-right text-[color:var(--loombus-text)]">{fulfillment.join(" · ") || "Confirm directly"}</strong></span>
