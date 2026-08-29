@@ -3,9 +3,9 @@ name: Library publication detail
 on:
   pull_request:
     paths:
-      - "src/app/library/publication/[publicationId]/page.tsx"
+      - 'src/app/library/publication/\[publicationId\]/page.tsx'
       - "src/components/library/library-publication-detail.tsx"
-      - "src/app/library/read/[publicationId]/page.tsx"
+      - 'src/app/library/read/\[publicationId\]/page.tsx'
       - "scripts/verification/verify-library-publication-detail.mjs"
       - ".github/workflows/library-publication-detail.yml"
 
