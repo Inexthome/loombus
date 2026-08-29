@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ProfileMessagePromptBridge } from "@/components/profile-message-prompt-bridge";
 import "./profile-v2-shell.css";
+import "./profile-editorial-ui.css";
 
 type ProfileLayoutProps = {
   children: ReactNode;

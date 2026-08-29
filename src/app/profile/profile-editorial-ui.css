@@ -1,0 +1,902 @@
+/* Loombus Editorial UI for the private /profile workspace only.
+   Runtime, profile persistence, Creator Hub, supporter, billing, and viewer logic are unchanged. */
+
+.profile-v2-route {
+  --profile-editorial-gold: #cbab5b;
+  --profile-editorial-cream: #fefbec;
+  min-height: 100vh;
+  background: var(--loombus-page-bg, var(--loombus-bg, #fefbec));
+  color: var(--loombus-text, #201b13);
+}
+
+html[data-loombus-theme="light"] .profile-v2-route {
+  background: var(--profile-editorial-cream);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .profile-v2-route {
+    background: var(--profile-editorial-cream);
+  }
+}
+
+.profile-v2-shell {
+  width: min(100%, 72rem);
+  padding: 1.25rem 1.25rem calc(6rem + env(safe-area-inset-bottom));
+}
+
+/* Header */
+.profile-v2-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 0 1.55rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-v2-eyebrow {
+  margin-bottom: 0.45rem;
+  color: color-mix(in srgb, var(--profile-editorial-gold) 84%, #765a19);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.profile-v2-hero h1 {
+  max-width: 19ch;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.profile-v2-hero-copy > p:last-child {
+  max-width: 42rem;
+  margin-top: 0.75rem;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.profile-v2-hero-actions {
+  gap: 0.9rem;
+  justify-content: flex-end;
+}
+
+.profile-v2-primary-action,
+.profile-v2-secondary-action {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--loombus-text-muted, #736a5b);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.profile-v2-primary-action:hover,
+.profile-v2-secondary-action:hover {
+  color: var(--loombus-text, #201b13);
+  transform: none;
+}
+
+/* The old three-card guide becomes a quiet editorial index. */
+.profile-v2-guide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.profile-v2-guide article {
+  min-height: 4.4rem;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem 0.9rem 0;
+  border: 0;
+  border-right: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-v2-guide article:not(:first-child) {
+  padding-left: 1rem;
+}
+
+.profile-v2-guide article:last-child {
+  border-right: 0;
+}
+
+.profile-v2-guide article > span {
+  display: block;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: var(--profile-editorial-gold);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.profile-v2-guide strong {
+  font-size: 0.82rem;
+}
+
+.profile-v2-guide p {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+/* Main workspace */
+.profile-v2-content > main {
+  background: transparent !important;
+}
+
+.profile-workspace-layout {
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.profile-workspace-nav {
+  position: sticky;
+  top: 5.25rem;
+  gap: 0;
+  padding: 0 1.1rem 1.1rem 0;
+  border: 0;
+  border-right: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18));
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-workspace-nav > p {
+  margin: 0 0.7rem 0.45rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+}
+
+.profile-workspace-nav button,
+.profile-workspace-nav a {
+  position: relative;
+  min-height: 2.8rem;
+  padding: 0.62rem 0.5rem 0.62rem 0.8rem;
+  border-radius: 0;
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.profile-workspace-nav button::before {
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 2px;
+  background: transparent;
+  content: "";
+}
+
+.profile-workspace-nav button:hover,
+.profile-workspace-nav button.is-active,
+.profile-workspace-nav a:hover {
+  background: transparent;
+  color: var(--loombus-text, #201b13);
+}
+
+.profile-workspace-nav button.is-active {
+  box-shadow: none;
+  font-weight: 850;
+}
+
+.profile-workspace-nav button.is-active::before {
+  background: var(--profile-editorial-gold);
+}
+
+.profile-workspace-nav svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: color-mix(in srgb, var(--profile-editorial-gold) 78%, var(--loombus-text-muted, #736a5b));
+}
+
+.profile-workspace-content {
+  min-width: 0;
+}
+
+/* Public member link: flat utility strip, not a card. */
+.profile-v2-content > main > div > section:first-of-type {
+  margin: 0 !important;
+  padding: 0 0 1.25rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-v2-content > main > div > section:first-of-type p.rounded-xl {
+  padding: 0.7rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.2)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-v2-content > main > div > section:first-of-type a.bg-white,
+.profile-v2-content > main > div > section:first-of-type button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem !important;
+  border-radius: 0.6rem !important;
+}
+
+/* Form + preview architecture */
+.profile-v2-content .grid.lg\:grid-cols-\[minmax\(0\,1fr\)_340px\] {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem) !important;
+  gap: 1.75rem !important;
+}
+
+.profile-v2-content form {
+  overflow: visible;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.profile-v2-content form > section {
+  margin: 0 !important;
+  padding: 1.2rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-v2-content form > section:first-child {
+  overflow: visible;
+  padding-top: 0 !important;
+}
+
+.profile-v2-content form > section:first-child::after {
+  display: none;
+}
+
+.profile-v2-content form h2,
+.profile-v2-content form h3 {
+  letter-spacing: -0.025em;
+}
+
+/* Completion becomes a compact editorial status. */
+.profile-v2-content form > section:first-child .h-2 {
+  height: 0.28rem !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--loombus-text-muted, #736a5b) 16%, transparent) !important;
+}
+
+.profile-v2-content form > section:first-child .h-full {
+  border-radius: 0 !important;
+  background: var(--profile-editorial-gold) !important;
+}
+
+.profile-v2-content form > section:first-child span.rounded-full {
+  padding: 0.2rem 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--loombus-text-muted, #736a5b) !important;
+}
+
+/* Avatar block stays visually discrete because the image itself is a discrete object. */
+.profile-v2-content form div.rounded-2xl.bg-black:has(input[type="file"]) {
+  padding: 0.9rem 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14)) !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-v2-content form label.rounded-full {
+  min-height: 2.75rem;
+  border-radius: 0.6rem !important;
+}
+
+/* Editorial fields */
+.profile-v2-content form input:not([type="checkbox"]):not([type="file"]),
+.profile-v2-content form textarea,
+.profile-v2-content form select {
+  min-height: 2.85rem;
+  padding: 0.65rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.28)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.profile-v2-content form textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+.profile-v2-content form input:not([type="checkbox"]):not([type="file"]):focus,
+.profile-v2-content form textarea:focus,
+.profile-v2-content form select:focus {
+  border-color: var(--profile-editorial-gold) !important;
+  outline: 0 !important;
+  box-shadow: 0 1px 0 var(--profile-editorial-gold) !important;
+}
+
+.profile-v2-content form label {
+  color: var(--loombus-text-muted, #736a5b) !important;
+}
+
+.profile-v2-content form .rounded-2xl.border.border-zinc-900.bg-black:not(:has(input[type="file"])) {
+  padding: 0.8rem 0 !important;
+  border: 0 !important;
+  border-left: 2px solid var(--profile-editorial-gold) !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--profile-editorial-gold) 6%, transparent) !important;
+}
+
+/* Notification controls are presently hidden by the workspace controller, but keep them flat if exposed. */
+.profile-v2-content form label.rounded-2xl {
+  min-height: 4rem;
+  padding: 0.8rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.13)) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.profile-v2-content form input[type="checkbox"] {
+  accent-color: var(--profile-editorial-gold);
+}
+
+/* Save remains the one dominant completion action, but no floating dashboard shadow. */
+.profile-v2-content form > button[type="submit"] {
+  position: sticky;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 10;
+  min-height: 2.9rem;
+  margin-top: 1rem;
+  padding: 0.65rem 1rem !important;
+  border-radius: 0.65rem !important;
+  border-color: var(--profile-editorial-gold) !important;
+  background: var(--profile-editorial-gold) !important;
+  color: #18130b !important;
+  box-shadow: 0 6px 20px color-mix(in srgb, #000 12%, transparent);
+}
+
+/* Preview is a genuinely discrete object and keeps containment. */
+.profile-v2-content aside {
+  position: sticky;
+  top: 5.25rem;
+  padding: 0.9rem !important;
+  border: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18)) !important;
+  border-radius: 0.9rem !important;
+  background: color-mix(in srgb, var(--loombus-surface, #fffdf4) 68%, transparent) !important;
+  box-shadow: none;
+}
+
+.profile-v2-content aside > p:first-child {
+  margin-bottom: 0.55rem !important;
+  color: var(--profile-editorial-gold) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.15em !important;
+}
+
+.profile-v2-content aside > div {
+  padding: 0.95rem !important;
+  border-radius: 0.65rem !important;
+  background: transparent !important;
+}
+
+.profile-v2-content aside > div::before {
+  margin-bottom: 0.55rem;
+}
+
+/* Profile viewers naturally fits the Editorial system already. */
+.profile-workspace-standalone-section > section {
+  padding: 1rem 0 !important;
+}
+
+.profile-workspace-standalone-section summary {
+  min-height: 3rem;
+}
+
+/* Creator Hub outer chrome */
+.creator-hub-phase-one,
+.creator-supporter-manager,
+.creator-paid-supporter-manager {
+  gap: 0;
+}
+
+.creator-hub-loading,
+.creator-hub-hero,
+.creator-hub-section,
+.creator-supporter-manager,
+.creator-paid-supporter-manager {
+  padding: 1.15rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.creator-hub-hero {
+  background: transparent;
+}
+
+.creator-hub-primary-link,
+.creator-hub-section-heading > a,
+.creator-supporter-manager-locked a,
+.creator-supporter-list-heading a,
+.creator-supporter-tier-heading button,
+.creator-supporter-tier-number button,
+.creator-supporter-member-list button,
+.creator-paid-supporter-actions button,
+.creator-paid-supporter-tier-list button {
+  border-radius: 0.6rem;
+}
+
+/* Creator metrics are one compact record, not three cards. */
+.creator-hub-metrics,
+.creator-paid-supporter-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+}
+
+.creator-hub-metrics article,
+.creator-paid-supporter-summary article {
+  min-height: 5rem;
+  padding: 0.8rem;
+  border: 0;
+  border-right: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.12));
+  border-radius: 0;
+  background: transparent;
+}
+
+.creator-hub-metrics article:last-child,
+.creator-paid-supporter-summary article:last-child {
+  border-right: 0;
+}
+
+.creator-hub-metrics span {
+  margin-top: 0.5rem;
+  font-size: 1.45rem;
+}
+
+/* Creator operation launchers become flat rows. */
+.creator-hub-launch-grid {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.creator-hub-launch-grid article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 0.8rem;
+  align-items: center;
+  min-height: 4.75rem;
+  padding: 0.75rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.13));
+  border-radius: 0;
+  background: transparent;
+}
+
+.creator-hub-launch-grid article > svg {
+  grid-row: 1 / 3;
+  margin: 0;
+}
+
+.creator-hub-launch-grid h4 {
+  margin: 0;
+}
+
+.creator-hub-launch-grid article > p {
+  min-height: 0;
+  margin: 0.18rem 0 0;
+}
+
+.creator-hub-launch-grid a {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.creator-hub-discussion-list {
+  gap: 0;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+}
+
+.creator-hub-discussion-list > a {
+  min-height: 3.4rem;
+  padding: 0.7rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.13));
+  border-radius: 0;
+  background: transparent;
+}
+
+.creator-hub-empty,
+.creator-supporter-empty {
+  min-height: 7rem;
+  border: 0;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-radius: 0;
+  background: transparent;
+}
+
+.creator-hub-link-fields input,
+.creator-supporter-program-fields input,
+.creator-supporter-program-fields textarea,
+.creator-supporter-tier-list input,
+.creator-supporter-tier-list textarea,
+.creator-supporter-tier-list select,
+.creator-paid-supporter-tier-list select,
+.creator-paid-supporter-tier-list input {
+  min-height: 2.8rem;
+  padding: 0.6rem 0 !important;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.26));
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.creator-hub-link-fields input:focus,
+.creator-supporter-program-fields input:focus,
+.creator-supporter-program-fields textarea:focus,
+.creator-supporter-tier-list input:focus,
+.creator-supporter-tier-list textarea:focus,
+.creator-supporter-tier-list select:focus,
+.creator-paid-supporter-tier-list select:focus,
+.creator-paid-supporter-tier-list input:focus {
+  border-color: var(--profile-editorial-gold);
+  box-shadow: 0 1px 0 var(--profile-editorial-gold);
+}
+
+.creator-hub-save-row button,
+.creator-supporter-save-row > button {
+  min-height: 2.75rem;
+  border-radius: 0.6rem;
+  background: var(--profile-editorial-gold);
+  color: #18130b;
+}
+
+/* Supporter program: flatten outer panels but retain tier records as discrete editable records. */
+.creator-supporter-manager-locked,
+.creator-supporter-switch-row,
+.creator-supporter-exclusive-control,
+.creator-paid-supporter-notice,
+.creator-paid-supporter-readiness {
+  padding: 0.8rem 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  border-radius: 0;
+  background: transparent;
+}
+
+.creator-supporter-tier-list article,
+.creator-paid-supporter-card,
+.creator-paid-supporter-tier-list article,
+.creator-paid-supporter-subscriptions article,
+.creator-paid-supporter-refunds article {
+  border-color: var(--loombus-border, rgba(81, 67, 39, 0.16));
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--loombus-surface, #fffdf4) 50%, transparent);
+  box-shadow: none;
+}
+
+.creator-paid-supporter-readiness {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+}
+
+.creator-paid-supporter-readiness span {
+  padding: 0.55rem;
+  border: 0;
+  border-right: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.12));
+  border-radius: 0;
+  background: transparent !important;
+}
+
+.creator-paid-supporter-readiness span:last-child {
+  border-right: 0;
+}
+
+.creator-paid-supporter-price-input {
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Focus and reduced motion */
+.profile-v2-route :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--profile-editorial-gold) !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 900px) {
+  .profile-v2-shell {
+    width: 100%;
+  }
+
+  .profile-v2-hero {
+    display: block;
+  }
+
+  .profile-v2-hero-actions {
+    justify-content: flex-start;
+    margin-top: 0.7rem;
+  }
+
+  .profile-workspace-layout {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .profile-workspace-nav {
+    position: static;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 0.25rem;
+    border: 0;
+    border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18));
+  }
+
+  .profile-workspace-nav > p {
+    display: none;
+  }
+
+  .profile-workspace-nav button,
+  .profile-workspace-nav a {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: 0.6rem 0.72rem;
+    white-space: nowrap;
+  }
+
+  .profile-workspace-nav button::before {
+    inset: auto 0.65rem 0 0.65rem;
+    width: auto;
+    height: 2px;
+  }
+
+  .profile-workspace-nav svg {
+    display: none;
+  }
+
+  .profile-v2-content .grid.lg\:grid-cols-\[minmax\(0\,1fr\)_340px\] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-v2-content aside {
+    position: static;
+    order: -1;
+  }
+
+  .creator-paid-supporter-readiness {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .profile-v2-route {
+    overflow-x: clip;
+  }
+
+  .profile-v2-shell {
+    padding: 0.75rem 0.85rem calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .profile-v2-hero {
+    padding: 0.8rem 0 1rem;
+  }
+
+  .profile-v2-hero h1 {
+    font-size: clamp(1.85rem, 9vw, 2.65rem);
+  }
+
+  .profile-v2-hero-copy > p:last-child {
+    margin-top: 0.55rem;
+    font-size: 0.87rem;
+    line-height: 1.55;
+  }
+
+  .profile-v2-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .profile-v2-guide {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .profile-v2-guide article {
+    flex: 0 0 min(15rem, 78vw);
+    min-height: 3.9rem;
+    padding: 0.7rem 0.8rem 0.7rem 0;
+    scroll-snap-align: start;
+  }
+
+  .profile-v2-guide article:not(:first-child) {
+    padding-left: 0.8rem;
+  }
+
+  .profile-v2-content > main > div > section:first-of-type {
+    padding-bottom: 1rem !important;
+  }
+
+  .profile-v2-content form > section {
+    padding: 0.95rem 0 !important;
+  }
+
+  .profile-v2-content form > button[type="submit"] {
+    width: 100%;
+    bottom: max(0.6rem, env(safe-area-inset-bottom));
+  }
+
+  .profile-v2-content aside {
+    padding: 0.75rem !important;
+  }
+
+  .creator-hub-loading,
+  .creator-hub-hero,
+  .creator-hub-section,
+  .creator-supporter-manager,
+  .creator-paid-supporter-manager {
+    padding: 0.95rem 0;
+  }
+
+  .creator-hub-hero,
+  .creator-hub-section-heading,
+  .creator-hub-save-row,
+  .creator-supporter-manager-heading,
+  .creator-supporter-tier-heading,
+  .creator-supporter-save-row,
+  .creator-supporter-exclusive-control,
+  .creator-supporter-list-heading,
+  .creator-supporter-manager-locked,
+  .creator-paid-supporter-manager > header,
+  .creator-paid-supporter-card-heading {
+    gap: 0.65rem;
+  }
+
+  .creator-hub-primary-link,
+  .creator-hub-section-heading > a,
+  .creator-hub-save-row button,
+  .creator-supporter-manager-locked a,
+  .creator-supporter-list-heading a,
+  .creator-supporter-save-row > button {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .creator-hub-metrics,
+  .creator-paid-supporter-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .creator-hub-metrics article,
+  .creator-paid-supporter-summary article {
+    min-height: 4.4rem;
+    padding: 0.65rem 0.45rem;
+  }
+
+  .creator-hub-metrics article > svg,
+  .creator-paid-supporter-summary svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .creator-hub-metrics span {
+    font-size: 1.15rem;
+  }
+
+  .creator-hub-metrics p,
+  .creator-paid-supporter-summary span {
+    font-size: 0.67rem;
+    line-height: 1.25;
+  }
+
+  .creator-hub-launch-grid article {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 4.5rem;
+  }
+
+  .creator-hub-launch-grid a {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 0.35rem;
+  }
+
+  .creator-supporter-tier-list {
+    grid-template-columns: 1fr;
+  }
+
+  .creator-paid-supporter-readiness {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .creator-paid-supporter-tier-list article {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .creator-paid-supporter-tier-list article > div:first-child,
+  .creator-paid-supporter-tier-list article > button {
+    grid-column: 1 / -1;
+  }
+
+  .creator-paid-supporter-actions,
+  .creator-supporter-exclusive-control > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .creator-paid-supporter-actions button,
+  .creator-paid-supporter-tier-list button,
+  .creator-supporter-member-list button {
+    width: auto;
+    min-height: 2.75rem;
+  }
+
+  .creator-paid-supporter-subscriptions article,
+  .creator-paid-supporter-refunds article,
+  .creator-supporter-member-list article {
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .profile-v2-guide article {
+    flex-basis: 84vw;
+  }
+
+  .profile-v2-content > main > div > section:first-of-type .flex.shrink-0.flex-col {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem !important;
+  }
+
+  .profile-v2-content > main > div > section:first-of-type .flex.shrink-0.flex-col > * {
+    min-width: 0;
+  }
+
+  .creator-hub-metrics,
+  .creator-paid-supporter-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .creator-paid-supporter-tier-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .creator-paid-supporter-tier-list article > div:first-child,
+  .creator-paid-supporter-tier-list article > button {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-v2-route *,
+  .profile-v2-route *::before,
+  .profile-v2-route *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
