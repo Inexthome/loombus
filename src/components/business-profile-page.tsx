@@ -1,36 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Building2,
-  CalendarCheck,
-  Globe2,
-  Loader2,
-  Mail,
-  Phone,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Building2, CalendarCheck, Globe2, Loader2, Mail, Phone, Search, ShieldCheck } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { BusinessProfile } from "@/lib/business-directory";
 import { supabase } from "@/lib/supabase/client";
 import { BusinessProfileOverview } from "@/components/business-profile-overview";
 import { BusinessProfileServices } from "@/components/business-profile-services";
-import {
-  BusinessProfileAccountability,
-  type BusinessProfilePanel,
-} from "@/components/business-profile-accountability";
+import { BusinessProfileAccountability, type BusinessProfilePanel } from "@/components/business-profile-accountability";
 
 function safeExternalHref(value: string) {
   if (!value) return "";
   try {
     const parsed = new URL(value);
-    return ["http:", "https:"].includes(parsed.protocol)
-      ? parsed.toString()
-      : "";
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.toString() : "";
   } catch {
     return "";
   }
@@ -46,24 +30,16 @@ export default function BusinessProfilePage() {
   const [claimEvidence, setClaimEvidence] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
-
   const pathname = usePathname();
-  const slug = useMemo(() => {
-    const parts = pathname.split("/").filter(Boolean);
-    return decodeURIComponent(parts[parts.length - 1] ?? "");
-  }, [pathname]);
+  const slug = useMemo(() => decodeURIComponent(pathname.split("/").filter(Boolean).at(-1) ?? ""), [pathname]);
 
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
-
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch(
-          `/api/businesses?slug=${encodeURIComponent(slug)}`,
-          { cache: "no-store" },
-        );
+        const response = await fetch(`/api/businesses?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
         const payload = await response.json().catch(() => ({}));
         if (cancelled) return;
         if (!response.ok || !payload.business) {
@@ -77,11 +53,8 @@ export default function BusinessProfilePage() {
         if (!cancelled) setLoading(false);
       }
     }
-
     void load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [slug]);
 
   async function authenticatedAction(payload: Record<string, unknown>) {
@@ -91,19 +64,13 @@ export default function BusinessProfilePage() {
       window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
       return null;
     }
-
     const response = await fetch("/api/businesses", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(result.error ?? "Unable to complete the request.");
-    }
+    if (!response.ok) throw new Error(result.error ?? "Unable to complete the request.");
     return result;
   }
 
@@ -113,24 +80,15 @@ export default function BusinessProfilePage() {
     setWorking(true);
     setMessage("");
     try {
-      const result = await authenticatedAction({
-        action: "claim",
-        businessId: business.id,
-        contactEmail: claimEmail,
-        evidence: claimEvidence,
-      });
+      const result = await authenticatedAction({ action: "claim", businessId: business.id, contactEmail: claimEmail, evidence: claimEvidence });
       if (!result) return;
       setPanel(null);
       setClaimEmail("");
       setClaimEvidence("");
       setMessage("Your ownership claim was submitted for administrator review.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Unable to submit the claim.",
-      );
-    } finally {
-      setWorking(false);
-    }
+      setMessage(error instanceof Error ? error.message : "Unable to submit the claim.");
+    } finally { setWorking(false); }
   }
 
   async function submitReport(event: FormEvent) {
@@ -139,173 +97,54 @@ export default function BusinessProfilePage() {
     setWorking(true);
     setMessage("");
     try {
-      const result = await authenticatedAction({
-        action: "report",
-        businessId: business.id,
-        reason: reportReason,
-        details: reportDetails,
-      });
+      const result = await authenticatedAction({ action: "report", businessId: business.id, reason: reportReason, details: reportDetails });
       if (!result) return;
       setPanel(null);
       setReportReason("");
       setReportDetails("");
       setMessage("The listing report was submitted for review.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Unable to submit the report.",
-      );
-    } finally {
-      setWorking(false);
-    }
+      setMessage(error instanceof Error ? error.message : "Unable to submit the report.");
+    } finally { setWorking(false); }
   }
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)] sm:px-6">
-        <div className="mx-auto grid min-h-64 max-w-[88rem] place-items-center rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)]">
-            <Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={18} /> Loading business profile
-          </span>
-        </div>
-      </main>
-    );
-  }
+  if (loading) return <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)]"><div className="mx-auto flex min-h-64 max-w-[82rem] items-center justify-center border-b border-[color:var(--loombus-border)]"><Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={22} /></div></main>;
 
-  if (!business) {
-    return (
-      <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-12 text-[color:var(--loombus-text)] sm:px-6">
-        <section className="mx-auto max-w-2xl rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center shadow-xl shadow-black/10">
-          <Building2 className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
-          <h1 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">Business profile unavailable</h1>
-          <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-            {message || "This listing may be under review or no longer public."}
-          </p>
-          <Link
-            href="/businesses"
-            className="mt-5 inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-5 py-3 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]"
-          >
-            <ArrowLeft size={16} /> Back to Businesses
-          </Link>
-        </section>
-      </main>
-    );
-  }
+  if (!business) return <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-12 text-[color:var(--loombus-text)]"><section className="mx-auto max-w-2xl border-y border-[color:var(--loombus-border)] py-10"><Building2 className="text-[color:var(--loombus-gold)]" size={28} /><h1 className="mt-4 text-2xl font-semibold">Business profile unavailable</h1><p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">{message || "This listing may be under review or no longer public."}</p><Link href="/businesses" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline"><ArrowLeft size={15} /> Back to Businesses</Link></section></main>;
 
   const website = safeExternalHref(business.websiteUrl);
   const booking = safeExternalHref(business.bookingUrl);
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-16 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[88rem]">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/businesses"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-gold)]"
-          >
-            <ArrowLeft size={16} /> Back to Businesses
-          </Link>
-          <Link
-            href="/local"
-            className="inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]"
-          >
-            Explore Local <ArrowUpRight size={14} />
-          </Link>
-        </div>
+    <main data-business-editorial="profile" className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-14 pt-7 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[82rem]">
+        <nav className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--loombus-border)] pb-4 text-sm font-semibold" aria-label="Business profile navigation">
+          <Link href="/businesses" className="inline-flex items-center gap-2 text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-gold)]"><ArrowLeft size={15} /> Businesses</Link>
+          <Link href="/local" className="inline-flex items-center gap-2 hover:text-[color:var(--loombus-gold)]">Explore Local <ArrowUpRight size={14} /></Link>
+        </nav>
 
         <BusinessProfileOverview business={business} />
+        {message ? <p className="border-b border-[color:var(--loombus-border)] py-4 text-sm" role="status">{message}</p> : null}
 
-        {message ? (
-          <p className="mt-5 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm shadow-sm" role="status">
-            {message}
-          </p>
-        ) : null}
+        <BusinessProfileServices business={business} />
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <section className="min-w-0">
-            <BusinessProfileServices business={business} />
-          </section>
+        <section className="grid border-b border-[color:var(--loombus-border)] lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.55fr)]">
+          <div className="py-7 lg:pr-8">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-gold)]">Contact and destinations</p>
+            <div className="mt-4 divide-y divide-[color:var(--loombus-border-muted)]">
+              {business.phone ? <a href={`tel:${business.phone}`} className="flex items-center justify-between gap-3 py-3 text-sm font-semibold hover:text-[color:var(--loombus-gold)]"><span className="inline-flex items-center gap-2"><Phone size={15} />{business.phone}</span><ArrowUpRight size={14} /></a> : null}
+              {business.contactEmail ? <a href={`mailto:${business.contactEmail}`} className="flex items-center justify-between gap-3 py-3 text-sm font-semibold hover:text-[color:var(--loombus-gold)]"><span className="inline-flex items-center gap-2"><Mail size={15} />Email business</span><ArrowUpRight size={14} /></a> : null}
+              {website ? <a href={website} target="_blank" rel="noreferrer" className="flex items-center justify-between py-3 text-sm font-semibold hover:text-[color:var(--loombus-gold)]"><span className="inline-flex items-center gap-2"><Globe2 size={15} />Website</span><ArrowUpRight size={14} /></a> : null}
+              {booking ? <a href={booking} target="_blank" rel="noreferrer" className="flex items-center justify-between py-3 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline"><span className="inline-flex items-center gap-2"><CalendarCheck size={15} />Request or book</span><ArrowUpRight size={14} /></a> : null}
+              <Link href={`/search?q=${encodeURIComponent(business.name)}`} className="flex items-center justify-between py-3 text-sm font-semibold hover:text-[color:var(--loombus-gold)]"><span className="inline-flex items-center gap-2"><Search size={15} />Search Loombus</span><ArrowUpRight size={14} /></Link>
+            </div>
+          </div>
+          <div className="border-t border-[color:var(--loombus-border)] py-7 lg:border-l lg:border-t-0 lg:pl-8">
+            <BusinessProfileAccountability business={business} panel={panel} working={working} claimEmail={claimEmail} claimEvidence={claimEvidence} reportReason={reportReason} reportDetails={reportDetails} onPanelChange={setPanel} onClaimEmailChange={setClaimEmail} onClaimEvidenceChange={setClaimEvidence} onReportReasonChange={setReportReason} onReportDetailsChange={setReportDetails} onSubmitClaim={submitClaim} onSubmitReport={submitReport} />
+          </div>
+        </section>
 
-          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Contact and destinations</p>
-              <div className="mt-4 space-y-2">
-                {business.phone ? (
-                  <a
-                    href={`tel:${business.phone}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
-                  >
-                    <span className="inline-flex min-w-0 items-center gap-2"><Phone size={16} className="shrink-0 text-[color:var(--loombus-gold)]" /><span className="truncate">{business.phone}</span></span>
-                    <ArrowUpRight size={14} className="shrink-0" />
-                  </a>
-                ) : null}
-                {business.contactEmail ? (
-                  <a
-                    href={`mailto:${business.contactEmail}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
-                  >
-                    <span className="inline-flex min-w-0 items-center gap-2"><Mail size={16} className="shrink-0 text-[color:var(--loombus-gold)]" /><span className="truncate">Email business</span></span>
-                    <ArrowUpRight size={14} className="shrink-0" />
-                  </a>
-                ) : null}
-                {website ? (
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
-                  >
-                    <span className="inline-flex items-center gap-2"><Globe2 size={16} className="text-[color:var(--loombus-gold)]" /> Website</span>
-                    <ArrowUpRight size={14} />
-                  </a>
-                ) : null}
-                {booking ? (
-                  <a
-                    href={booking}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-cream)] px-4 py-3 text-sm font-semibold text-[color:var(--loombus-cream-contrast)] transition hover:opacity-90 dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
-                  >
-                    <span className="inline-flex items-center gap-2"><CalendarCheck size={16} /> Request or book</span>
-                    <ArrowUpRight size={14} />
-                  </a>
-                ) : null}
-                <Link
-                  href={`/search?q=${encodeURIComponent(business.name)}`}
-                  className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
-                >
-                  <span className="inline-flex items-center gap-2"><Search size={16} className="text-[color:var(--loombus-gold)]" /> Search Loombus</span>
-                  <ArrowUpRight size={14} />
-                </Link>
-              </div>
-            </section>
-
-            <BusinessProfileAccountability
-              business={business}
-              panel={panel}
-              working={working}
-              claimEmail={claimEmail}
-              claimEvidence={claimEvidence}
-              reportReason={reportReason}
-              reportDetails={reportDetails}
-              onPanelChange={setPanel}
-              onClaimEmailChange={setClaimEmail}
-              onClaimEvidenceChange={setClaimEvidence}
-              onReportReasonChange={setReportReason}
-              onReportDetailsChange={setReportDetails}
-              onSubmitClaim={submitClaim}
-              onSubmitReport={submitReport}
-            />
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex gap-3">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
-                <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                  Loombus provides attribution and review tools but does not guarantee licensing, pricing, availability, service quality, or transaction outcomes.
-                </p>
-              </div>
-            </section>
-          </aside>
-        </div>
+        <footer className="flex gap-3 py-6 text-sm leading-6 text-[color:var(--loombus-text-muted)]"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" /><p>Loombus provides attribution and review tools but does not guarantee licensing, pricing, availability, service quality, or transaction outcomes.</p></footer>
       </div>
     </main>
   );
