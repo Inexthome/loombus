@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import PeopleFollowRequestsPanel from "./people-follow-requests-panel";
 
 type Member = {
   id: string;
@@ -52,8 +53,10 @@ const VIEWS: Array<[View, string]> = [
   ["following", "Following"],
   ["followers", "Followers"],
   ["mutual", "Mutual"],
-  ["requests", "Requested"],
+  ["requests", "Requests"],
 ];
+
+const VIEW_KEYS = new Set<View>(VIEWS.map(([key]) => key));
 
 function displayName(member: Member) {
   return member.fullName?.trim() || member.username?.trim() || "Loombus member";
@@ -91,6 +94,23 @@ export default function PeopleV2Client() {
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [adminVisibility, setAdminVisibility] = useState(false);
+
+  useEffect(() => {
+    const requestedView = new URLSearchParams(window.location.search).get("view") as View | null;
+    if (requestedView && VIEW_KEYS.has(requestedView)) setView(requestedView);
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view === "all") {
+      url.searchParams.delete("view");
+      url.searchParams.delete("request");
+    } else {
+      url.searchParams.set("view", view);
+      if (view !== "requests") url.searchParams.delete("request");
+    }
+    window.history.replaceState({}, "", url);
+  }, [view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,6 +227,11 @@ export default function PeopleV2Client() {
     event.preventDefault();
     setPage(1);
     setActiveQuery(query.trim());
+  }
+
+  function selectView(nextView: View) {
+    setView(nextView);
+    if (nextView !== "requests") setPage(1);
   }
 
   async function toggleFollow(member: Member) {
@@ -326,7 +351,7 @@ export default function PeopleV2Client() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/following" className="rounded-full bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Following feed</Link>
-              <Link href="/settings#privacy" className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold">Privacy settings</Link>
+              <Link href="/settings?section=privacy-safety" className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold">Privacy settings</Link>
             </div>
           </div>
         </section>
@@ -337,7 +362,7 @@ export default function PeopleV2Client() {
             ["Following", metrics.following],
             ["Followers", metrics.followers],
             ["Mutual", metrics.mutual],
-            ["Requested", metrics.requested],
+            ["Sent on page", metrics.requested],
           ].map(([label, value]) => (
             <article key={label} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
               <p className="text-xs uppercase tracking-[.16em] text-[var(--loombus-text-subtle)]">{label}</p>
@@ -349,86 +374,96 @@ export default function PeopleV2Client() {
         {notice ? <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]" role="status">{notice}</div> : null}
 
         <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 sm:p-5">
-          <form onSubmit={submitSearch} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_12rem_12rem_12rem]">
-            <label className="relative">
-              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--loombus-text-subtle)]" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search names, usernames, or bios" className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] py-3.5 pl-12 pr-4 text-sm outline-none focus:border-[var(--loombus-gold)]" />
-            </label>
-            <button type="submit" className="rounded-2xl bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Search</button>
-            <select value={sort} onChange={(event) => setSort(event.target.value as Sort)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="recommended">Recommended</option><option value="name">Name A–Z</option><option value="followers">Most followed</option></select>
-            <select value={role} onChange={(event) => setRole(event.target.value as Role)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All roles</option><option value="member">Members</option><option value="admin">Admins</option></select>
-            <select value={quality} onChange={(event) => setQuality(event.target.value as Quality)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All profiles</option><option value="bio">With bio</option><option value="complete">Complete profiles</option></select>
-          </form>
-          <div className="mt-4 flex gap-2 overflow-x-auto border-t border-[var(--loombus-border)] pt-4">
+          {view !== "requests" ? (
+            <form onSubmit={submitSearch} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_12rem_12rem_12rem]">
+              <label className="relative">
+                <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--loombus-text-subtle)]" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search names, usernames, or bios" className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] py-3.5 pl-12 pr-4 text-sm outline-none focus:border-[var(--loombus-gold)]" />
+              </label>
+              <button type="submit" className="rounded-2xl bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Search</button>
+              <select value={sort} onChange={(event) => setSort(event.target.value as Sort)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="recommended">Recommended</option><option value="name">Name A–Z</option><option value="followers">Most followed</option></select>
+              <select value={role} onChange={(event) => setRole(event.target.value as Role)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All roles</option><option value="member">Members</option><option value="admin">Admins</option></select>
+              <select value={quality} onChange={(event) => setQuality(event.target.value as Quality)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All profiles</option><option value="bio">With bio</option><option value="complete">Complete profiles</option></select>
+            </form>
+          ) : (
+            <p className="text-sm text-[var(--loombus-text-muted)]">Review incoming requests or manage requests you sent to private accounts.</p>
+          )}
+          <div className={`${view !== "requests" ? "mt-4 border-t" : "mt-3"} flex gap-2 overflow-x-auto border-[var(--loombus-border)] pt-4`}>
             {VIEWS.map(([key, label]) => (
-              <button key={key} type="button" onClick={() => setView(key)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium ${view === key ? "border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}>{label}</button>
+              <button key={key} type="button" onClick={() => selectView(key)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium ${view === key ? "border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}>{label}</button>
             ))}
           </div>
         </section>
 
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold">{filteredMembers.length} shown · {total} discoverable members</p>
-            <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">{adminVisibility ? "Admin visibility includes active undiscoverable accounts." : "Undiscoverable accounts and blocked relationships are excluded."}</p>
-          </div>
-          {activeQuery ? <button type="button" onClick={() => { setQuery(""); setActiveQuery(""); setPage(1); }} className="text-sm font-semibold text-[var(--loombus-text-muted)]">Clear search</button> : null}
-        </div>
-
-        {filteredMembers.length ? (
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredMembers.map((member) => {
-              const profile = { id: member.id, full_name: member.fullName, username: member.username, avatar_url: member.avatarUrl };
-              const href = member.username ? `/u/${encodeURIComponent(member.username)}` : "/people";
-              return (
-                <article key={member.id} className="rounded-[1.65rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <Link href={href}><ProfileAvatar profile={profile} size="lg" /></Link>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link href={href} className="truncate text-lg font-bold">{displayName(member)}</Link>
-                        {member.isAdmin ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[.68rem] font-bold text-amber-900"><ShieldCheck className="size-3" /> Admin</span> : null}
-                        {member.privateAccount ? <span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2 py-1 text-[.68rem] font-bold text-[var(--loombus-text-muted)]"><LockKeyhole className="size-3" /> Private</span> : null}
-                        {member.mutual ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-[.68rem] font-bold text-emerald-800">Mutual</span> : member.followsYou ? <span className="rounded-full bg-sky-100 px-2 py-1 text-[.68rem] font-bold text-sky-800">Follows you</span> : null}
-                      </div>
-                      <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{member.username ? `@${member.username}` : "Loombus member"}</p>
-                    </div>
-                  </div>
-
-                  <p className="mt-4 line-clamp-3 min-h-[4.1rem] text-sm leading-6 text-[var(--loombus-text-muted)]">{member.bio?.trim() || (member.privateAccount ? "This member has a private account." : "This member has not added a bio yet.")}</p>
-
-                  <div className="mt-4 flex items-center gap-4 border-t border-[var(--loombus-border)] pt-4 text-xs font-semibold text-[var(--loombus-text-muted)]">
-                    <span>{member.followerCount} followers</span>
-                    <span>{member.followingCount} following</span>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button type="button" disabled={working === member.id} onClick={() => void toggleFollow(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--loombus-gold-strong)] px-3 text-sm font-bold text-[var(--loombus-gold-contrast)] disabled:opacity-60">
-                      {member.requested ? <UserCheck className="size-4" /> : <UserPlus className="size-4" />}
-                      {working === member.id ? "Working…" : member.following ? "Following" : member.requested ? "Requested" : member.privateAccount ? "Request follow" : "Follow"}
-                    </button>
-                    {member.mutual ? (
-                      <button type="button" disabled={openingMessage === member.id} onClick={() => void openMessage(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold disabled:opacity-60"><MessageCircle className="size-4" /> {openingMessage === member.id ? "Opening…" : "Message"}</button>
-                    ) : (
-                      <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold"><Users className="size-4" /> View profile</Link>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </section>
+        {view === "requests" ? (
+          <PeopleFollowRequestsPanel />
         ) : (
-          <section className="rounded-[1.75rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-10 text-center">
-            <Search className="mx-auto size-9 text-[var(--loombus-gold)]" />
-            <h2 className="mt-4 text-2xl font-bold">No members match this view.</h2>
-            <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Try All members, broaden the search, or clear the filters.</p>
-          </section>
-        )}
+          <>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold">{filteredMembers.length} shown · {total} discoverable members</p>
+                <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">{adminVisibility ? "Admin visibility includes active undiscoverable accounts." : "Undiscoverable accounts and blocked relationships are excluded."}</p>
+              </div>
+              {activeQuery ? <button type="button" onClick={() => { setQuery(""); setActiveQuery(""); setPage(1); }} className="text-sm font-semibold text-[var(--loombus-text-muted)]">Clear search</button> : null}
+            </div>
 
-        <nav className="flex items-center justify-center gap-3" aria-label="People directory pages">
-          <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40"><ChevronLeft className="size-4" /> Previous</button>
-          <span className="text-sm font-semibold text-[var(--loombus-text-muted)]">Page {page}</span>
-          <button type="button" disabled={!hasMore} onClick={() => setPage((current) => current + 1)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40">Next <ChevronRight className="size-4" /></button>
-        </nav>
+            {filteredMembers.length ? (
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredMembers.map((member) => {
+                  const profile = { id: member.id, full_name: member.fullName, username: member.username, avatar_url: member.avatarUrl };
+                  const href = member.username ? `/u/${encodeURIComponent(member.username)}` : "/people";
+                  return (
+                    <article key={member.id} className="rounded-[1.65rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <Link href={href}><ProfileAvatar profile={profile} size="lg" /></Link>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link href={href} className="truncate text-lg font-bold">{displayName(member)}</Link>
+                            {member.isAdmin ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[.68rem] font-bold text-amber-900"><ShieldCheck className="size-3" /> Admin</span> : null}
+                            {member.privateAccount ? <span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2 py-1 text-[.68rem] font-bold text-[var(--loombus-text-muted)]"><LockKeyhole className="size-3" /> Private</span> : null}
+                            {member.mutual ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-[.68rem] font-bold text-emerald-800">Mutual</span> : member.followsYou ? <span className="rounded-full bg-sky-100 px-2 py-1 text-[.68rem] font-bold text-sky-800">Follows you</span> : null}
+                          </div>
+                          <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{member.username ? `@${member.username}` : "Loombus member"}</p>
+                        </div>
+                      </div>
+
+                      <p className="mt-4 line-clamp-3 min-h-[4.1rem] text-sm leading-6 text-[var(--loombus-text-muted)]">{member.bio?.trim() || (member.privateAccount ? "This member has a private account." : "This member has not added a bio yet.")}</p>
+
+                      <div className="mt-4 flex items-center gap-4 border-t border-[var(--loombus-border)] pt-4 text-xs font-semibold text-[var(--loombus-text-muted)]">
+                        <span>{member.followerCount} followers</span>
+                        <span>{member.followingCount} following</span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button type="button" disabled={working === member.id} onClick={() => void toggleFollow(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--loombus-gold-strong)] px-3 text-sm font-bold text-[var(--loombus-gold-contrast)] disabled:opacity-60">
+                          {member.requested ? <UserCheck className="size-4" /> : <UserPlus className="size-4" />}
+                          {working === member.id ? "Working…" : member.following ? "Following" : member.requested ? "Requested" : member.privateAccount ? "Request follow" : "Follow"}
+                        </button>
+                        {member.mutual ? (
+                          <button type="button" disabled={openingMessage === member.id} onClick={() => void openMessage(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold disabled:opacity-60"><MessageCircle className="size-4" /> {openingMessage === member.id ? "Opening…" : "Message"}</button>
+                        ) : (
+                          <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold"><Users className="size-4" /> View profile</Link>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </section>
+            ) : (
+              <section className="rounded-[1.75rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-10 text-center">
+                <Search className="mx-auto size-9 text-[var(--loombus-gold)]" />
+                <h2 className="mt-4 text-2xl font-bold">No members match this view.</h2>
+                <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Try All members, broaden the search, or clear the filters.</p>
+              </section>
+            )}
+
+            <nav className="flex items-center justify-center gap-3" aria-label="People directory pages">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40"><ChevronLeft className="size-4" /> Previous</button>
+              <span className="text-sm font-semibold text-[var(--loombus-text-muted)]">Page {page}</span>
+              <button type="button" disabled={!hasMore} onClick={() => setPage((current) => current + 1)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40">Next <ChevronRight className="size-4" /></button>
+            </nav>
+          </>
+        )}
       </div>
     </main>
   );

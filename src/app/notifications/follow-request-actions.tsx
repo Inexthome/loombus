@@ -122,7 +122,7 @@ export default function FollowRequestActions() {
       }
 
       setRequests((current) => current.filter((item) => item.id !== requestId));
-      setNotice(action === "accept" ? "Follow request accepted." : "Follow request declined.");
+      setNotice(action === "accept" ? "Follow request approved." : "Follow request declined.");
       window.dispatchEvent(new Event("loombus:notifications-changed"));
 
       // The server removes the matching follow-request notification as part of
@@ -147,15 +147,28 @@ export default function FollowRequestActions() {
       aria-labelledby="follow-requests-heading"
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2
-          id="follow-requests-heading"
-          className="text-sm font-semibold text-[var(--loombus-text)]"
-        >
-          Follow requests
-        </h2>
-        <span className="text-xs text-[var(--loombus-text-muted)]">
-          {requests.length} pending
-        </span>
+        <div>
+          <h2
+            id="follow-requests-heading"
+            className="text-sm font-semibold text-[var(--loombus-text)]"
+          >
+            Follow requests
+          </h2>
+          <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">
+            Approve or decline directly from Notifications.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[var(--loombus-text-muted)]">
+            {requests.length} pending
+          </span>
+          <Link
+            href="/people?view=requests&request=received"
+            className="text-xs font-semibold text-[var(--loombus-text)] underline decoration-[var(--loombus-border)] underline-offset-4"
+          >
+            Manage all
+          </Link>
+        </div>
       </div>
 
       <div className="divide-y divide-[var(--loombus-border)]">
@@ -192,7 +205,7 @@ export default function FollowRequestActions() {
                   type="button"
                   onClick={() => void respond(item.id, "decline")}
                   disabled={Boolean(workingId)}
-                  className="min-h-9 rounded-md border border-[var(--loombus-border)] px-3 text-sm font-medium text-[var(--loombus-text)] transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="min-h-11 rounded-md border border-[var(--loombus-border)] px-3 text-sm font-medium text-[var(--loombus-text)] transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Decline
                 </button>
@@ -200,9 +213,9 @@ export default function FollowRequestActions() {
                   type="button"
                   onClick={() => void respond(item.id, "accept")}
                   disabled={Boolean(workingId)}
-                  className="min-h-9 rounded-md bg-[#CBAB5B] px-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="min-h-11 rounded-md bg-[#CBAB5B] px-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {busy ? "Working…" : "Accept"}
+                  {busy ? "Working…" : "Approve"}
                 </button>
               </div>
             </div>
