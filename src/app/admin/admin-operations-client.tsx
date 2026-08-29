@@ -10,13 +10,12 @@ import {
   ClipboardList,
   CreditCard,
   FlaskConical,
-  Gauge,
   HeartPulse,
   LifeBuoy,
   LineChart,
   ListChecks,
-  RefreshCw,
   Radio,
+  RefreshCw,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -48,7 +47,6 @@ type AdminModule = {
   href: string;
   title: string;
   description: string;
-  action: string;
   Icon: LucideIcon;
   countKey?: keyof AdminCounts;
 };
@@ -80,148 +78,205 @@ const EMPTY_COUNTS: AdminCounts = {
 
 const MODULE_GROUPS: AdminModuleGroup[] = [
   {
-    title: "Moderation & safety",
+    title: "Trust, safety & moderation",
     description:
-      "Review reports, safety signals, soft-deleted content, support requests, and the permanent audit trail.",
+      "Investigate reports, safety signals, enforcement decisions, recovery work, and the audit trail.",
     modules: [
       {
         href: "/admin/reports",
         title: "Reports",
-        description:
-          "Review member-submitted reports for discussions, replies, and profiles, then record the moderation outcome.",
-        action: "Open reports",
+        description: "Review member-submitted reports and record moderation outcomes.",
         Icon: ShieldAlert,
         countKey: "newReports",
       },
       {
         href: "/admin/safety",
         title: "Safety Queue",
-        description:
-          "Review pre-submit safety blocks and warnings from the existing rule-based and AI-assisted checks.",
-        action: "Open safety queue",
+        description: "Review pre-submit safety blocks and warnings from current safety checks.",
         Icon: AlertTriangle,
       },
       {
-        href: "/admin/support",
-        title: "Support Requests",
-        description:
-          "Review structured support submissions, update request status, and preserve internal Admin notes.",
-        action: "Open support",
-        Icon: LifeBuoy,
-        countKey: "supportRequests",
+        href: "/admin/age-safety",
+        title: "Age Safety",
+        description: "Review age-safety operations and the controls attached to them.",
+        Icon: ShieldCheck,
+      },
+      {
+        href: "/admin/enforcement",
+        title: "Enforcement & Appeals",
+        description: "Review enforcement cases, member consequences, and appeal workflows.",
+        Icon: ListChecks,
       },
       {
         href: "/admin/deleted",
         title: "Deleted Discussions",
-        description:
-          "Inspect and restore soft-deleted discussions through the existing recovery workflow.",
-        action: "Review discussions",
+        description: "Inspect and restore soft-deleted discussions through the recovery workflow.",
         Icon: ArchiveRestore,
         countKey: "deletedDiscussions",
       },
       {
         href: "/admin/deleted-replies",
         title: "Deleted Replies",
-        description:
-          "Inspect and restore soft-deleted replies without inventing a separate recovery system.",
-        action: "Review replies",
+        description: "Inspect and restore soft-deleted replies through the recovery workflow.",
         Icon: ArchiveRestore,
         countKey: "deletedReplies",
       },
       {
         href: "/admin/audit",
         title: "Audit Log",
-        description:
-          "Review platform activity, moderation actions, actors, targets, and recorded system events.",
-        action: "Open audit log",
+        description: "Review recorded platform activity, actors, targets, and system events.",
         Icon: ClipboardList,
       },
     ],
   },
   {
-    title: "Members, access & billing",
+    title: "Members, support & billing",
     description:
-      "Use the existing member lookup, AI-entitlement, and billing-diagnostics tools without exposing unsupported account actions.",
+      "Inspect member status, support work, AI entitlements, billing references, and booking payments.",
     modules: [
       {
         href: "/admin/users",
         title: "Member Lookup",
-        description:
-          "Search members and review account status, Premium access, and billing-identity presence.",
-        action: "Open members",
+        description: "Search members and review account, plan, and billing identity status.",
         Icon: Users,
         countKey: "members",
       },
       {
+        href: "/admin/support",
+        title: "Support Requests",
+        description: "Review structured support requests, statuses, and internal Admin notes.",
+        Icon: LifeBuoy,
+        countKey: "supportRequests",
+      },
+      {
         href: "/admin/ai-access",
         title: "AI Access",
-        description:
-          "Manage Premium AI-assisted access and review the entitlement controls already used by Loombus.",
-        action: "Open AI access",
+        description: "Review and manage the existing Premium AI entitlement controls.",
         Icon: Bot,
       },
       {
         href: "/admin/billing",
         title: "Billing Diagnostics",
-        description:
-          "Review Stripe configuration presence, subscription synchronization, and Extra AI Pack fulfillment.",
-        action: "Open billing",
+        description: "Inspect subscription synchronization and Extra AI Pack fulfillment.",
+        Icon: CreditCard,
+      },
+      {
+        href: "/admin/professional-booking/payments",
+        title: "Booking Payments",
+        description: "Review payment operations attached to professional booking workflows.",
         Icon: CreditCard,
       },
     ],
   },
   {
-    title: "Product & platform operations",
+    title: "Platform operations",
     description:
-      "Review the existing Labs workflow, platform-health diagnostics, Topic Memory coverage, and public-module moderation.",
+      "Operate product workflows, review system health, and inspect the platform's active operational surfaces.",
     modules: [
       {
         href: "/admin/platform",
         title: "Platform Operations",
-        description:
-          "Review Marketplace, Business Directory, Jobs, Events, Requests, Services, Rooms, Appointments, Local, and Matches from one role-protected administrator workspace.",
-        action: "Open platform operations",
+        description: "Review Marketplace, Businesses, Jobs, Events, Requests, Services, Rooms, Local, Matches, and related modules.",
         Icon: ListChecks,
       },
       {
         href: "/admin/labs",
         title: "Labs Review",
-        description:
-          "Review feature requests, update their workflow status, preserve Admin notes, and inspect real vote totals.",
-        action: "Open Labs review",
+        description: "Review feature requests, workflow status, Admin notes, and vote totals.",
         Icon: FlaskConical,
         countKey: "labsInWorkflow",
       },
       {
         href: "/admin/health",
         title: "Platform Health",
-        description:
-          "Review configuration presence, database visibility, AI failures, reports, and operational warnings.",
-        action: "Open health",
+        description: "Inspect configuration, database visibility, AI failures, reports, and operational warnings.",
         Icon: HeartPulse,
       },
       {
         href: "/admin/topic-memory",
         title: "Topic Memory",
-        description:
-          "Review recurring topics, Reality Lenses, tags, and AI idea coverage through the current Admin tool.",
-        action: "Open Topic Memory",
+        description: "Review recurring topics, Reality Lenses, tags, and AI idea coverage.",
         Icon: Sparkles,
       },
+    ],
+  },
+  {
+    title: "Knowledge & publishing",
+    description:
+      "Review publication workflows and the knowledge surfaces that require administrator judgment.",
+    modules: [
+      {
+        href: "/admin/library-review",
+        title: "Library Review",
+        description: "Review author submissions and publishing decisions for Loombus Library.",
+        Icon: ClipboardList,
+      },
+    ],
+  },
+  {
+    title: "Legal & governance",
+    description:
+      "Open restricted legal workflows, evidence preparation, retention controls, and reporting tools.",
+    modules: [
+      {
+        href: "/admin/legal-operations",
+        title: "Legal Operations",
+        description: "Open the primary legal operations workspace and its active case tools.",
+        Icon: ShieldCheck,
+      },
+      {
+        href: "/admin/legal-operations/disclosure-preparation",
+        title: "Disclosure Preparation",
+        description: "Prepare and review disclosure material through the existing legal workflow.",
+        Icon: ClipboardList,
+      },
+      {
+        href: "/admin/legal-operations/protected-party-review",
+        title: "Protected Party Review",
+        description: "Review protected-party handling through the restricted legal workflow.",
+        Icon: ShieldAlert,
+      },
+      {
+        href: "/admin/legal-operations/data-map",
+        title: "Legal Data Map",
+        description: "Inspect the legal data map and its recorded data relationships.",
+        Icon: ListChecks,
+      },
+      {
+        href: "/admin/legal-operations/export-integrity",
+        title: "Export Integrity",
+        description: "Review export-integrity controls before protected material leaves the system.",
+        Icon: ShieldCheck,
+      },
+      {
+        href: "/admin/legal-operations/retention",
+        title: "Legal Retention",
+        description: "Review retention requirements and the controls attached to preserved records.",
+        Icon: ArchiveRestore,
+      },
+      {
+        href: "/admin/legal-operations/transparency-reporting",
+        title: "Transparency Reporting",
+        description: "Review the reporting workflow for legal and governance transparency outputs.",
+        Icon: LineChart,
+      },
+    ],
+  },
+  {
+    title: "The Floor",
+    description:
+      "Resolve calls and operate reviewed programming and research workflows for The Floor.",
+    modules: [
       {
         href: "/admin/floor-resolutions",
         title: "Floor Call Resolutions",
-        description:
-          "Approve or reject the calls resolver's proposed outcomes before they stamp a member's public track record.",
-        action: "Open Floor resolutions",
+        description: "Approve or reject proposed outcomes before they affect a member's public track record.",
         Icon: LineChart,
       },
       {
         href: "/admin/floor-program",
         title: "Floor Operations Desk",
-        description:
-          "Schedule live programming, publish reviewed Research Desk issues, review contributor applications, and create editorial assignments.",
-        action: "Operate The Floor",
+        description: "Schedule programming, publish reviewed research, and manage editorial assignments.",
         Icon: Radio,
       },
     ],
@@ -229,36 +284,12 @@ const MODULE_GROUPS: AdminModuleGroup[] = [
 ];
 
 const PUBLIC_RESOURCES = [
-  {
-    href: "/support",
-    title: "Support Center",
-    description: "Review the member-facing help and support entry point.",
-  },
-  {
-    href: "/privacy-security",
-    title: "Privacy & Security",
-    description: "Review the member-facing privacy and account-security center.",
-  },
-  {
-    href: "/premium",
-    title: "Premium & Plans",
-    description: "Review current plan presentation and supported billing paths.",
-  },
-  {
-    href: "/labs",
-    title: "Loombus Labs",
-    description: "Review the public request board and Premium Plus voting experience.",
-  },
-  {
-    href: "/ai-usage",
-    title: "AI Usage",
-    description: "Review the signed-in AI usage and limit dashboard.",
-  },
-  {
-    href: "/guidelines",
-    title: "Guidelines",
-    description: "Review the current behavior and discussion-quality standards.",
-  },
+  { href: "/support", title: "Support Center", description: "Member-facing help and support." },
+  { href: "/privacy-security", title: "Privacy & Security", description: "Privacy and account-security center." },
+  { href: "/premium", title: "Premium & Plans", description: "Current plan presentation and billing paths." },
+  { href: "/labs", title: "Loombus Labs", description: "Public request board and voting experience." },
+  { href: "/ai-usage", title: "AI Usage", description: "Signed-in AI usage and limits." },
+  { href: "/guidelines", title: "Guidelines", description: "Current behavior and discussion-quality standards." },
 ];
 
 function countValue(result: CountResult): CountValue {
@@ -274,47 +305,24 @@ function sumCounts(...values: CountValue[]): CountValue {
   return values.reduce<number>((total, value) => total + (value ?? 0), 0);
 }
 
-function MetricCard({
-  label,
-  value,
-  description,
-  priority = false,
-}: {
-  label: string;
-  value: CountValue;
-  description: string;
-  priority?: boolean;
-}) {
-  return (
-    <article className={`admin-ops-metric${priority ? " is-priority" : ""}`}>
-      <p>{label}</p>
-      <strong>{formatCount(value)}</strong>
-      <span>{description}</span>
-    </article>
-  );
-}
-
-function ModuleCard({ module, counts }: { module: AdminModule; counts: AdminCounts }) {
+function ModuleRow({ module, counts }: { module: AdminModule; counts: AdminCounts }) {
   const count = module.countKey ? counts[module.countKey] : undefined;
 
   return (
-    <Link href={module.href} className="admin-ops-module-card">
-      <div className="admin-ops-module-topline">
-        <span className="admin-ops-module-icon">
-          <module.Icon aria-hidden="true" />
-        </span>
-        {module.countKey ? (
-          <span className="admin-ops-count-badge">{formatCount(count ?? null)}</span>
-        ) : null}
-      </div>
-      <div className="admin-ops-module-copy">
-        <h3>{module.title}</h3>
-        <p>{module.description}</p>
-      </div>
-      <span className="admin-ops-module-action">
-        {module.action}
-        <ChevronRight aria-hidden="true" />
+    <Link href={module.href} className="admin-ops-module-row">
+      <span className="admin-ops-module-icon">
+        <module.Icon aria-hidden="true" />
       </span>
+      <span className="admin-ops-module-copy">
+        <strong>{module.title}</strong>
+        <span>{module.description}</span>
+      </span>
+      {module.countKey ? (
+        <span className="admin-ops-module-count" aria-label={`${module.title} count`}>
+          {formatCount(count ?? null)}
+        </span>
+      ) : null}
+      <ChevronRight className="admin-ops-row-chevron" aria-hidden="true" />
     </Link>
   );
 }
@@ -322,41 +330,15 @@ function ModuleCard({ module, counts }: { module: AdminModule; counts: AdminCoun
 async function readAdminCounts() {
   const results = await Promise.all([
     supabase.from("reports").select("id", { count: "exact", head: true }),
-    supabase
-      .from("reports")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "new"),
-    supabase
-      .from("reports")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "dismissed"),
-    supabase
-      .from("reports")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "actioned"),
-    supabase
-      .from("reports")
-      .select("id", { count: "exact", head: true })
-      .not("reported_profile_id", "is", null),
-    supabase
-      .from("discussions")
-      .select("id", { count: "exact", head: true })
-      .not("deleted_at", "is", null),
-    supabase
-      .from("replies")
-      .select("id", { count: "exact", head: true })
-      .not("deleted_at", "is", null),
-    supabase
-      .from("labs_feature_requests")
-      .select("id", { count: "exact", head: true }),
-    supabase
-      .from("labs_feature_requests")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["submitted", "reviewing", "planned"]),
-    supabase
-      .from("support_requests")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["new", "reviewing"]),
+    supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "new"),
+    supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "dismissed"),
+    supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "actioned"),
+    supabase.from("reports").select("id", { count: "exact", head: true }).not("reported_profile_id", "is", null),
+    supabase.from("discussions").select("id", { count: "exact", head: true }).not("deleted_at", "is", null),
+    supabase.from("replies").select("id", { count: "exact", head: true }).not("deleted_at", "is", null),
+    supabase.from("labs_feature_requests").select("id", { count: "exact", head: true }),
+    supabase.from("labs_feature_requests").select("id", { count: "exact", head: true }).in("status", ["submitted", "reviewing", "planned"]),
+    supabase.from("support_requests").select("id", { count: "exact", head: true }).in("status", ["new", "reviewing"]),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
   ]);
 
@@ -413,10 +395,8 @@ export default function AdminOperationsClient() {
         );
       }
     } catch (error) {
-      console.error("Unable to load Admin Operations Center counts.", error);
-      setLoadMessage(
-        "Operational totals could not be refreshed. Existing Admin tools remain available below."
-      );
+      console.error("Unable to load Admin Operations counts.", error);
+      setLoadMessage("Operational totals could not be refreshed. Admin tools remain available below.");
     } finally {
       setLoadingCounts(false);
     }
@@ -455,9 +435,7 @@ export default function AdminOperationsClient() {
         console.error("Unable to verify Admin access.", error);
         if (!mounted) return;
         setAccessState("error");
-        setLoadMessage(
-          "Admin access could not be verified. Refresh the page or open Support if the problem continues."
-        );
+        setLoadMessage("Admin access could not be verified. Refresh the page or open Support if the problem continues.");
       }
     }
 
@@ -481,13 +459,11 @@ export default function AdminOperationsClient() {
   if (accessState === "checking") {
     return (
       <main className="admin-ops-page">
-        <section className="admin-ops-state-card" aria-live="polite">
-          <span className="admin-ops-state-icon">
-            <ShieldCheck aria-hidden="true" />
-          </span>
-          <p className="admin-ops-eyebrow">Admin Operations Center</p>
-          <h1>Verifying Admin access…</h1>
-          <p>Loombus is confirming the current account role before loading operational data.</p>
+        <section className="admin-ops-state" aria-live="polite">
+          <ShieldCheck aria-hidden="true" />
+          <p className="admin-ops-eyebrow">Admin</p>
+          <h1>Verifying access…</h1>
+          <p>Checking the current account role before operational data is loaded.</p>
         </section>
       </main>
     );
@@ -496,22 +472,14 @@ export default function AdminOperationsClient() {
   if (accessState === "denied") {
     return (
       <main className="admin-ops-page">
-        <section className="admin-ops-state-card">
-          <span className="admin-ops-state-icon is-warning">
-            <ShieldAlert aria-hidden="true" />
-          </span>
-          <p className="admin-ops-eyebrow">Admin Operations Center</p>
+        <section className="admin-ops-state">
+          <ShieldAlert aria-hidden="true" />
+          <p className="admin-ops-eyebrow">Admin</p>
           <h1>Admin access is required.</h1>
-          <p>
-            This workspace is restricted to accounts with the existing Loombus Admin role. No operational data has been loaded.
-          </p>
+          <p>This area is restricted to accounts with the existing Loombus Admin role.</p>
           <div className="admin-ops-state-actions">
-            <Link href="/discussions" className="admin-ops-primary-action">
-              Return to Loombus
-            </Link>
-            <Link href="/support" className="admin-ops-secondary-action">
-              Open Support
-            </Link>
+            <Link href="/discussions" className="admin-ops-primary-action">Return to Loombus</Link>
+            <Link href="/support" className="admin-ops-secondary-action">Open Support</Link>
           </div>
         </section>
       </main>
@@ -521,24 +489,16 @@ export default function AdminOperationsClient() {
   if (accessState === "error") {
     return (
       <main className="admin-ops-page">
-        <section className="admin-ops-state-card">
-          <span className="admin-ops-state-icon is-warning">
-            <AlertTriangle aria-hidden="true" />
-          </span>
-          <p className="admin-ops-eyebrow">Admin Operations Center</p>
+        <section className="admin-ops-state">
+          <AlertTriangle aria-hidden="true" />
+          <p className="admin-ops-eyebrow">Admin</p>
           <h1>Access could not be verified.</h1>
           <p>{loadMessage}</p>
           <div className="admin-ops-state-actions">
-            <button
-              type="button"
-              className="admin-ops-primary-action"
-              onClick={() => window.location.reload()}
-            >
+            <button type="button" className="admin-ops-primary-action" onClick={() => window.location.reload()}>
               Reload page
             </button>
-            <Link href="/support" className="admin-ops-secondary-action">
-              Open Support
-            </Link>
+            <Link href="/support" className="admin-ops-secondary-action">Open Support</Link>
           </div>
         </section>
       </main>
@@ -548,39 +508,21 @@ export default function AdminOperationsClient() {
   return (
     <main className="admin-ops-page">
       <div className="admin-ops-shell">
-        <header className="admin-ops-hero">
-          <div className="admin-ops-hero-copy">
-            <p className="admin-ops-eyebrow">Admin Operations Center</p>
-            <h1>Run Loombus from one verified workspace.</h1>
-            <p>
-              Review active queues, move into the existing operational tools, and keep moderation, support, member access, billing, Labs, and platform diagnostics connected without creating parallel Admin systems.
-            </p>
-            <div className="admin-ops-live-note">
-              <span aria-hidden="true" />
-              <p>
-                Counts are direct reads from the current production tables. Unavailable values render as a dash rather than a false zero.
-              </p>
-            </div>
+        <header className="admin-ops-header">
+          <div className="admin-ops-header-copy">
+            <p className="admin-ops-eyebrow">Loombus Admin</p>
+            <h1>Operations</h1>
+            <p>Review what needs attention, investigate issues, and open the administrator tools responsible for each workflow.</p>
           </div>
-
-          <div className="admin-ops-hero-actions">
-            <button
-              type="button"
-              className="admin-ops-primary-action"
-              onClick={() => void refreshCounts()}
-              disabled={loadingCounts}
-            >
+          <div className="admin-ops-header-actions">
+            <button type="button" className="admin-ops-primary-action" onClick={() => void refreshCounts()} disabled={loadingCounts}>
               <RefreshCw className={loadingCounts ? "is-spinning" : ""} aria-hidden="true" />
-              {loadingCounts ? "Refreshing…" : "Refresh overview"}
+              {loadingCounts ? "Refreshing…" : "Refresh"}
             </button>
-            <Link href="/discussions" className="admin-ops-secondary-action">
-              View Loombus
-            </Link>
-            <p>
-              {loadedAt
-                ? `Last refreshed ${loadedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-                : "Operational totals have not loaded yet."}
-            </p>
+            <Link href="/discussions" className="admin-ops-secondary-action">View Loombus</Link>
+            <span className="admin-ops-refresh-time">
+              {loadedAt ? `Updated ${loadedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Awaiting totals"}
+            </span>
           </div>
         </header>
 
@@ -591,161 +533,108 @@ export default function AdminOperationsClient() {
           </div>
         ) : null}
 
-        <section className="admin-ops-metrics" aria-label="Operational overview">
-          <MetricCard
-            label="Active queue"
-            value={activeQueue}
-            description="New reports, active support requests, and Labs requests still in workflow."
-            priority={(activeQueue ?? 0) > 0}
-          />
-          <MetricCard
-            label="New reports"
-            value={counts.newReports}
-            description="Reports currently carrying the existing New status."
-            priority={(counts.newReports ?? 0) > 0}
-          />
-          <MetricCard
-            label="Active support"
-            value={counts.supportRequests}
-            description="Support requests currently New or Reviewing."
-          />
-          <MetricCard
-            label="Members"
-            value={counts.members}
-            description="Profiles visible to the existing Admin role."
-          />
+        <section className="admin-ops-signal-strip" aria-label="Operational overview">
+          <div className={(activeQueue ?? 0) > 0 ? "is-attention" : ""}>
+            <span>Active queue</span>
+            <strong>{formatCount(activeQueue)}</strong>
+          </div>
+          <div className={(counts.newReports ?? 0) > 0 ? "is-attention" : ""}>
+            <span>New reports</span>
+            <strong>{formatCount(counts.newReports)}</strong>
+          </div>
+          <div>
+            <span>Active support</span>
+            <strong>{formatCount(counts.supportRequests)}</strong>
+          </div>
+          <div>
+            <span>Members</span>
+            <strong>{formatCount(counts.members)}</strong>
+          </div>
         </section>
 
-        <section className="admin-ops-snapshot" aria-labelledby="admin-ops-snapshot-title">
+        <section className="admin-ops-section" aria-labelledby="admin-attention-title">
           <div className="admin-ops-section-heading">
             <div>
-              <p className="admin-ops-eyebrow">Queue snapshot</p>
-              <h2 id="admin-ops-snapshot-title">What needs attention now</h2>
+              <p className="admin-ops-eyebrow">Current queues</p>
+              <h2 id="admin-attention-title">Needs attention</h2>
             </div>
-            <p>Each total links to the production workflow that owns the underlying records.</p>
+            <p>Live totals from the production workflows below. A dash means the value could not be verified.</p>
           </div>
 
-          <div className="admin-ops-priority-grid">
-            <Link href="/admin/reports" className="admin-ops-priority-card">
-              <ShieldAlert aria-hidden="true" />
-              <div>
-                <p>Moderation</p>
-                <strong>{formatCount(counts.newReports)} new reports</strong>
-                <span>{formatCount(counts.profileReports)} reports involve a profile.</span>
-              </div>
+          <div className="admin-ops-attention-list">
+            <Link href="/admin/reports" className="admin-ops-attention-row">
+              <span><ShieldAlert aria-hidden="true" /></span>
+              <div><strong>Moderation</strong><small>{formatCount(counts.profileReports)} profile-related reports</small></div>
+              <b>{formatCount(counts.newReports)} new</b>
               <ChevronRight aria-hidden="true" />
             </Link>
-
-            <Link href="/admin/support" className="admin-ops-priority-card">
-              <LifeBuoy aria-hidden="true" />
-              <div>
-                <p>Support</p>
-                <strong>{formatCount(counts.supportRequests)} active requests</strong>
-                <span>New and Reviewing support statuses.</span>
-              </div>
+            <Link href="/admin/support" className="admin-ops-attention-row">
+              <span><LifeBuoy aria-hidden="true" /></span>
+              <div><strong>Support</strong><small>New and reviewing requests</small></div>
+              <b>{formatCount(counts.supportRequests)} active</b>
               <ChevronRight aria-hidden="true" />
             </Link>
-
-            <Link href="/admin/labs" className="admin-ops-priority-card">
-              <FlaskConical aria-hidden="true" />
-              <div>
-                <p>Labs</p>
-                <strong>{formatCount(counts.labsInWorkflow)} in workflow</strong>
-                <span>{formatCount(counts.labsRequests)} total feature requests.</span>
-              </div>
+            <Link href="/admin/labs" className="admin-ops-attention-row">
+              <span><FlaskConical aria-hidden="true" /></span>
+              <div><strong>Labs</strong><small>{formatCount(counts.labsRequests)} total feature requests</small></div>
+              <b>{formatCount(counts.labsInWorkflow)} in workflow</b>
               <ChevronRight aria-hidden="true" />
             </Link>
-
-            <Link href="/admin/deleted" className="admin-ops-priority-card">
-              <ArchiveRestore aria-hidden="true" />
-              <div>
-                <p>Recovery</p>
-                <strong>{formatCount(deletedContent)} soft-deleted items</strong>
-                <span>
-                  {formatCount(counts.deletedDiscussions)} discussions and {formatCount(counts.deletedReplies)} replies.
-                </span>
-              </div>
+            <Link href="/admin/deleted" className="admin-ops-attention-row">
+              <span><ArchiveRestore aria-hidden="true" /></span>
+              <div><strong>Recovery</strong><small>{formatCount(counts.deletedDiscussions)} discussions · {formatCount(counts.deletedReplies)} replies</small></div>
+              <b>{formatCount(deletedContent)} items</b>
               <ChevronRight aria-hidden="true" />
             </Link>
           </div>
         </section>
 
         <section className="admin-ops-history" aria-label="Moderation history totals">
-          <div>
-            <span>Total reports</span>
-            <strong>{formatCount(counts.totalReports)}</strong>
-          </div>
-          <div>
-            <span>Actioned reports</span>
-            <strong>{formatCount(counts.actionedReports)}</strong>
-          </div>
-          <div>
-            <span>Dismissed reports</span>
-            <strong>{formatCount(counts.dismissedReports)}</strong>
-          </div>
-          <div>
-            <span>Profile reports</span>
-            <strong>{formatCount(counts.profileReports)}</strong>
-          </div>
+          <div><span>Total reports</span><strong>{formatCount(counts.totalReports)}</strong></div>
+          <div><span>Actioned</span><strong>{formatCount(counts.actionedReports)}</strong></div>
+          <div><span>Dismissed</span><strong>{formatCount(counts.dismissedReports)}</strong></div>
+          <div><span>Profile reports</span><strong>{formatCount(counts.profileReports)}</strong></div>
         </section>
 
-        {MODULE_GROUPS.map((group) => (
-          <section className="admin-ops-module-section" key={group.title}>
-            <div className="admin-ops-section-heading">
-              <div>
-                <p className="admin-ops-eyebrow">Operations</p>
+        <div className="admin-ops-directory">
+          {MODULE_GROUPS.map((group) => (
+            <section className="admin-ops-directory-section" key={group.title}>
+              <div className="admin-ops-directory-heading">
                 <h2>{group.title}</h2>
+                <p>{group.description}</p>
               </div>
-              <p>{group.description}</p>
-            </div>
-            <div className="admin-ops-module-grid">
-              {group.modules.map((module) => (
-                <ModuleCard key={module.href} module={module} counts={counts} />
-              ))}
-            </div>
-          </section>
-        ))}
+              <div className="admin-ops-module-list">
+                {group.modules.map((module) => (
+                  <ModuleRow key={module.href} module={module} counts={counts} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
 
-        <section className="admin-ops-resource-section">
-          <div className="admin-ops-section-heading">
-            <div>
-              <p className="admin-ops-eyebrow">Public surfaces</p>
-              <h2>Review the member experience</h2>
-            </div>
-            <p>
-              These links open current public or signed-in surfaces. No announcement-management console is presented because no separate production Admin announcement route is connected here.
-            </p>
+        <section className="admin-ops-public-section">
+          <div className="admin-ops-directory-heading">
+            <p className="admin-ops-eyebrow">Public surfaces</p>
+            <h2>Member experience</h2>
+            <p>Open the member-facing surfaces most closely connected to administration and policy.</p>
           </div>
-
-          <div className="admin-ops-resource-grid">
+          <div className="admin-ops-public-grid">
             {PUBLIC_RESOURCES.map((resource) => (
-              <Link key={resource.href} href={resource.href} className="admin-ops-resource-link">
-                <div>
-                  <strong>{resource.title}</strong>
-                  <span>{resource.description}</span>
-                </div>
+              <Link key={resource.href} href={resource.href} className="admin-ops-public-link">
+                <span><strong>{resource.title}</strong><small>{resource.description}</small></span>
                 <ChevronRight aria-hidden="true" />
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="admin-ops-integrity-card">
-          <span className="admin-ops-integrity-icon">
-            <Gauge aria-hidden="true" />
-          </span>
+        <footer className="admin-ops-footer">
           <div>
-            <p className="admin-ops-eyebrow">Operational integrity</p>
-            <h2>One landing center, existing systems underneath.</h2>
-            <p>
-              This page does not replace moderation, support, billing, member, Labs, health, or audit workflows. It verifies Admin access, reads real overview totals, and routes each action to the existing owner surface.
-            </p>
-          </div>
-          <Link href="/admin/health" className="admin-ops-secondary-action">
             <Activity aria-hidden="true" />
-            Review platform health
-          </Link>
-        </section>
+            <span>Operational totals are read from current production tables. Unavailable values remain visibly unavailable rather than being reported as zero.</span>
+          </div>
+          <Link href="/admin/health">Platform health <ChevronRight aria-hidden="true" /></Link>
+        </footer>
       </div>
     </main>
   );
