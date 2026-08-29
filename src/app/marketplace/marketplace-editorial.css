@@ -1,0 +1,173 @@
+/* Marketplace Editorial UI
+ * Presentation-only refinement. The Marketplace keeps its established page
+ * background instead of adopting the optional Cream editorial canvas.
+ */
+
+[data-marketplace-editorial] {
+  --marketplace-editorial-accent: #cbab5b;
+  min-width: 0;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+}
+
+[data-marketplace-editorial] > main,
+[data-marketplace-editorial] main {
+  background: var(--loombus-page-bg) !important;
+}
+
+/* Reduce dashboard chrome while preserving genuinely discrete listing/media objects. */
+[data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-xl"],
+[data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-2xl"],
+[data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-sm"] {
+  box-shadow: none !important;
+}
+
+[data-marketplace-editorial] :is(section, article, nav)[class*="rounded-[1.75rem]"],
+[data-marketplace-editorial] :is(section, article, nav)[class*="rounded-[1.5rem]"],
+[data-marketplace-editorial] :is(section, article, nav)[class*="rounded-[1.4rem]"] {
+  border-radius: 0.9rem !important;
+}
+
+/* Keep media/result objects contained, but quieter. */
+[data-marketplace-editorial] img {
+  border-radius: inherit;
+}
+
+/* Headings use a more restrained editorial scale. */
+[data-marketplace-editorial] h1[class*="text-5xl"] {
+  font-size: clamp(2rem, 4vw, 2.75rem) !important;
+  line-height: 1.05;
+  letter-spacing: -0.045em !important;
+}
+
+/* Text-led workspace navigation instead of filled dashboard tabs. */
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] {
+  gap: 1.25rem !important;
+  padding: 0 !important;
+  border-width: 0 0 1px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow-x: auto;
+}
+
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button {
+  position: relative;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0 0.75rem !important;
+}
+
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[aria-current="page"]::after,
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--marketplace-editorial-accent);
+}
+
+/* Manager summary becomes a compact record strip rather than four floating cards. */
+[data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] {
+  gap: 0 !important;
+  border-block: 1px solid var(--loombus-border-muted);
+}
+
+[data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] > article {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 1.25rem !important;
+}
+
+[data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] > article:last-child {
+  border-right: 0 !important;
+}
+
+/* Directory filters read as one continuous control band. */
+[data-marketplace-editorial="directory"] section[class*="mb-7"][class*="rounded-[1.75rem]"] {
+  border-inline: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+[data-marketplace-editorial="directory"] aside > section[class*="sticky"] {
+  border-radius: 0.9rem !important;
+  box-shadow: none !important;
+}
+
+/* Detail facts become a divider-led record instead of four metric cards. */
+[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] {
+  gap: 0 !important;
+  border-block: 1px solid var(--loombus-border-muted);
+}
+
+[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > * {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > *:last-child {
+  border-right: 0 !important;
+}
+
+/* Listing text and report sections sit in the reading flow; the photo remains a discrete object. */
+[data-marketplace-editorial="detail"] main section[class*="space-y-5"] > section:not(:first-child) {
+  border-inline: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-inline: 0 !important;
+}
+
+[data-marketplace-editorial="detail"] main aside > section {
+  box-shadow: none !important;
+}
+
+/* Saved items and seller records remain discrete records, but lose heavy elevation. */
+[data-marketplace-editorial="saved"] article,
+[data-marketplace-editorial="manage"] article {
+  box-shadow: none !important;
+}
+
+/* Restrained fields and buttons without changing interaction contracts. */
+[data-marketplace-editorial] input,
+[data-marketplace-editorial] select,
+[data-marketplace-editorial] textarea {
+  box-shadow: none !important;
+}
+
+[data-marketplace-editorial] :focus-visible {
+  outline: 2px solid var(--marketplace-editorial-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"],
+  [data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] {
+    gap: 0.75rem !important;
+    border-block: 0;
+  }
+
+  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] > article,
+  [data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > * {
+    border: 0 !important;
+    border-bottom: 1px solid var(--loombus-border-muted) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-marketplace-editorial] *,
+  [data-marketplace-editorial] *::before,
+  [data-marketplace-editorial] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
