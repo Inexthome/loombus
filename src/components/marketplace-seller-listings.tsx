@@ -59,8 +59,8 @@ export function MarketplaceSellerListings({
       await marketplaceApiAction({ action, listingId });
       setReservationNotice(
         action === "reserve"
-          ? "Listing reserved. New buyer inquiries are paused."
-          : "Reservation released. Buyer actions are available again."
+          ? "Listing reserved. Availability questions are paused, but buyers can still message you."
+          : "Reservation released. Full buyer actions are available again."
       );
       await onRefresh();
     } catch (error) {
@@ -133,7 +133,7 @@ export function MarketplaceSellerListings({
                     </p>
                     {listing.status === "reserved" ? (
                       <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                        The listing stays visible, but new buyer inquiries are paused until you release the reservation or mark it sold.
+                        The listing stays public. Availability questions are paused, buyers can still message you, and you must release the reservation before editing.
                       </p>
                     ) : null}
                     {listing.moderationReason ? (
@@ -145,7 +145,7 @@ export function MarketplaceSellerListings({
                 </div>
 
                 <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-[24rem] lg:justify-end">
-                  {!['sold', 'removed'].includes(listing.status) ? (
+                  {!['sold', 'removed', 'reserved'].includes(listing.status) ? (
                     <button type="button" onClick={() => startEdit(listing)} className={secondaryButton}>
                       <Pencil size={15} /> {listing.status === "draft" ? "Continue editing" : "Edit"}
                     </button>
