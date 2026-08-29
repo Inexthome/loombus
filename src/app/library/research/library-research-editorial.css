@@ -1,0 +1,405 @@
+/* Loombus Editorial UI — Research, Evidence, Provenance, and Promotion only.
+   The Knowledge Graph route intentionally has no research-editorial wrapper. */
+
+[data-library-research-editorial] {
+  --research-editorial-gold: #CBAB5B;
+  --research-editorial-cream: #FEFBEC;
+  --loombus-gold: #CBAB5B;
+  color: var(--loombus-text);
+}
+
+[data-library-research-editorial] main {
+  background: var(--loombus-page-bg) !important;
+}
+
+html[data-loombus-theme="light"] [data-library-research-editorial] main {
+  background: var(--research-editorial-cream) !important;
+}
+
+html[data-loombus-theme="dark"] [data-library-research-editorial] main {
+  background: var(--loombus-page-bg) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-library-research-editorial] main {
+    background: var(--research-editorial-cream) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-library-research-editorial] main {
+    background: var(--loombus-page-bg) !important;
+  }
+}
+
+/* Shared page hierarchy */
+[data-library-research-editorial] main > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+[data-library-research-editorial] main header {
+  padding-bottom: 1.35rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+[data-library-research-editorial] main header > a {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+[data-library-research-editorial] main header > div {
+  margin-top: 1.15rem !important;
+  gap: 0.7rem !important;
+}
+
+[data-library-research-editorial] main header > div > div:first-child:has(svg) {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--research-editorial-gold) !important;
+}
+
+[data-library-research-editorial] main h1 {
+  color: var(--loombus-text);
+  font-size: clamp(1.9rem, 4vw, 2.6rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.05 !important;
+}
+
+[data-library-research-editorial] main h2 {
+  letter-spacing: -0.02em;
+}
+
+[data-library-research-editorial] main .uppercase {
+  letter-spacing: 0.13em !important;
+}
+
+/* Route-level navigation is text-led rather than floating dashboard chrome. */
+[data-library-research-editorial] .research-editorial-route-nav {
+  position: relative;
+  z-index: 10;
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 1rem 1rem 0;
+}
+
+[data-library-research-editorial] .research-editorial-route-nav-inner {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 1.15rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--loombus-border);
+  scrollbar-width: none;
+}
+
+[data-library-research-editorial] .research-editorial-route-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+[data-library-research-editorial] .research-editorial-route-nav a {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+[data-library-research-editorial] .research-editorial-route-nav a:hover,
+[data-library-research-editorial] .research-editorial-route-nav a:focus-visible {
+  color: var(--loombus-text);
+}
+
+[data-library-research-editorial] .research-editorial-route-nav a[data-active="true"] {
+  color: var(--loombus-text);
+}
+
+[data-library-research-editorial] .research-editorial-route-nav a[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--research-editorial-gold);
+}
+
+/* Alerts are inline feedback, not cards. */
+[data-library-research-editorial] main [role="alert"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Search is a flat editorial field. */
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="Search"]),
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="search"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="Search"]):focus-within,
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="search"]):focus-within {
+  border-bottom-color: var(--research-editorial-gold) !important;
+}
+
+/* Inputs and selectors participate in the page flow. */
+[data-library-research-editorial] main input:not([type="checkbox"]):not([type="radio"]),
+[data-library-research-editorial] main textarea,
+[data-library-research-editorial] main select {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-library-research-editorial] main input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-library-research-editorial] main textarea:focus,
+[data-library-research-editorial] main select:focus {
+  border-bottom-color: var(--research-editorial-gold) !important;
+}
+
+[data-library-research-editorial] main textarea {
+  line-height: 1.65 !important;
+  padding-inline: 0 !important;
+}
+
+[data-library-research-editorial] main select {
+  min-height: 2.6rem !important;
+  padding-left: 0 !important;
+}
+
+/* Compact text-led tabs. */
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) {
+  gap: 1.25rem !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) > button {
+  position: relative;
+  min-height: 2.8rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) > button[class*="text-[var(--loombus-gold)]"] {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) > button[class*="text-[var(--loombus-gold)]"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--research-editorial-gold);
+}
+
+/* Research collections rail */
+[data-library-research-editorial="research"] main aside > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="research"] main aside > section button[data-active] {
+  position: relative;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0.7rem !important;
+}
+
+[data-library-research-editorial="research"] main aside > section button[data-active="true"] {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial="research"] main aside > section button[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  left: 0;
+  width: 2px;
+  background: var(--research-editorial-gold);
+}
+
+/* The left-side creation/editor forms are one integrated work surface, not cards. */
+[data-library-research-editorial="evidence"] main section[class*="sticky"],
+[data-library-research-editorial="promote"] main aside,
+[data-library-research-editorial="provenance"] main aside {
+  border-color: var(--loombus-border) !important;
+}
+
+[data-library-research-editorial="evidence"] main section[class*="sticky"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.1rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Claims and knowledge objects remain discrete intellectual records, with restrained containment. */
+[data-library-research-editorial="evidence"] main article {
+  border-radius: 0.55rem !important;
+  background: color-mix(in srgb, var(--loombus-surface) 52%, transparent) !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="evidence"] main article > details {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 0 !important;
+}
+
+/* Research passage rows and provenance records read as evidence, not dashboard modules. */
+[data-library-research-editorial="research"] main article,
+[data-library-research-editorial="provenance"] main article {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+/* Promotion is a linear review flow. */
+[data-library-research-editorial="promote"] main > div > div[class*="grid"] {
+  align-items: start;
+}
+
+[data-library-research-editorial="promote"] main aside > button {
+  position: relative;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 0.9rem 0.75rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main aside > button[data-active="true"] {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial="promote"] main aside > button[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0.65rem;
+  bottom: 0.65rem;
+  left: 0;
+  width: 2px;
+  background: var(--research-editorial-gold);
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"]:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+/* Secondary outlined/pill controls are intentionally quieter. */
+[data-library-research-editorial] main button.rounded-full.border,
+[data-library-research-editorial] main a.rounded-full.border {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial] main button.rounded-full.border:hover,
+[data-library-research-editorial] main a.rounded-full.border:hover {
+  color: var(--loombus-text) !important;
+}
+
+/* Keep one clear primary action treatment. */
+[data-library-research-editorial] main button[class*="bg-[var(--loombus-gold)]"] {
+  background: var(--research-editorial-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+/* Empty states are quiet editorial pauses. */
+[data-library-research-editorial] main .border-dashed {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Floating overlays/menus remain discrete surfaces. */
+[data-library-research-editorial] details > div[class*="absolute"] {
+  border-radius: 0.65rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.16) !important;
+}
+
+/* Accessible focus */
+[data-library-research-editorial] button:focus-visible,
+[data-library-research-editorial] a:focus-visible,
+[data-library-research-editorial] input:focus-visible,
+[data-library-research-editorial] textarea:focus-visible,
+[data-library-research-editorial] select:focus-visible,
+[data-library-research-editorial] summary:focus-visible {
+  outline: 2px solid var(--research-editorial-gold) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 767px) {
+  [data-library-research-editorial] .research-editorial-route-nav {
+    padding-top: 0.5rem;
+  }
+
+  [data-library-research-editorial] main {
+    padding-bottom: max(6rem, calc(4.5rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  [data-library-research-editorial] main > div[class*="max-w-"] {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-library-research-editorial] *,
+  [data-library-research-editorial] *::before,
+  [data-library-research-editorial] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
