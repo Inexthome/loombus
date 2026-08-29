@@ -11,6 +11,8 @@ import {
   normalizeMarketplaceListing,
 } from "@/lib/marketplace-server-normalize";
 
+const PUBLIC_MARKETPLACE_STATUSES = new Set(["published", "reserved"]);
+
 function sellerIsPubliclyEligible(row: Record<string, unknown>) {
   const seller = nestedRow(row, "profiles");
   const status = cleanMarketplaceText(seller.account_status, 30) || "active";
@@ -24,7 +26,7 @@ function sellerIsPubliclyEligible(row: Record<string, unknown>) {
 }
 
 export function marketplaceRowIsPublic(row: Record<string, unknown>) {
-  if (cleanMarketplaceText(row.status, 20) !== "published") return false;
+  if (!PUBLIC_MARKETPLACE_STATUSES.has(cleanMarketplaceText(row.status, 20))) return false;
 
   const expiresAt = cleanMarketplaceText(row.expires_at, 60);
   if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) return false;
@@ -95,7 +97,13 @@ export async function findPublicMarketplaceListingById(
 
   if (error || !data) return null;
   const row = data as Record<string, unknown>;
-  return marketplaceRowIsPublic(row) ? normalizeMarketplaceListing(row) : null;
+  if (!marketplaceRowIsPublic(row)) return null;
+  const listing = normalizeMarketplaceListing(row);
+
+  // This ID lookup backs new listing-originated buyer inquiries. Reserved
+  // listings remain public by slug and in discovery, but cannot open a new
+  // inquiry while the seller is completing another sale.
+  return listing.status === "reserved" ? null : listing;
 }
 
 export async function listPublicMarketplaceForIdentity(options: {
@@ -141,7 +149,7 @@ export async function listPublicMarketplaceForIdentity(options: {
   let query = service
     .from("marketplace_listings")
     .select(MARKETPLACE_SELECT)
-    .eq("status", "published")
+    .in("status", ["published", "reserved"])
     .order("published_at", { ascending: false })
     .limit(limit);
 
