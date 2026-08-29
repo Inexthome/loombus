@@ -1,0 +1,93 @@
+[data-people-editorial="directory"] [aria-label="People directory results"] {
+  overflow-x: visible;
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-left: 1px solid var(--loombus-border);
+  border-top: 1px solid var(--loombus-border);
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:first-child {
+  display: none;
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 1rem;
+  border-right: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"] {
+  min-width: 0;
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(1) {
+  margin-bottom: 0.875rem;
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(2),
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(3),
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(4) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  text-align: left;
+  color: var(--loombus-text-muted);
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(2)::before {
+  content: "Relationship";
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(3)::before {
+  content: "Followers";
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(4)::before {
+  content: "Following";
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(2)::before,
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(3)::before,
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(4)::before {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--loombus-text-subtle);
+}
+
+[data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) > [role="cell"]:nth-child(5) {
+  margin-top: auto;
+  padding-top: 1rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+@media (max-width: 959px) {
+  [data-people-editorial="directory"] [aria-label="People directory table"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  [data-people-editorial="directory"] [aria-label="People directory table"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-people-editorial="directory"] [aria-label="People directory table"] > [role="row"]:not(:first-child) {
+    padding: 0.875rem;
+  }
+}
