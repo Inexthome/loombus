@@ -1,27 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
-import { Check, Eye, EyeOff, LockKeyhole, Search, UserCheck, X } from "lucide-react";
-import { ProfileAvatar } from "@/components/profile-avatar";
+import { Eye, EyeOff, LockKeyhole, Search, UserCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type PrivacySettings = {
   private_account: boolean;
   discoverable: boolean;
   show_view_identity: boolean;
-};
-
-type FollowRequest = {
-  id: string;
-  createdAt: string;
-  requester: {
-    id: string;
-    full_name: string | null;
-    username: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-  };
 };
 
 const DEFAULTS: PrivacySettings = {
@@ -73,10 +61,9 @@ function PrivacyToggle({
 export function MemberPrivacySettingsBridge() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   const [settings, setSettings] = useState<PrivacySettings>(DEFAULTS);
-  const [requests, setRequests] = useState<FollowRequest[]>([]);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [workingRequest, setWorkingRequest] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -110,7 +97,9 @@ export function MemberPrivacySettingsBridge() {
       } else if (!privacyResponse.ok) {
         setMessage(privacyPayload.error ?? "Privacy controls could not load.");
       }
-      if (requestResponse.ok) setRequests(requestPayload.requests ?? []);
+      if (requestResponse.ok) {
+        setPendingRequestCount(Array.isArray(requestPayload.requests) ? requestPayload.requests.length : 0);
+      }
       setLoading(false);
     }
     void load();
@@ -128,7 +117,7 @@ export function MemberPrivacySettingsBridge() {
     setMessage("");
     const token = await getToken();
     if (!token) {
-      window.location.href = "/login?next=/settings#privacy";
+      window.location.href = "/login?next=/settings?section=privacy-safety";
       return;
     }
 
@@ -156,30 +145,6 @@ export function MemberPrivacySettingsBridge() {
       );
     }
     setSaving(false);
-  }
-
-  async function respondToRequest(requestId: string, action: "accept" | "decline") {
-    if (workingRequest) return;
-    setWorkingRequest(requestId);
-    setMessage("");
-    const token = await getToken();
-    if (!token) return;
-    const response = await fetch("/api/follows/requests", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ requestId, action }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (response.ok) {
-      setRequests((current) => current.filter((item) => item.id !== requestId));
-      setMessage(action === "accept" ? "Follow request approved." : "Follow request declined.");
-    } else {
-      setMessage(payload.error ?? "Unable to update this follow request.");
-    }
-    setWorkingRequest("");
   }
 
   if (!mount) return null;
@@ -226,48 +191,21 @@ export function MemberPrivacySettingsBridge() {
       <section className="member-follow-requests">
         <div className="member-follow-requests-heading">
           <div>
-            <p>Follow approvals</p>
-            <h3>{requests.length} pending request{requests.length === 1 ? "" : "s"}</h3>
+            <p>Follow requests</p>
+            <h3>{pendingRequestCount} pending request{pendingRequestCount === 1 ? "" : "s"}</h3>
           </div>
           <UserCheck aria-hidden="true" />
         </div>
-        {requests.length ? (
-          <div className="member-follow-request-list">
-            {requests.map((request) => {
-              const profile = request.requester;
-              const displayName = profile.full_name?.trim() || profile.username?.trim() || "Loombus member";
-              return (
-                <article key={request.id} className="member-follow-request">
-                  <ProfileAvatar profile={profile} size="sm" />
-                  <div className="member-follow-request-copy">
-                    <strong>{displayName}</strong>
-                    <span>{profile.username ? `@${profile.username}` : "Member request"}</span>
-                  </div>
-                  <div className="member-follow-request-actions">
-                    <button
-                      type="button"
-                      disabled={workingRequest === request.id}
-                      onClick={() => void respondToRequest(request.id, "accept")}
-                      aria-label={`Approve ${displayName}`}
-                    >
-                      <Check aria-hidden="true" /> Approve
-                    </button>
-                    <button
-                      type="button"
-                      disabled={workingRequest === request.id}
-                      onClick={() => void respondToRequest(request.id, "decline")}
-                      aria-label={`Decline ${displayName}`}
-                    >
-                      <X aria-hidden="true" /> Decline
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="member-follow-requests-empty">No follow requests are waiting.</p>
-        )}
+        <p className="member-follow-requests-empty">
+          Approve or decline individual requests from Notifications or People. Settings only controls whether approval is required.
+        </p>
+        <Link
+          href="/people?view=requests&request=received"
+          className="settings-v2-secondary-action"
+          style={{ marginTop: "0.75rem" }}
+        >
+          Review follow requests
+        </Link>
       </section>
     </div>,
     mount
