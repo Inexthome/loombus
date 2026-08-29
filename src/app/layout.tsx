@@ -1,12 +1,16 @@
 import "./globals.css";
 import "./loombus-brand-accent.css";
 import "./desktop-navigation-shell.css";
+import "./desktop-rail-appearance-footer.css";
+import "./ipad-desktop-shell-safe-inset.css";
 import "./mobile-navigation-shell.css";
+import "./mobile-top-appearance-cycle.css";
 import "./adaptive-shell-controls.css";
 import "./persistent-mobile-primary-dock.css";
-import "./persistent-quick-rail.css";
+import "./floating-utility-removal.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
+import "./create-flat-sections.css";
 import "./discussion-audience-controls.css";
 import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
@@ -19,7 +23,6 @@ import "./trust-safety-appearance-fixes.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import RouteClientLayout from "./route-client-layout";
-import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-utility-launcher";
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
@@ -27,7 +30,9 @@ import { DesktopAccountAutoCloseController } from "@/components/desktop-account-
 import { DesktopMessagesPreviewTrayController } from "@/components/desktop-messages-preview-tray-controller";
 import { DesktopNotificationsTrayController } from "@/components/desktop-notifications-tray-controller";
 import { DesktopNavigationShell } from "@/components/desktop-navigation-shell";
+import { DesktopRailAppearanceFooter } from "@/components/desktop-rail-appearance-footer";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
+import { MobileTopAppearanceCycle } from "@/components/mobile-top-appearance-cycle";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
@@ -90,17 +95,18 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         ` }} />
         <AppChromeBoundary>
           <DesktopNavigationShell />
+          <DesktopRailAppearanceFooter />
           <DesktopAccountAutoCloseController />
           <DesktopMessagesPreviewTrayController />
           <DesktopNotificationsTrayController />
           <MobileNavigationShell />
+          <MobileTopAppearanceCycle />
           <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
         <PlatformPromptBridge />
         <PlatformPromptDomBridge />
         <PlatformNativeAlertBridge />
-        <AppChromeBoundary><AdaptiveFloatingUtilityLauncher /></AppChromeBoundary>
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />

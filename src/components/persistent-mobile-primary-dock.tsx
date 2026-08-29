@@ -4,8 +4,10 @@ import {
   DoorOpen,
   Inbox,
   LineChart,
+  Menu,
   MessageCircle,
   Plus,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -42,17 +44,12 @@ const DOCK_ITEMS: readonly DockItem[] = [
   { href: "/discussions", label: "Discussions", icon: MessageCircle },
   { href: "/rooms", label: "Rooms", icon: DoorOpen },
   { href: "/create", label: "Create", icon: Plus, primary: true },
-  {
-    href: "/the-floor/discussion",
-    label: "The Floor",
-    icon: LineChart,
-  },
+  { href: "/the-floor/discussion", label: "The Floor", icon: LineChart },
   { href: "/inbox", label: "Inbox", icon: Inbox },
 ];
 
 const TOP_VISIBILITY_THRESHOLD = 88;
-const DOWNWARD_HIDE_DISTANCE = 28;
-const DIRECTION_CHANGE_THRESHOLD = 6;
+const DIRECTION_THRESHOLD = 6;
 
 function isPathActive(pathname: string, href: string) {
   if (href === "/discussions") {
@@ -103,31 +100,30 @@ export function PersistentMobilePrimaryDock() {
   const [userId, setUserId] = useState<string | null>(null);
   const [inboxCount, setInboxCount] = useState(0);
   const [suppressed, setSuppressed] = useState(false);
-  const [dockHidden, setDockHidden] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [launcherFaded, setLauncherFaded] = useState(false);
   const dockRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     document.body.dataset.persistentMobileDock = "true";
     return () => {
       delete document.body.dataset.persistentMobileDock;
-      delete document.body.dataset.mobileDockHidden;
+      delete document.body.dataset.mobileDockExpanded;
     };
   }, []);
 
   useEffect(() => {
-    if (dockHidden && userId && !suppressed) {
-      document.body.dataset.mobileDockHidden = "true";
-    } else {
-      delete document.body.dataset.mobileDockHidden;
-    }
+    if (expanded) document.body.dataset.mobileDockExpanded = "true";
+    else delete document.body.dataset.mobileDockExpanded;
 
     return () => {
-      delete document.body.dataset.mobileDockHidden;
+      delete document.body.dataset.mobileDockExpanded;
     };
-  }, [dockHidden, suppressed, userId]);
+  }, [expanded]);
 
   useEffect(() => {
-    setDockHidden(false);
+    setExpanded(false);
+    setLauncherFaded(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -221,10 +217,7 @@ export function PersistentMobilePrimaryDock() {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      window.removeEventListener(
-        "loombus:notifications-changed",
-        refreshInboxCount
-      );
+      window.removeEventListener("loombus:notifications-changed", refreshInboxCount);
       window.removeEventListener("loombus:messages-changed", refreshInboxCount);
     };
   }, []);
@@ -237,7 +230,10 @@ export function PersistentMobilePrimaryDock() {
       frame = window.requestAnimationFrame(() => {
         const nextSuppressed = composerIsOpen(pathname);
         setSuppressed(nextSuppressed);
-        if (nextSuppressed) setDockHidden(false);
+        if (nextSuppressed) {
+          setExpanded(false);
+          setLauncherFaded(false);
+        }
       });
     }
 
@@ -246,10 +242,7 @@ export function PersistentMobilePrimaryDock() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: [
-        "data-create-focus",
-        "data-discussions-create-open",
-      ],
+      attributeFilter: ["data-create-focus", "data-discussions-create-open"],
     });
 
     syncSuppression();
@@ -262,29 +255,23 @@ export function PersistentMobilePrimaryDock() {
 
   useEffect(() => {
     if (!userId || suppressed) {
-      setDockHidden(false);
+      setLauncherFaded(false);
       return;
     }
 
     let lastScrollY = Math.max(window.scrollY, 0);
-    let downwardDistance = 0;
     let frame = 0;
 
-    function updateDockVisibility() {
+    function updateLauncherVisibility() {
       const currentScrollY = Math.max(window.scrollY, 0);
       const delta = currentScrollY - lastScrollY;
 
-      if (currentScrollY <= TOP_VISIBILITY_THRESHOLD) {
-        downwardDistance = 0;
-        setDockHidden(false);
-      } else if (delta <= -DIRECTION_CHANGE_THRESHOLD) {
-        downwardDistance = 0;
-        setDockHidden(false);
-      } else if (delta > 0) {
-        downwardDistance += delta;
-        if (downwardDistance >= DOWNWARD_HIDE_DISTANCE) {
-          setDockHidden(true);
-        }
+      if (expanded || currentScrollY <= TOP_VISIBILITY_THRESHOLD) {
+        setLauncherFaded(false);
+      } else if (delta > DIRECTION_THRESHOLD) {
+        setLauncherFaded(true);
+      } else if (delta < -DIRECTION_THRESHOLD) {
+        setLauncherFaded(false);
       }
 
       lastScrollY = currentScrollY;
@@ -293,7 +280,7 @@ export function PersistentMobilePrimaryDock() {
 
     function handleScroll() {
       if (frame) return;
-      frame = window.requestAnimationFrame(updateDockVisibility);
+      frame = window.requestAnimationFrame(updateLauncherVisibility);
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -302,14 +289,15 @@ export function PersistentMobilePrimaryDock() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [pathname, suppressed, userId]);
+  }, [expanded, suppressed, userId]);
 
   function handleNavigation(
     event: MouseEvent<HTMLAnchorElement>,
     item: DockItem,
     active: boolean
   ) {
-    setDockHidden(false);
+    setExpanded(false);
+    setLauncherFaded(false);
 
     if (!active || item.primary) return;
 
@@ -324,39 +312,65 @@ export function PersistentMobilePrimaryDock() {
       ref={dockRef}
       className="loombus-persistent-mobile-dock"
       aria-label="Mobile primary navigation"
-      data-hidden={dockHidden ? "true" : "false"}
-      onFocusCapture={() => setDockHidden(false)}
+      data-expanded={expanded ? "true" : "false"}
     >
-      <div>
-        {DOCK_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isPathActive(pathname, item.href);
+      {expanded ? (
+        <div className="loombus-persistent-mobile-dock-panel">
+          {DOCK_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isPathActive(pathname, item.href);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-label={item.label}
-              aria-current={active ? "page" : undefined}
-              data-active={active ? "true" : "false"}
-              data-primary={item.primary ? "true" : "false"}
-              onClick={(event) => handleNavigation(event, item, active)}
-            >
-              <span className="loombus-persistent-mobile-dock-icon">
-                <Icon aria-hidden="true" size={item.primary ? 25 : 22} strokeWidth={2.1} />
-                {item.href === "/inbox" && inboxCount > 0 ? (
-                  <span className="loombus-persistent-mobile-dock-badge">
-                    {inboxCount > 99 ? "99+" : inboxCount}
-                  </span>
-                ) : null}
-              </span>
-              <span className="loombus-persistent-mobile-dock-label">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-label={item.label}
+                aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : "false"}
+                data-primary={item.primary ? "true" : "false"}
+                onClick={(event) => handleNavigation(event, item, active)}
+              >
+                <span className="loombus-persistent-mobile-dock-icon">
+                  <Icon aria-hidden="true" size={item.primary ? 25 : 22} strokeWidth={2.1} />
+                  {item.href === "/inbox" && inboxCount > 0 ? (
+                    <span className="loombus-persistent-mobile-dock-badge">
+                      {inboxCount > 99 ? "99+" : inboxCount}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="loombus-persistent-mobile-dock-label">{item.label}</span>
+              </Link>
+            );
+          })}
+          <button
+            type="button"
+            className="loombus-persistent-mobile-dock-close"
+            onClick={() => setExpanded(false)}
+            aria-label="Close mobile navigation"
+          >
+            <X aria-hidden="true" size={18} />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="loombus-persistent-mobile-dock-launcher"
+          data-faded={launcherFaded ? "true" : "false"}
+          onClick={() => {
+            setLauncherFaded(false);
+            setExpanded(true);
+          }}
+          aria-label="Open mobile navigation"
+          aria-expanded="false"
+        >
+          <Menu aria-hidden="true" size={24} strokeWidth={2.1} />
+          {inboxCount > 0 ? (
+            <span className="loombus-persistent-mobile-dock-launcher-badge">
+              {inboxCount > 99 ? "99+" : inboxCount}
+            </span>
+          ) : null}
+        </button>
+      )}
     </nav>
   );
 }

@@ -1,6 +1,7 @@
 package com.loombus.app;
 
 import android.Manifest;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import com.getcapacitor.JSArray;
@@ -32,6 +34,60 @@ public class LoombusLiveUpdatesPlugin extends Plugin {
     public void load() {
         super.load();
         createNotificationChannel();
+    }
+
+    @PluginMethod
+    public void setNotificationBadgeCount(PluginCall call) {
+        Integer requestedCount = call.getInt("count");
+        int count = Math.max(0, requestedCount == null ? 0 : requestedCount);
+        JSObject result = new JSObject();
+        result.put("count", count);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            result.put("applied", false);
+            call.resolve(result);
+            return;
+        }
+
+        NotificationManager manager = getContext().getSystemService(NotificationManager.class);
+        if (manager == null) {
+            result.put("applied", false);
+            call.resolve(result);
+            return;
+        }
+
+        StatusBarNotification[] activeNotifications = manager.getActiveNotifications();
+        Set<String> activeAppointmentIds = activeAppointmentIds();
+        StatusBarNotification newestPushNotification = null;
+
+        for (StatusBarNotification activeNotification : activeNotifications) {
+            if (isAppointmentLiveUpdateNotification(activeNotification.getId(), activeAppointmentIds)) {
+                continue;
+            }
+
+            if (count == 0) {
+                cancelNotification(manager, activeNotification);
+                continue;
+            }
+
+            if (
+                newestPushNotification == null ||
+                activeNotification.getPostTime() > newestPushNotification.getPostTime()
+            ) {
+                newestPushNotification = activeNotification;
+            }
+        }
+
+        if (count > 0 && newestPushNotification != null) {
+            Notification notification = newestPushNotification.getNotification();
+            notification.number = count;
+            notifyExisting(manager, newestPushNotification, notification);
+            result.put("applied", true);
+        } else {
+            result.put("applied", count == 0);
+        }
+
+        call.resolve(result);
     }
 
     @PluginMethod
@@ -200,6 +256,35 @@ public class LoombusLiveUpdatesPlugin extends Plugin {
         if (Build.VERSION.SDK_INT < 36) return notificationsAllowed();
         NotificationManager manager = getContext().getSystemService(NotificationManager.class);
         return manager != null && manager.canPostPromotedNotifications();
+    }
+
+    private boolean isAppointmentLiveUpdateNotification(int id, Set<String> activeAppointmentIds) {
+        for (String appointmentId : activeAppointmentIds) {
+            if (notificationId(appointmentId) == id) return true;
+        }
+        return false;
+    }
+
+    private void cancelNotification(NotificationManager manager, StatusBarNotification notification) {
+        String tag = notification.getTag();
+        if (tag == null) {
+            manager.cancel(notification.getId());
+        } else {
+            manager.cancel(tag, notification.getId());
+        }
+    }
+
+    private void notifyExisting(
+        NotificationManager manager,
+        StatusBarNotification statusBarNotification,
+        Notification notification
+    ) {
+        String tag = statusBarNotification.getTag();
+        if (tag == null) {
+            manager.notify(statusBarNotification.getId(), notification);
+        } else {
+            manager.notify(tag, statusBarNotification.getId(), notification);
+        }
     }
 
     private int notificationId(String appointmentId) {

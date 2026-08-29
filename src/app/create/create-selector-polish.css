@@ -1,0 +1,105 @@
+/* Final /create hierarchy polish layered over the Editorial UI baseline. */
+
+[data-create-composer-variant] .create-composer-help {
+  justify-content: flex-end;
+  border-top: 0;
+  padding-top: 0;
+}
+
+[data-create-composer-variant] .create-composer-help > span:first-child {
+  display: none;
+}
+
+[data-create-composer-variant] .create-field-label-split > span:nth-child(2):not(.create-info-tooltip) {
+  display: none;
+}
+
+[data-create-composer-variant] .create-field-label-split {
+  justify-content: flex-start;
+  gap: 0;
+}
+
+[data-create-composer-variant] .create-classification-row {
+  gap: 0.55rem;
+  border-bottom: 0;
+  padding: 0.7rem 0 0.8rem;
+}
+
+[data-create-composer-variant] .create-classification-action {
+  position: relative;
+  min-height: 2.65rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 0.7rem;
+  background: var(--loombus-surface-muted);
+  padding: 0 2rem 0 0.8rem;
+  color: var(--loombus-text);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.03);
+}
+
+[data-create-composer-variant] .create-classification-action + .create-classification-action {
+  padding-left: 0.8rem;
+}
+
+[data-create-composer-variant] .create-classification-action:last-child {
+  border-right: 1px solid var(--loombus-border);
+}
+
+[data-create-composer-variant] .create-classification-action:hover,
+[data-create-composer-variant] .create-classification-action:focus-visible {
+  border-color: #CBAB5B;
+  background: color-mix(in srgb, #CBAB5B 7%, var(--loombus-surface-muted));
+}
+
+[data-create-composer-variant] .create-classification-action > span[aria-hidden] {
+  position: absolute;
+  right: 0.72rem;
+  color: #CBAB5B;
+  font-size: 0.8rem;
+}
+
+[data-create-composer-variant] .create-composer-tabs button[data-active="true"] {
+  color: var(--loombus-text);
+}
+
+[data-create-composer-variant] .create-composer-tabs button[data-active="true"]::after {
+  right: 0.85rem;
+  bottom: 0;
+  left: 0.85rem;
+  height: 2px;
+  background: #CBAB5B;
+}
+
+[data-create-composer-variant] .create-composer-tabs button:first-child[data-active="true"]::after {
+  left: 0;
+}
+
+[data-create-composer-variant] .create-publish-action {
+  background: #CBAB5B !important;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger {
+  position: relative;
+}
+
+[data-create-composer-variant] .create-info-tooltip__trigger::before {
+  content: "";
+  position: absolute;
+  inset: -0.55rem;
+}
+
+@media (max-width: 40rem) {
+  [data-create-composer-variant] .create-classification-row {
+    gap: 0.45rem;
+    overflow-x: auto;
+  }
+
+  [data-create-composer-variant] .create-classification-action {
+    flex: 0 0 auto;
+    min-height: 2.55rem;
+    white-space: nowrap;
+  }
+
+  [data-create-composer-variant] .create-info-tooltip__trigger::before {
+    inset: -0.7rem;
+  }
+}

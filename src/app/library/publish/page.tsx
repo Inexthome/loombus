@@ -360,83 +360,131 @@ export default function LibraryPublishPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-28 pt-6 text-[var(--loombus-text)] sm:px-6 md:pt-24 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <Link href="/library" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-gold)] hover:text-[var(--loombus-text)]">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />Library
+    <main data-library-publish-editorial className="library-publish-page">
+      <div className="library-publish-shell">
+        <div className="library-publish-topbar">
+          <Link href="/library" className="library-publish-back">
+            <ArrowLeft aria-hidden="true" />
+            Library
           </Link>
-          <button type="button" onClick={startNewDraft} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />New publication
+          <button type="button" onClick={startNewDraft} className="library-publish-new">
+            <Sparkles aria-hidden="true" />
+            New publication
           </button>
         </div>
 
-        <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]">Author Publishing</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Prepare work for the Loombus Library.</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">
+        <header className="library-publish-header">
+          <p className="library-publish-eyebrow">Author Publishing</p>
+          <h1>Prepare work for the Loombus Library.</h1>
+          <p>
             Create and refine publication metadata, upload its EPUB, then submit the processed work for review. Drafts remain private; authors cannot directly publish or approve their own work.
           </p>
-        </section>
+        </header>
 
-        {error ? <div role="alert" className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4 text-sm text-[var(--loombus-text-muted)]">{error}</div> : null}
-        {message ? <div role="status" className="mt-5 rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-4 text-sm text-[var(--loombus-text)]">{message}</div> : null}
+        {error ? <div role="alert" className="library-publish-feedback library-publish-feedback-error">{error}</div> : null}
+        {message ? <div role="status" className="library-publish-feedback library-publish-feedback-success">{message}</div> : null}
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <aside className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Your work</p><h2 className="mt-2 text-lg font-semibold">Publications</h2></div>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin text-[var(--loombus-gold)]" aria-label="Loading publications" /> : null}
+        <div className="library-publish-workspace">
+          <aside className="library-publish-rail" aria-labelledby="library-publish-list-heading">
+            <div className="library-publish-rail-heading">
+              <div>
+                <p className="library-publish-eyebrow">Your work</p>
+                <h2 id="library-publish-list-heading">Publications</h2>
+              </div>
+              {loading ? <Loader2 className="library-publish-spinner" aria-label="Loading publications" /> : null}
             </div>
-            {!loading && !rows.length ? <p className="mt-5 rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm leading-6 text-[var(--loombus-text-muted)]">No author publications yet. Create your first private draft.</p> : null}
-            <div className="mt-4 space-y-3">
+
+            {!loading && !rows.length ? (
+              <p className="library-publish-empty">No author publications yet. Create your first private draft.</p>
+            ) : null}
+
+            <div className="library-publish-list" role="list">
               {rows.map((row) => (
-                <button key={row.publication_id} type="button" onClick={() => choosePublication(row)} className={`w-full rounded-2xl border p-4 text-left transition ${selectedId === row.publication_id ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)]" : "border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] hover:border-[var(--loombus-gold)]"}`}>
-                  <p className="font-semibold">{row.publication.title}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--loombus-text-muted)]">
-                    <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 capitalize">{authorStatusLabel(row)}</span>
-                    <span className="capitalize">{row.publication.publication_type}</span>
-                  </div>
+                <button
+                  key={row.publication_id}
+                  type="button"
+                  role="listitem"
+                  data-active={selectedId === row.publication_id}
+                  onClick={() => choosePublication(row)}
+                  className="library-publish-publication"
+                >
+                  <span className="library-publish-publication-title">{row.publication.title}</span>
+                  <span className="library-publish-publication-meta">
+                    <span className="library-publish-status">{authorStatusLabel(row)}</span>
+                    <span className="library-publish-type">{row.publication.publication_type}</span>
+                  </span>
                 </button>
               ))}
             </div>
           </aside>
 
-          <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">{selected ? authorStatusLabel(selected) : "New draft"}</p><h2 className="mt-2 text-xl font-semibold">Publication details</h2></div>
+          <article className="library-publish-editor">
+            <header className="library-publish-editor-header">
+              <div>
+                <p className="library-publish-eyebrow">{selected ? authorStatusLabel(selected) : "New draft"}</p>
+                <h2>Publication details</h2>
+              </div>
               {selected?.publication.status === "published" ? (
-                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Published to Library</span>
+                <span className="library-publish-state">Published to Library</span>
               ) : selected?.publication.status === "archived" ? (
-                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Unpublished · history preserved</span>
+                <span className="library-publish-state">Unpublished · history preserved</span>
               ) : selected?.submission_status === "approved" ? (
-                <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[var(--loombus-text-muted)]">Approved for controlled publishing</span>
+                <span className="library-publish-state">Approved for controlled publishing</span>
               ) : null}
-            </div>
+            </header>
 
-            {selected?.review_note ? <div className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-4"><p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Review note</p><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{selected.review_note}</p></div> : null}
+            {selected?.review_note ? (
+              <aside className="library-publish-review-note" aria-label="Review note">
+                <p className="library-publish-eyebrow">Review note</p>
+                <p>{selected.review_note}</p>
+              </aside>
+            ) : null}
 
-            <fieldset disabled={!editable || saving} className="mt-6 grid gap-4 disabled:opacity-70">
-              <label className="grid gap-2 text-sm font-medium">Title<input value={form.title} onChange={(event) => updateField("title", event.target.value)} maxLength={200} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
-              <label className="grid gap-2 text-sm font-medium">Subtitle<input value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
-              <label className="grid gap-2 text-sm font-medium">Description<textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={5} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 py-3 outline-none focus:border-[var(--loombus-gold)]" /></label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm font-medium">Type<select value={form.publicationType} onChange={(event) => updateField("publicationType", event.target.value)} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]">{publicationTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
-                <label className="grid gap-2 text-sm font-medium">Language<input value={form.languageCode} onChange={(event) => updateField("languageCode", event.target.value)} maxLength={12} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
+            <fieldset disabled={!editable || saving} className="library-publish-fields">
+              <label className="library-publish-field">
+                <span className="library-publish-field-label">Title</span>
+                <input value={form.title} onChange={(event) => updateField("title", event.target.value)} maxLength={200} />
+              </label>
+
+              <label className="library-publish-field">
+                <span className="library-publish-field-label">Subtitle <span>Optional</span></span>
+                <input value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} />
+              </label>
+
+              <label className="library-publish-field">
+                <span className="library-publish-field-label">Description <span>Optional</span></span>
+                <textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={5} />
+              </label>
+
+              <div className="library-publish-field-grid">
+                <label className="library-publish-field">
+                  <span className="library-publish-field-label">Type</span>
+                  <select value={form.publicationType} onChange={(event) => updateField("publicationType", event.target.value)}>
+                    {publicationTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+                <label className="library-publish-field">
+                  <span className="library-publish-field-label">Language</span>
+                  <input value={form.languageCode} onChange={(event) => updateField("languageCode", event.target.value)} maxLength={12} />
+                </label>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm font-medium">Author name<input value={form.authorName} onChange={(event) => updateField("authorName", event.target.value)} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
-                <label className="grid gap-2 text-sm font-medium">Publisher<input value={form.publisherName} onChange={(event) => updateField("publisherName", event.target.value)} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
+
+              <div className="library-publish-field-grid">
+                <label className="library-publish-field">
+                  <span className="library-publish-field-label">Author name <span>Optional</span></span>
+                  <input value={form.authorName} onChange={(event) => updateField("authorName", event.target.value)} />
+                </label>
+                <label className="library-publish-field">
+                  <span className="library-publish-field-label">Publisher <span>Optional</span></span>
+                  <input value={form.publisherName} onChange={(event) => updateField("publisherName", event.target.value)} />
+                </label>
               </div>
-              <label className="grid gap-2 text-sm font-medium">ISBN<input value={form.isbn} onChange={(event) => updateField("isbn", event.target.value)} className="min-h-12 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-4 outline-none focus:border-[var(--loombus-gold)]" /></label>
+
+              <label className="library-publish-field">
+                <span className="library-publish-field-label">ISBN <span>Optional</span></span>
+                <input value={form.isbn} onChange={(event) => updateField("isbn", event.target.value)} />
+              </label>
             </fieldset>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              {editable ? <button type="button" disabled={saving} onClick={() => void saveDraft()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" aria-hidden="true" />}Save draft</button> : null}
-              {selected && editable ? <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" />Submit for review</button> : null}
-              {selected && deletable ? <button type="button" disabled={saving} onClick={() => void deletePublication()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-500/40 px-4 text-sm font-semibold text-rose-500 transition hover:bg-rose-500/10 disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Delete publication</button> : null}
-              {selected && retirable ? <button type="button" disabled={saving} onClick={() => void retirePublication()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-500/40 px-4 text-sm font-semibold text-rose-500 transition hover:bg-rose-500/10 disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Delete publication</button> : null}
-            </div>
 
             <LibraryAuthorEpubUpload
               publicationId={selected?.publication_id ?? null}
@@ -446,7 +494,7 @@ export default function LibraryPublishPage() {
             />
 
             {selected && !editable ? (
-              <p className="mt-5 text-sm leading-6 text-[var(--loombus-text-muted)]">
+              <p className="library-publish-lock-note">
                 {selected.publication.status === "published"
                   ? "This publication is published in the Loombus Library and is locked from author-side draft editing."
                   : selected.publication.status === "archived"
@@ -454,7 +502,37 @@ export default function LibraryPublishPage() {
                     : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
               </p>
             ) : null}
-          </section>
+
+            <footer className="library-publish-actions">
+              <div className="library-publish-secondary-actions">
+                {editable ? (
+                  <button type="button" disabled={saving} onClick={() => void saveDraft()} className="library-publish-secondary">
+                    {saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <BookOpen aria-hidden="true" />}
+                    Save draft
+                  </button>
+                ) : null}
+                {selected && deletable ? (
+                  <button type="button" disabled={saving} onClick={() => void deletePublication()} className="library-publish-destructive">
+                    <Trash2 aria-hidden="true" />
+                    Delete publication
+                  </button>
+                ) : null}
+                {selected && retirable ? (
+                  <button type="button" disabled={saving} onClick={() => void retirePublication()} className="library-publish-destructive">
+                    <Trash2 aria-hidden="true" />
+                    Delete publication
+                  </button>
+                ) : null}
+              </div>
+
+              {selected && editable ? (
+                <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="library-publish-primary">
+                  <Send aria-hidden="true" />
+                  Submit for review
+                </button>
+              ) : null}
+            </footer>
+          </article>
         </div>
       </div>
     </main>

@@ -1,0 +1,45 @@
+.loombus-mobile-appearance-cycle-host {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .loombus-mobile-appearance-cycle-host {
+    display: contents;
+  }
+
+  .loombus-mobile-appearance-cycle {
+    width: 2.72rem;
+    height: 2.72rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: var(--loombus-surface-strong);
+    color: var(--loombus-text-muted);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      color 150ms ease,
+      transform 150ms ease,
+      background 150ms ease;
+  }
+
+  .loombus-mobile-appearance-cycle:hover,
+  .loombus-mobile-appearance-cycle:focus-visible {
+    border-color: color-mix(in srgb, var(--loombus-gold) 65%, var(--loombus-border));
+    background: var(--loombus-surface);
+    color: var(--loombus-gold);
+  }
+
+  .loombus-mobile-appearance-cycle:active {
+    transform: scale(0.96);
+  }
+
+  .loombus-mobile-appearance-cycle:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
+    outline-offset: 2px;
+  }
+}
