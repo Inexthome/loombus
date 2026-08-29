@@ -20,6 +20,7 @@ import {
   Search,
   Send,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   SquarePen,
   Trash2,
@@ -38,10 +39,14 @@ import {
 } from "./messages-v2-components";
 import {
   MESSAGE_REPORT_REASONS,
+  formatMarketplaceConversationPrice,
   formatMessageAttachmentFileSize,
   formatMessageDay,
+  getConversationConnectionLabel,
   getConversationHandle,
   getConversationName,
+  getMarketplaceConversationLocation,
+  getPrimaryMarketplaceContext,
   isDifferentMessageDay,
 } from "./messages-v2-model";
 import { useMessagesV2 } from "./use-messages-v2";
@@ -184,8 +189,11 @@ export default function MessagesV2Client() {
     ["muted", "Muted", mutedCount],
   ] as const;
 
+  const marketplaceContext = getPrimaryMarketplaceContext(selectedConversation);
+
   const renderDetails = (drawer = false) => {
     if (!selectedConversation) return null;
+    const detailsMarketplaceContext = getPrimaryMarketplaceContext(selectedConversation);
     return (
       <section className={`messages-v2-details-card${drawer ? " is-drawer" : ""}`}>
         {drawer ? (
@@ -216,7 +224,7 @@ export default function MessagesV2Client() {
         <dl className="messages-v2-details-list">
           <div>
             <dt>Connection</dt>
-            <dd>Mutual followers</dd>
+            <dd>{getConversationConnectionLabel(selectedConversation)}</dd>
           </div>
           <div>
             <dt>Notifications</dt>
@@ -227,6 +235,16 @@ export default function MessagesV2Client() {
             <dd>{sharedAttachments.length}</dd>
           </div>
         </dl>
+
+        {detailsMarketplaceContext ? (
+          <Link
+            href={`/marketplace/${encodeURIComponent(detailsMarketplaceContext.slug)}`}
+            className="messages-v2-profile-link"
+          >
+            <ShoppingBag aria-hidden="true" size={16} />
+            View Marketplace listing
+          </Link>
+        ) : null}
 
         {selectedConversation.otherUsername ? (
           <Link
@@ -333,7 +351,7 @@ export default function MessagesV2Client() {
         <div>
           <p className="messages-v2-eyebrow">Private communication</p>
           <h1>Messages</h1>
-          <p>Focused conversations between mutual followers, away from the public thread.</p>
+          <p>Focused private conversations between connections and Marketplace buyers and sellers.</p>
         </div>
         <button type="button" className="messages-v2-new-button" onClick={openNewMessage}>
           <SquarePen aria-hidden="true" size={17} />
@@ -420,7 +438,7 @@ export default function MessagesV2Client() {
               <div className="messages-v2-list-empty">
                 <Inbox aria-hidden="true" size={25} />
                 <strong>Your inbox is ready</strong>
-                <p>Start a private conversation with a mutual follower.</p>
+                <p>Start from a mutual connection or contact a seller from a Marketplace listing.</p>
                 <button type="button" onClick={openNewMessage}>
                   Find a connection
                 </button>
@@ -515,10 +533,35 @@ export default function MessagesV2Client() {
               <div className="messages-v2-thread-context">
                 <ShieldCheck aria-hidden="true" size={15} />
                 <span>
-                  Private conversation with {getConversationName(selectedConversation)}
+                  {marketplaceContext
+                    ? `Marketplace inquiry with ${getConversationName(selectedConversation)}`
+                    : `Private conversation with ${getConversationName(selectedConversation)}`}
                 </span>
                 {selectedConversation.mutedAt ? <strong>Muted</strong> : null}
               </div>
+
+              {marketplaceContext ? (
+                <Link
+                  href={`/marketplace/${encodeURIComponent(marketplaceContext.slug)}`}
+                  className="mx-4 mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[var(--loombus-gold)]/40 bg-[var(--loombus-gold-surface)] px-4 py-3 text-[var(--loombus-text)] transition hover:border-[var(--loombus-gold)]"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--loombus-surface)] text-[var(--loombus-gold)]">
+                      <ShoppingBag aria-hidden="true" size={17} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Marketplace inquiry</span>
+                      <strong className="block truncate text-sm">{marketplaceContext.title}</strong>
+                      <span className="block truncate text-xs text-[var(--loombus-text-muted)]">
+                        {[formatMarketplaceConversationPrice(marketplaceContext), getMarketplaceConversationLocation(marketplaceContext)]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs font-bold text-[var(--loombus-gold)]">View listing →</span>
+                </Link>
+              ) : null}
 
               <div className="messages-v2-thread-scroll">
                 {threadLoading ? (
@@ -676,7 +719,7 @@ export default function MessagesV2Client() {
               <MessageCircle aria-hidden="true" size={34} />
               <p className="messages-v2-eyebrow">Private messages</p>
               <h2>Choose a conversation.</h2>
-              <p>Select a thread from your inbox or start a new message with a mutual follower.</p>
+              <p>Select a thread, start a new message with a mutual follower, or contact a seller from Marketplace.</p>
               <button type="button" className="messages-v2-primary-button" onClick={openNewMessage}>
                 <SquarePen aria-hidden="true" size={17} />
                 New message
