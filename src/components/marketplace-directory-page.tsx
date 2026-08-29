@@ -426,6 +426,11 @@ export default function MarketplaceDirectoryPage() {
                         <span className="inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#b45309] dark:bg-orange-400/10">
                           {listing.category}
                         </span>
+                        {listing.status === "reserved" ? (
+                          <span className="ml-2 inline-flex rounded-full bg-[color:var(--loombus-cream)] px-3 py-1 text-xs font-bold text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]">
+                            Reserved
+                          </span>
+                        ) : null}
                         <h3 className="mt-3 text-xl font-semibold leading-snug tracking-[-0.025em] text-[color:var(--loombus-text)]">
                           {listing.title}
                         </h3>

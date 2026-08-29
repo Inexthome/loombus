@@ -81,7 +81,10 @@ export default async function ListingPage({
           url: `${siteUrl}/marketplace/${listing.slug}`,
           priceCurrency: listing.currency,
           price: listing.price,
-          availability: "https://schema.org/InStock",
+          availability:
+            listing.status === "reserved"
+              ? "https://schema.org/LimitedAvailability"
+              : "https://schema.org/InStock",
           seller: listing.businessName
             ? {
                 "@type": "Organization",
@@ -103,7 +106,9 @@ export default async function ListingPage({
           listingId={listing.id}
           listingTitle={listing.title}
           listingSlug={listing.slug}
-          pickupAvailable={listing.pickupAvailable}
+          pickupAvailable={
+            listing.pickupAvailable && listing.status === "published"
+          }
           businessBacked={Boolean(listing.businessId)}
         />
       ) : null}

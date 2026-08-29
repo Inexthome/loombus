@@ -168,7 +168,7 @@ export default function MarketplaceSavedPage() {
                 : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] hover:border-[color:var(--loombus-gold)]"
             }`}
           >
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Still available</span>
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Active or reserved</span>
             <strong className="mt-2 block text-3xl tracking-[-0.04em]">{availableCount}</strong>
           </button>
           <button
@@ -240,6 +240,7 @@ export default function MarketplaceSavedPage() {
             ) : (
               <section className="grid gap-4 md:grid-cols-2" aria-label="Saved Marketplace items">
                 {filteredItems.map(({ listing, available, savedAt }) => {
+                  const reserved = listing.status === "reserved";
                   const card = (
                     <article className="group flex h-full min-h-[390px] flex-col overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-lg shadow-black/5 transition hover:-translate-y-0.5 hover:border-[color:var(--loombus-gold)] hover:shadow-xl">
                       <div className="aspect-[16/10] bg-[color:var(--loombus-surface-muted)]">
@@ -256,12 +257,18 @@ export default function MarketplaceSavedPage() {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              available
-                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              reserved
+                                ? "bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
+                                : available
+                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
                             }`}
                           >
-                            {available ? "Available" : marketplaceStatusLabel(listing.status)}
+                            {reserved
+                              ? "Reserved"
+                              : available
+                                ? "Available"
+                                : marketplaceStatusLabel(listing.status)}
                           </span>
                           <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">{listing.category}</span>
                         </div>
@@ -306,7 +313,7 @@ export default function MarketplaceSavedPage() {
               <div className="mt-4 space-y-2">
                 {[
                   ["all", "Everything saved", items.length],
-                  ["available", "Still available", availableCount],
+                  ["available", "Active or reserved", availableCount],
                   ["unavailable", "Closed or unavailable", unavailableCount],
                 ].map(([value, label, count]) => (
                   <button

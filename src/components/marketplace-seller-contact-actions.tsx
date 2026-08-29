@@ -90,36 +90,43 @@ export default function MarketplaceSellerContactActions({
   if (isOwner) return null;
 
   const updated = formatMarketplaceDate(listing.updatedAt ?? listing.publishedAt);
+  const reserved = listing.status === "reserved";
 
   return (
     <section className="mb-6 border-y border-[color:var(--loombus-border-muted)] py-5" aria-labelledby="marketplace-buyer-actions-heading">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
-            Buyer actions
+            {reserved ? "Reserved" : "Buyer actions"}
           </p>
           <h2 id="marketplace-buyer-actions-heading" className="mt-1 text-xl font-semibold tracking-[-0.025em]">
-            Interested in this item?
+            {reserved ? "This item is currently reserved." : "Interested in this item?"}
           </h2>
-          <p className="mt-1 text-sm text-[color:var(--loombus-text-muted)]">
-            Listed as available{updated ? ` · Updated ${updated}` : ""}. Ask the seller before making plans.
+          <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+            {reserved
+              ? `The seller is holding this item while a sale is pending${
+                  updated ? ` · Updated ${updated}` : ""
+                }. You can still message the seller, but availability questions are paused until the reservation is released.`
+              : `Listed as available${updated ? ` · Updated ${updated}` : ""}. Ask the seller before making plans.`}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={Boolean(working)}
-            onClick={() => void contact("availability")}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
-          >
-            {working === "availability" ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <PackageCheck size={16} />
-            )}
-            Ask if available
-          </button>
+          {!reserved ? (
+            <button
+              type="button"
+              disabled={Boolean(working)}
+              onClick={() => void contact("availability")}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
+            >
+              {working === "availability" ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <PackageCheck size={16} />
+              )}
+              Ask if available
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={Boolean(working)}

@@ -2,6 +2,7 @@ export type MarketplaceListingStatus =
   | "draft"
   | "pending"
   | "published"
+  | "reserved"
   | "rejected"
   | "suspended"
   | "sold"
@@ -144,6 +145,7 @@ export function marketplaceConditionLabel(value: MarketplaceCondition) {
 export function marketplaceStatusLabel(status: MarketplaceListingStatus) {
   if (status === "pending") return "Pending review";
   if (status === "published") return "Published";
+  if (status === "reserved") return "Reserved";
   if (status === "rejected") return "Changes requested";
   if (status === "suspended") return "Suspended";
   if (status === "sold") return "Sold";

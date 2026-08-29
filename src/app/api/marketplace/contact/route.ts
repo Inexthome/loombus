@@ -223,6 +223,13 @@ export async function POST(request: NextRequest) {
     const listingId = cleanUuid(input.listingId, "listing id");
     const listing = await findPublicMarketplaceListingById(listingId);
     if (!listing) return jsonError("Listing not found.", 404, "listing_not_found");
+    if (listing.status === "reserved" && type === "availability") {
+      return jsonError(
+        "This item is currently reserved. You can still message the seller.",
+        409,
+        "listing_reserved"
+      );
+    }
     if (listing.sellerId === access.user.id) {
       return jsonError("You cannot contact yourself about your own listing.", 400);
     }

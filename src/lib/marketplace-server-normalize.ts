@@ -113,6 +113,7 @@ export function normalizeMarketplaceListing(
         "draft",
         "pending",
         "published",
+        "reserved",
         "rejected",
         "suspended",
         "sold",

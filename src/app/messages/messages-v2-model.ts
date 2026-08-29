@@ -104,16 +104,19 @@ export function formatMarketplaceConversationPrice(
   context: MarketplaceConversationContext | null | undefined
 ) {
   if (!context) return "";
-  if (context.isFree) return "Free";
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: context.currency || "USD",
-      maximumFractionDigits: Number.isInteger(context.price) ? 0 : 2,
-    }).format(context.price);
-  } catch {
-    return `${context.currency || "USD"} ${context.price.toLocaleString()}`;
-  }
+  const price = (() => {
+    if (context.isFree) return "Free";
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: context.currency || "USD",
+        maximumFractionDigits: Number.isInteger(context.price) ? 0 : 2,
+      }).format(context.price);
+    } catch {
+      return `${context.currency || "USD"} ${context.price.toLocaleString()}`;
+    }
+  })();
+  return context.status === "reserved" ? `Reserved · ${price}` : price;
 }
 
 export function getMarketplaceConversationLocation(
