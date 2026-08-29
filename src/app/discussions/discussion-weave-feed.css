@@ -1,87 +1,60 @@
-/* Card-mode Discussion Weave feed. Compact mode remains unchanged. */
+/* Card mode is a deliberate, single-column discovery surface.
+   Compact mode owns the dense weave/index presentation and is intentionally untouched here. */
 
 .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
-  position: relative;
   display: grid !important;
-  gap: 0 !important;
+  gap: 1.35rem !important;
+  margin: 0 !important;
   background: transparent !important;
 }
 
-/* One continuous strand belongs to the feed, not to individual posts. */
 .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  left: 0.42rem;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: color-mix(in srgb, var(--loombus-border) 84%, transparent);
-  pointer-events: none;
+  display: none !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article {
   position: relative;
-  z-index: 1;
-  overflow: visible !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--loombus-border) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  transition: border-color 150ms ease !important;
+  overflow: hidden !important;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 1.55rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 14px 38px color-mix(in srgb, #000 9%, transparent) !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease !important;
 }
 
-.discussion-feed-route[data-discussion-view="card"] main article::before {
+.discussion-feed-route[data-discussion-view="card"] main article::before,
+.discussion-feed-route[data-discussion-view="card"] main article::after {
   display: none !important;
 }
 
-.discussion-feed-route[data-discussion-view="card"] main article::after {
-  content: "";
-  position: absolute;
-  z-index: 2;
-  left: 0.19rem;
-  top: 1.42rem;
-  width: 0.48rem;
-  height: 0.48rem;
-  border: 1px solid color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
-  border-radius: 999px;
-  background: var(--loombus-page-bg);
-  pointer-events: none;
-}
-
 .discussion-feed-route[data-discussion-view="card"] main article:hover {
-  border-bottom-color: color-mix(in srgb, var(--loombus-gold) 34%, var(--loombus-border)) !important;
-  background: transparent !important;
-}
-
-.discussion-feed-route[data-discussion-view="card"] main article:hover::after {
-  background: var(--loombus-gold);
-  border-color: var(--loombus-gold);
-}
-
-/* Explicitly prevent legacy surface layers from recreating cards. */
-.discussion-feed-route[data-discussion-view="card"] main article > div,
-.discussion-feed-route[data-discussion-view="card"] main article > div:first-child,
-.discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
-  background: transparent !important;
-  box-shadow: none !important;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--loombus-gold) 42%, var(--loombus-border)) !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 18px 46px color-mix(in srgb, #000 12%, transparent) !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
-  padding: 1.15rem 0.25rem 0.6rem 1.65rem !important;
+  padding: 1.45rem 1.5rem 1.2rem !important;
+  background: var(--loombus-surface) !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child {
-  margin-bottom: 0.45rem !important;
-  gap: 0.35rem 0.6rem !important;
+  margin-bottom: 0.8rem !important;
+  gap: 0.45rem 0.55rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span {
-  font-size: 0.68rem !important;
-  font-weight: 760 !important;
-  line-height: 1.3 !important;
-  letter-spacing: 0.01em !important;
+  min-height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem !important;
+  font-weight: 780 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.015em !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a:first-child > div:first-child > span:first-child {
@@ -89,93 +62,65 @@
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article h2 {
-  max-width: 42rem;
-  font-size: clamp(1.2rem, 2vw, 1.55rem) !important;
-  line-height: 1.24 !important;
-  letter-spacing: -0.025em !important;
+  max-width: 48rem;
+  font-size: clamp(1.55rem, 2.8vw, 2.05rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.04em !important;
   font-weight: 720 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article h2 + div {
-  margin-top: 0.5rem !important;
-  max-width: 46rem;
-  font-size: 0.9rem !important;
-  line-height: 1.58 !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  margin-top: 0.8rem !important;
+  max-width: 50rem;
+  font-size: 0.98rem !important;
+  line-height: 1.65 !important;
   color: var(--loombus-text-muted) !important;
 }
 
-/* Reddit-like media density: media becomes a bounded side strand instead of a tall card. */
-.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
-  display: grid !important;
-  grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
-  grid-template-areas:
-    "media copy"
-    "media author"
-    "media tags";
-  column-gap: 1rem;
-  align-items: start;
-}
-
-.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a:first-child {
-  grid-area: copy;
-  min-width: 0;
-}
-
+/* In Card mode, media is part of the story rather than a thumbnail cue. */
 .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
-  grid-area: media;
-  align-self: start;
-  display: block !important;
+  display: grid !important;
   width: 100%;
-  margin: 0 !important;
+  margin: 1.15rem 0 0 !important;
+  gap: 0.75rem !important;
   border: 0 !important;
   background: transparent !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > * {
-  display: none !important;
+  display: block !important;
 }
 
-.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child {
-  display: block !important;
+.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > * {
   overflow: hidden;
-  width: 100%;
-  max-height: 10rem;
   border: 1px solid var(--loombus-border-muted) !important;
-  border-radius: 0.45rem !important;
-  background: transparent !important;
+  border-radius: 1rem !important;
+  background: var(--loombus-page-bg) !important;
   box-shadow: none !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
 .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
   width: 100% !important;
-  height: 10rem !important;
-  aspect-ratio: auto !important;
+  height: auto !important;
+  max-height: 28rem;
+  aspect-ratio: 16 / 9 !important;
   object-fit: cover !important;
   border-radius: 0 !important;
 }
 
-.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child > span,
-.discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] > :first-child > a {
-  display: none !important;
-}
-
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 {
-  margin-top: 0.75rem !important;
-  gap: 0.55rem !important;
-}
-
-.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > a.mt-5 {
-  grid-area: author;
-  margin-top: 0.6rem !important;
+  margin-top: 1rem !important;
+  gap: 0.7rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 > div {
-  display: flex !important;
+  display: block !important;
   min-width: 0;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.15rem 0.4rem;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p {
@@ -183,109 +128,103 @@
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:first-child {
-  font-size: 0.76rem !important;
-  font-weight: 720 !important;
+  font-size: 0.82rem !important;
+  font-weight: 740 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > a.mt-5 p:last-child {
-  font-size: 0.69rem !important;
-  font-weight: 650 !important;
+  margin-top: 0.08rem !important;
+  font-size: 0.72rem !important;
+  font-weight: 640 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap {
-  margin-top: 0.65rem !important;
-  gap: 0.35rem 0.65rem !important;
-  border-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-.discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) > div.mt-4.flex.flex-wrap {
-  grid-area: tags;
+  margin-top: 0.85rem !important;
+  gap: 0.4rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:first-child > div.mt-4.flex.flex-wrap > span {
-  font-size: 0.66rem !important;
+  border-color: var(--loombus-border-muted) !important;
+  background: transparent !important;
+  font-size: 0.68rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
-  min-height: 0 !important;
-  gap: 0.9rem !important;
-  border-top: 0 !important;
-  padding: 0.3rem 0.25rem 0.95rem 1.65rem !important;
+  min-height: 3.35rem !important;
+  gap: 1.1rem !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  padding: 0.85rem 1.5rem !important;
+  background: color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg)) !important;
   color: var(--loombus-text-muted) !important;
-  font-size: 0.72rem !important;
+  font-size: 0.76rem !important;
   font-weight: 700 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child svg {
-  width: 0.9rem !important;
-  height: 0.9rem !important;
+  width: 0.95rem !important;
+  height: 0.95rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span {
-  gap: 0.35rem !important;
+  gap: 0.38rem !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
   margin-left: auto !important;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 42%, var(--loombus-border)) !important;
+  border-radius: 999px !important;
+  padding: 0.38rem 0.7rem !important;
   color: var(--loombus-text) !important;
   font-size: 0.72rem !important;
-  font-weight: 800 !important;
+  font-weight: 820 !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child::before {
-  content: "";
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 999px;
-  background: var(--loombus-gold);
-  opacity: 0.72;
+  display: none !important;
 }
 
 @media (max-width: 639px) {
-  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
-    left: 0.28rem;
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
+    gap: 1rem !important;
   }
 
-  .discussion-feed-route[data-discussion-view="card"] main article::after {
-    left: 0.05rem;
-    top: 1.2rem;
+  .discussion-feed-route[data-discussion-view="card"] main article {
+    border-radius: 1.2rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:first-child {
-    padding: 0.95rem 0 0.5rem 1.25rem !important;
+    padding: 1.05rem 1rem 0.95rem !important;
   }
 
-  .discussion-feed-route[data-discussion-view="card"] main article > div:first-child:has(section[aria-label="Discussion attachments"]) {
-    display: block !important;
+  .discussion-feed-route[data-discussion-view="card"] main article h2 {
+    font-size: 1.38rem !important;
+    line-height: 1.16 !important;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main article h2 + div {
+    -webkit-line-clamp: 3 !important;
+    margin-top: 0.65rem !important;
+    font-size: 0.9rem !important;
+    line-height: 1.55 !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] {
-    width: min(9rem, 44vw);
-    margin: 0.7rem 0 0 !important;
+    margin-top: 0.9rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] img,
   .discussion-feed-route[data-discussion-view="card"] main article section[aria-label="Discussion attachments"] video {
-    height: 8rem !important;
-  }
-
-  .discussion-feed-route[data-discussion-view="card"] main article h2 {
-    font-size: 1.15rem !important;
-  }
-
-  .discussion-feed-route[data-discussion-view="card"] main article h2 + div {
-    font-size: 0.84rem !important;
-    line-height: 1.52 !important;
+    max-height: 20rem;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:last-child {
-    gap: 0.75rem !important;
-    padding: 0.25rem 0 0.8rem 1.25rem !important;
-    font-size: 0.68rem !important;
+    gap: 0.8rem !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.7rem !important;
   }
 
   .discussion-feed-route[data-discussion-view="card"] main article > div:last-child > span:last-child {
+    padding: 0.34rem 0.58rem !important;
     font-size: 0.68rem !important;
   }
 }
