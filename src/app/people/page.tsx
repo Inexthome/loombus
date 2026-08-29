@@ -1,4 +1,4 @@
-import "./people-directory-grid.css";
+import "./people-editorial.css";
 import PeopleEditorialClient from "./people-editorial-client";
 
 export const dynamic = "force-dynamic";
