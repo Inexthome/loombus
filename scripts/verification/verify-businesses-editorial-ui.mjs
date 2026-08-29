@@ -45,8 +45,10 @@ requireText(files.servicesManager, '"/api/requests"', "Services matching Request
 requireText(files.servicesManager, 'professional_matching', "professional matching entitlement");
 requireText(files.servicesManager, 'professional_portfolio', "professional portfolio entitlement");
 requireText(files.directory, 'bg-[color:var(--loombus-page-bg)]', "original Loombus background");
-requireText(files.manager, 'border-b-2 border-[color:var(--loombus-gold)]', "Editorial active tab");
-requireText(files.servicesManager, 'border-b-2 border-[color:var(--loombus-gold)]', "Services Editorial active tab");
+requireText(files.manager, 'border-b-2', "Business Editorial tab underline");
+requireText(files.manager, 'border-[color:var(--loombus-gold)]', "Business Editorial active tab Gold");
+requireText(files.servicesManager, 'border-b-2', "Services Editorial tab underline");
+requireText(files.servicesManager, 'border-[color:var(--loombus-gold)]', "Services Editorial active tab Gold");
 requireText(files.fields, 'focus:border-[var(--loombus-gold)]', "Editorial field focus");
 requireText(files.location, 'focus:border-[var(--loombus-gold)]', "Editorial location focus");
 requireText(files.serviceEditor, 'divide-y divide-[var(--loombus-border)]', "divider-led service editor");
