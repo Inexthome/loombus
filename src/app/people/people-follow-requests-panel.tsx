@@ -48,6 +48,10 @@ function profileHref(profile: RequestProfile) {
   return profile.username ? `/u/${encodeURIComponent(profile.username)}` : "/people";
 }
 
+function loginHref(next: string) {
+  return `/login?next=${encodeURIComponent(next)}`;
+}
+
 function formatRequestDate(value: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "Pending";
@@ -86,7 +90,7 @@ export default function PeopleFollowRequestsPanel() {
       setNotice("");
       const token = await getSessionToken();
       if (!token) {
-        window.location.href = "/login?next=/people?view=requests";
+        window.location.href = loginHref("/people?view=requests");
         return;
       }
 
@@ -121,7 +125,7 @@ export default function PeopleFollowRequestsPanel() {
 
     const token = await getSessionToken();
     if (!token) {
-      window.location.href = "/login?next=/people?view=requests&request=received";
+      window.location.href = loginHref("/people?view=requests&request=received");
       return;
     }
 
@@ -156,7 +160,7 @@ export default function PeopleFollowRequestsPanel() {
 
     const token = await getSessionToken();
     if (!token) {
-      window.location.href = "/login?next=/people?view=requests&request=sent";
+      window.location.href = loginHref("/people?view=requests&request=sent");
       return;
     }
 
