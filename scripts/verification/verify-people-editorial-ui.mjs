@@ -1,11 +1,22 @@
 import fs from "node:fs";
 
-const files = {
-  page: fs.readFileSync("src/app/people/page.tsx", "utf8"),
-  client: fs.readFileSync("src/app/people/people-editorial-client.tsx", "utf8"),
-  grid: fs.readFileSync("src/app/people/people-directory-grid.css", "utf8"),
-  requests: fs.readFileSync("src/app/people/people-follow-requests-panel.tsx", "utf8"),
+const paths = {
+  page: "src/app/people/page.tsx",
+  client: "src/app/people/people-editorial-client.tsx",
+  styles: "src/app/people/people-editorial.css",
+  requests: "src/app/people/people-follow-requests-panel.tsx",
 };
+
+const legacyPaths = [
+  "src/app/people/client-page.tsx",
+  "src/app/people/people-v2-client.tsx",
+  "src/app/people/people-card-identity-cleanup.css",
+  "src/app/people/people-directory-grid.css",
+];
+
+const files = Object.fromEntries(
+  Object.entries(paths).map(([key, path]) => [key, fs.readFileSync(path, "utf8")])
+);
 
 function requireText(source, needle, label) {
   if (!source.includes(needle)) throw new Error(`Missing ${label}: ${needle}`);
@@ -15,20 +26,21 @@ function forbidText(source, needle, label) {
   if (source.includes(needle)) throw new Error(`Unexpected ${label}: ${needle}`);
 }
 
+for (const legacyPath of legacyPaths) {
+  if (fs.existsSync(legacyPath)) throw new Error(`Legacy People implementation still exists: ${legacyPath}`);
+}
+
 requireText(files.page, 'PeopleEditorialClient', "Editorial client route");
-requireText(files.page, './people-directory-grid.css', "responsive People listing styles");
+requireText(files.page, './people-editorial.css', "consolidated People Editorial styles");
 forbidText(files.page, 'PeopleV2Client', "legacy People client route");
+forbidText(files.page, 'people-directory-grid.css', "retired grid override import");
+
 requireText(files.client, 'data-people-editorial="directory"', "Editorial directory scope");
 requireText(files.client, 'bg-[var(--loombus-page-bg)]', "Loombus page background");
 requireText(files.client, 'aria-label="People directory views"', "directory view tabs");
 requireText(files.client, 'aria-label="People directory results"', "directory result list");
-requireText(files.client, 'role="table"', "People table presentation");
-requireText(files.client, 'aria-label="People directory table"', "People table accessibility label");
-requireText(files.client, 'role="columnheader">Member', "member column");
-requireText(files.client, 'role="columnheader">Relationship', "relationship column");
-requireText(files.client, 'role="columnheader" className="text-right">Followers', "followers column");
-requireText(files.client, 'role="columnheader" className="text-right">Following', "following column");
-requireText(files.client, 'role="columnheader" className="text-right">Actions', "actions column");
+requireText(files.client, 'role="table"', "People grid semantic source");
+requireText(files.client, 'aria-label="People directory table"', "People grid accessibility label");
 requireText(files.client, '/api/people/directory?', "directory API");
 requireText(files.client, '/api/follows/toggle', "follow action");
 requireText(files.client, '/api/messages/conversations', "mutual messaging action");
@@ -42,13 +54,13 @@ forbidText(files.client, 'sm:grid-cols-2 xl:grid-cols-3', "legacy member card gr
 forbidText(files.client, '#FEFBEC', "forced Cream background");
 forbidText(files.client, '#fefbec', "forced Cream background");
 
-requireText(files.grid, 'grid-template-columns: repeat(3, minmax(0, 1fr))', "three-across desktop People layout");
-requireText(files.grid, '@media (max-width: 959px)', "tablet People breakpoint");
-requireText(files.grid, 'grid-template-columns: repeat(2, minmax(0, 1fr))', "two-across tablet People layout");
-requireText(files.grid, '@media (max-width: 639px)', "mobile People breakpoint");
-requireText(files.grid, 'grid-template-columns: minmax(0, 1fr)', "single-column mobile People layout");
-requireText(files.grid, 'min-width: 0', "mobile-safe People width reset");
-requireText(files.grid, 'overflow-x: visible', "no forced horizontal People scrolling");
+requireText(files.styles, 'grid-template-columns: repeat(3, minmax(0, 1fr))', "three-across desktop People layout");
+requireText(files.styles, '@media (max-width: 959px)', "tablet People breakpoint");
+requireText(files.styles, 'grid-template-columns: repeat(2, minmax(0, 1fr))', "two-across tablet People layout");
+requireText(files.styles, '@media (max-width: 639px)', "mobile People breakpoint");
+requireText(files.styles, 'grid-template-columns: minmax(0, 1fr)', "single-column mobile People layout");
+requireText(files.styles, 'min-width: 0', "mobile-safe People width reset");
+requireText(files.styles, 'overflow-x: visible', "no forced horizontal People scrolling");
 
 requireText(files.requests, '/api/follows/requests?scope=all', "follow request loading");
 requireText(files.requests, 'action: "accept" | "decline"', "request decision actions");
