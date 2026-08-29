@@ -120,7 +120,7 @@ export async function getPublicMarketplaceListing(
     .from("marketplace_listings")
     .select(MARKETPLACE_SELECT)
     .eq("slug", slug)
-    .eq("status", "published")
+    .in("status", ["published", "reserved"])
     .maybeSingle();
 
   if (error) {
