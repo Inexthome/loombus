@@ -82,9 +82,7 @@ export default function UnifiedAppointmentsOverview() {
   const [notice, setNotice] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
   const [liveUpdateWorking, setLiveUpdateWorking] = useState(false);
-  const [liveUpdateStartedId, setLiveUpdateStartedId] = useState<string | null>(
-    null
-  );
+  const [liveUpdateStartedId, setLiveUpdateStartedId] = useState<string | null>(null);
   const [liveUpdatesAvailable, setLiveUpdatesAvailable] = useState(false);
   const [nativePlatform] = useState(() => getNativePlatform());
 
@@ -103,15 +101,9 @@ export default function UnifiedAppointmentsOverview() {
       }
       setItems(Array.isArray(payload.items) ? payload.items : []);
       const generatedAt = Date.parse(payload.generatedAt ?? "");
-      setCurrentTime(
-        Number.isFinite(generatedAt) ? generatedAt : new Date().getTime()
-      );
+      setCurrentTime(Number.isFinite(generatedAt) ? generatedAt : new Date().getTime());
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to load your Loombus schedule."
-      );
+      setNotice(error instanceof Error ? error.message : "Unable to load your Loombus schedule.");
     } finally {
       setLoading(false);
     }
@@ -152,8 +144,7 @@ export default function UnifiedAppointmentsOverview() {
   }, [currentTime, filter, items]);
 
   const liveUpdateCandidate = useMemo(
-    () =>
-      items.find((item) => isEligibleForLiveUpdate(item, currentTime)) ?? null,
+    () => items.find((item) => isEligibleForLiveUpdate(item, currentTime)) ?? null,
     [currentTime, items]
   );
 
@@ -169,11 +160,7 @@ export default function UnifiedAppointmentsOverview() {
         `Live update started for ${liveUpdateCandidate.title}. Loombus will refresh or close it when your schedule next syncs.`
       );
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "The appointment live update could not be started."
-      );
+      setNotice(error instanceof Error ? error.message : "The appointment live update could not be started.");
     } finally {
       setLiveUpdateWorking(false);
     }
@@ -189,31 +176,31 @@ export default function UnifiedAppointmentsOverview() {
   ];
 
   return (
-    <section className="mb-8 rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
-      <div className="flex flex-col gap-4 border-b border-[color:var(--loombus-border-muted)] p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+    <section
+      data-appointments-editorial="schedule"
+      className="mb-10 border-y border-[color:var(--loombus-border)]"
+    >
+      <div className="flex flex-col gap-5 py-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#b45309]">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
             Your Loombus schedule
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
+          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
             Appointments, pickups, and Room reservations
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-            One timeline for the bookings you make across Loombus. Each item links back to its original business, Marketplace listing, or Room.
+            One timeline for bookings across Loombus, with each entry linked back to its original business, Marketplace listing, or Room.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {(nativePlatform === "ios" || nativePlatform === "android") &&
           liveUpdatesAvailable &&
           liveUpdateCandidate ? (
             <button
               type="button"
               onClick={() => void startLiveUpdate()}
-              disabled={
-                liveUpdateWorking ||
-                liveUpdateStartedId === liveUpdateCandidate.id
-              }
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#CBAB5B] px-4 text-sm font-semibold text-black disabled:opacity-60"
+              disabled={liveUpdateWorking || liveUpdateStartedId === liveUpdateCandidate.id}
+              className="inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 text-sm font-semibold disabled:opacity-60"
             >
               <Activity aria-hidden="true" className="h-4 w-4" />
               {liveUpdateWorking
@@ -227,27 +214,26 @@ export default function UnifiedAppointmentsOverview() {
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
           >
-            <RefreshCw
-              aria-hidden="true"
-              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-            />
+            <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto border-b border-[color:var(--loombus-border-muted)] p-3 sm:px-5">
+      <div className="flex gap-6 overflow-x-auto border-t border-[color:var(--loombus-border-muted)]" role="tablist" aria-label="Schedule filters">
         {filters.map((option) => (
           <button
             key={option.key}
             type="button"
+            role="tab"
+            aria-selected={filter === option.key}
             onClick={() => setFilter(option.key)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+            className={`shrink-0 border-b-2 py-3 text-sm font-semibold transition ${
               filter === option.key
-                ? "bg-orange-50 text-[#b45309] dark:bg-orange-400/10"
-                : "bg-[color:var(--loombus-surface-muted)] text-[color:var(--loombus-text-muted)]"
+                ? "border-[color:var(--loombus-gold)] text-[color:var(--loombus-gold)]"
+                : "border-transparent text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"
             }`}
           >
             {option.label}
@@ -256,39 +242,39 @@ export default function UnifiedAppointmentsOverview() {
       </div>
 
       {notice ? (
-        <p role="alert" className="m-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
+        <p role="alert" className="my-5 border-l-2 border-[color:var(--loombus-gold)] py-2 pl-4 text-sm">
           {notice}
         </p>
       ) : loading && items.length === 0 ? (
-        <p className="p-8 text-center text-sm text-[color:var(--loombus-text-muted)]">
+        <p className="border-t border-[color:var(--loombus-border-muted)] py-8 text-sm text-[color:var(--loombus-text-muted)]">
           Loading your schedule…
         </p>
       ) : visibleItems.length === 0 ? (
-        <div className="p-8 text-center">
-          <CalendarClock className="mx-auto h-8 w-8 text-[#b45309]" aria-hidden="true" />
+        <div className="border-t border-[color:var(--loombus-border-muted)] py-8">
+          <CalendarClock className="h-7 w-7 text-[color:var(--loombus-gold)]" aria-hidden="true" />
           <h3 className="mt-3 text-lg font-semibold">Nothing in this view</h3>
           <p className="mt-1 text-sm text-[color:var(--loombus-text-muted)]">
             New appointments, pickup times, and Room reservations will appear here.
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-[color:var(--loombus-border-muted)]">
+        <div className="divide-y divide-[color:var(--loombus-border-muted)] border-t border-[color:var(--loombus-border-muted)]">
           {visibleItems.map((item) => (
             <Link
               key={item.id}
               href={item.href}
-              className="flex items-start gap-4 p-5 transition hover:bg-[color:var(--loombus-surface-muted)] sm:p-6"
+              className="group flex items-start gap-4 py-5 transition sm:py-6"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-orange-50 text-[#b45309] dark:bg-orange-400/10 [&>svg]:h-5 [&>svg]:w-5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center border border-[color:var(--loombus-border)] text-[color:var(--loombus-gold)] [&>svg]:h-5 [&>svg]:w-5">
                 <SourceIcon source={item.source} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2">
+                <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <strong className="text-base">{item.title}</strong>
-                  <span className="rounded-full bg-[color:var(--loombus-surface-muted)] px-3 py-1 text-xs font-semibold">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--loombus-gold)]">
                     {sourceLabel(item.source)}
                   </span>
-                  <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1 text-xs font-semibold capitalize text-[color:var(--loombus-text-muted)]">
+                  <span className="text-xs font-semibold capitalize text-[color:var(--loombus-text-muted)]">
                     {item.status}
                   </span>
                 </span>
@@ -296,17 +282,17 @@ export default function UnifiedAppointmentsOverview() {
                   {item.context}
                 </span>
                 <span className="mt-3 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
-                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]" aria-hidden="true" />
+                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
                   {dateRange(item)}
                 </span>
                 {item.location ? (
                   <span className="mt-2 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]" aria-hidden="true" />
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
                     {item.location}
                   </span>
                 ) : null}
               </span>
-              <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-[color:var(--loombus-text-subtle)]" aria-hidden="true" />
+              <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-[color:var(--loombus-text-subtle)] transition group-hover:text-[color:var(--loombus-gold)]" aria-hidden="true" />
             </Link>
           ))}
         </div>
