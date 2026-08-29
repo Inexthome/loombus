@@ -1,5 +1,5 @@
 /* Marketplace Editorial UI
- * Presentation-only refinement. The Marketplace keeps its established page
+ * Shared presentation contract. Marketplace keeps its established page
  * background instead of adopting the optional Cream editorial canvas.
  */
 
@@ -15,7 +15,6 @@
   background: var(--loombus-page-bg) !important;
 }
 
-/* Reduce dashboard chrome while preserving genuinely discrete listing/media objects. */
 [data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-xl"],
 [data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-2xl"],
 [data-marketplace-editorial] :is(section, article, aside, nav)[class*="shadow-sm"] {
@@ -38,7 +37,7 @@
   letter-spacing: -0.045em !important;
 }
 
-/* Text-led workspace navigation instead of filled dashboard tabs. */
+/* Management navigation remains a text-led workspace rail. */
 [data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] {
   gap: 1.25rem !important;
   padding: 0 !important;
@@ -86,7 +85,7 @@
   border-right: 0 !important;
 }
 
-/* Directory filters read as one continuous control band. */
+/* Directory filters remain one continuous control band. */
 [data-marketplace-editorial="directory"] section[class*="mb-7"][class*="rounded-[1.75rem]"] {
   border-inline: 0 !important;
   border-radius: 0 !important;
@@ -99,69 +98,7 @@
   box-shadow: none !important;
 }
 
-/* Detail facts become a divider-led record instead of metric cards. */
-[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] {
-  gap: 0 !important;
-  border-block: 1px solid var(--loombus-border-muted);
-}
-
-[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > * {
-  border: 0 !important;
-  border-right: 1px solid var(--loombus-border-muted) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-[data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > *:last-child {
-  border-right: 0 !important;
-}
-
-/* The visible listing detail is one editorial reading flow, not a content/sidebar dashboard. */
-[data-marketplace-editorial="detail"] main div.grid[class*="xl:grid-cols-[minmax(0,1fr)_22rem]"] {
-  display: block !important;
-}
-
-[data-marketplace-editorial="detail"] main section[class*="space-y-5"] > section:not(:first-child),
-[data-marketplace-editorial="detail"] main form[class*="rounded-[1.75rem]"] {
-  border-inline: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding-inline: 0 !important;
-}
-
-[data-marketplace-editorial="detail"] main dl > div[class*="rounded-2xl"] {
-  border-radius: 0 !important;
-  background: transparent !important;
-  border-bottom: 1px solid var(--loombus-border-muted);
-  padding-inline: 0 !important;
-}
-
-[data-marketplace-editorial="detail"] main aside[class*="sticky"] {
-  position: static !important;
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0 !important;
-  margin-top: 1.75rem;
-  border-block: 1px solid var(--loombus-border-muted);
-}
-
-[data-marketplace-editorial="detail"] main aside[class*="sticky"] > section {
-  border: 0 !important;
-  border-right: 1px solid var(--loombus-border-muted) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--loombus-text) !important;
-  box-shadow: none !important;
-  padding: 1.25rem !important;
-}
-
-[data-marketplace-editorial="detail"] main aside[class*="sticky"] > section:last-child {
-  border-right: 0 !important;
-}
-
-/* Pickup scheduling remains prominent without becoming a Cream dashboard card. */
+/* Listing detail is structurally Editorial in JSX; no selector-based layout rewrite belongs here. */
 [data-marketplace-editorial="detail"] > section > div[class*="rounded-[1.75rem]"] {
   border-width: 1px 0 0 !important;
   border-color: var(--loombus-border-muted) !important;
@@ -172,7 +109,6 @@
   padding-inline: 0 !important;
 }
 
-/* Fixed save/safety controls stay available but use a quiet editorial utility bar. */
 [data-marketplace-editorial="detail"] > aside.fixed {
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -197,26 +133,14 @@
 }
 
 @media (max-width: 1023px) {
-  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"],
-  [data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] {
+  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] {
     gap: 0.75rem !important;
     border-block: 0;
   }
 
-  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] > article,
-  [data-marketplace-editorial="detail"] main > div > section.grid[class*="lg:grid-cols-4"] > * {
+  [data-marketplace-editorial="manage"] main > div > section.grid[class*="lg:grid-cols-4"] > article {
     border: 0 !important;
     border-bottom: 1px solid var(--loombus-border-muted) !important;
-  }
-
-  [data-marketplace-editorial="detail"] main aside[class*="sticky"] {
-    grid-template-columns: 1fr;
-  }
-
-  [data-marketplace-editorial="detail"] main aside[class*="sticky"] > section {
-    border-right: 0 !important;
-    border-bottom: 1px solid var(--loombus-border-muted) !important;
-    padding-inline: 0 !important;
   }
 }
 
