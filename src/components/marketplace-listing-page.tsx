@@ -8,7 +8,6 @@ import {
   ArrowUpRight,
   BadgeCheck,
   CalendarClock,
-  ChevronRight,
   Loader2,
   MapPin,
   PackageCheck,
@@ -29,10 +28,10 @@ import {
 import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
 import MarketplaceSellerContactActions from "@/components/marketplace-seller-contact-actions";
 
-const editorialInputClass =
-  "w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)]";
+const inputClass =
+  "w-full border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)]";
 const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-transparent px-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:opacity-50";
 
 export default function MarketplaceListingPage() {
   const params = useParams<{ slug: string }>();
@@ -52,9 +51,16 @@ export default function MarketplaceListingPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/marketplace?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
-      const payload = (await response.json()) as { listing?: MarketplaceListing; error?: string };
-      if (!response.ok || !payload.listing) throw new Error(payload.error || "Marketplace listing not found.");
+      const response = await fetch(`/api/marketplace?slug=${encodeURIComponent(slug)}`, {
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as {
+        listing?: MarketplaceListing;
+        error?: string;
+      };
+      if (!response.ok || !payload.listing) {
+        throw new Error(payload.error || "Marketplace listing not found.");
+      }
       setListing(payload.listing);
       setSelectedPhoto(0);
     } catch (cause) {
@@ -82,7 +88,12 @@ export default function MarketplaceListingPage() {
       const response = await marketplaceAuthorizedFetch("/api/marketplace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "report", listingId: listing.id, reason, details }),
+        body: JSON.stringify({
+          action: "report",
+          listingId: listing.id,
+          reason,
+          details,
+        }),
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error || "Report could not be submitted.");
@@ -145,7 +156,7 @@ export default function MarketplaceListingPage() {
           <Fact icon={<PackageCheck size={18} />} label="Condition" value={marketplaceConditionLabel(listing.condition)} />
           <Fact icon={<MapPin size={18} />} label="Location" value={marketplaceLocationLabel(listing)} />
           <Fact icon={<Truck size={18} />} label="Fulfillment" value={fulfillment.join(" · ") || "Confirm with seller"} />
-          <Fact icon={<CalendarClock size={18} />} label="Active through" value={expires ? `${expires}, unless sold sooner` : "Until sold or removed"} />
+          <Fact icon={<CalendarClock size={18} />} label="Listing active through" value={expires ? `${expires}, unless sold sooner` : "Until sold or removed"} />
         </section>
 
         <div className="border-b border-[color:var(--loombus-border-muted)] py-5">
@@ -218,15 +229,21 @@ export default function MarketplaceListingPage() {
               <div className="min-w-0"><p className="truncate font-semibold">{listing.businessName || listing.sellerName}</p><p className="text-xs text-[color:var(--loombus-text-muted)]">{listing.businessName ? `Attributed seller · ${listing.sellerName}` : "Personal seller"}</p></div>
               {listing.businessVerificationStatus === "verified" ? <BadgeCheck className="ml-auto shrink-0 text-[color:var(--loombus-gold)]" size={20} aria-label="Verified business" /> : null}
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={sellerHref} className={secondaryButton}><ArrowUpRight size={16} /> Seller profile</Link>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <Link href={sellerHref} className={secondaryButton}><ArrowUpRight size={16} /> View seller profile</Link>
               {listing.businessSlug ? <Link href={`/businesses/${listing.businessSlug}`} className={secondaryButton}><Store size={16} /> Business profile</Link> : null}
             </div>
           </div>
 
           <div className="py-6 lg:pl-6">
-            <div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" /><div><h3 className="font-semibold">Transaction boundary</h3><p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Loombus does not process payment, hold funds, arrange shipping, or guarantee this item. Confirm identity, condition, price, and delivery terms directly with the seller.</p></div></div>
-            <button type="button" onClick={() => setReportOpen((value) => !value)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400"><AlertTriangle size={16} /> Report listing</button>
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
+              <div>
+                <h3 className="font-semibold">Transaction boundary</h3>
+                <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Loombus does not process payment, hold funds, arrange shipping, or guarantee this item. Confirm identity, condition, price, and delivery terms directly with the seller.</p>
+                <button type="button" onClick={() => setReportOpen((value) => !value)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400"><AlertTriangle size={16} /> Report listing</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -235,15 +252,29 @@ export default function MarketplaceListingPage() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-red-600 dark:text-red-400">Marketplace report</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">Report this listing</h2>
             <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Reports go to administrator review and do not contact the seller.</p>
-            <div className="mt-5 grid max-w-2xl gap-4">
-              <select value={reason} onChange={(event) => setReason(event.target.value)} className={editorialInputClass}><option>Prohibited or regulated item</option><option>Counterfeit or stolen item</option><option>Misleading description</option><option>Seller safety concern</option><option>Other policy concern</option></select>
-              <textarea required minLength={10} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Explain the concern" rows={5} className={editorialInputClass} />
-              <div className="flex flex-wrap gap-3"><button type="submit" disabled={reporting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-red-600 px-4 text-sm font-semibold text-white disabled:opacity-50">{reporting ? <Loader2 className="animate-spin" size={16} /> : <AlertTriangle size={16} />} Submit report</button><button type="button" onClick={() => setReportOpen(false)} className={secondaryButton}>Cancel</button></div>
+            <div className="mt-5 grid max-w-2xl gap-5">
+              <select value={reason} onChange={(event) => setReason(event.target.value)} className={inputClass}>
+                <option>Prohibited or regulated item</option>
+                <option>Counterfeit or stolen item</option>
+                <option>Misleading description</option>
+                <option>Seller safety concern</option>
+                <option>Other policy concern</option>
+              </select>
+              <textarea required minLength={10} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Explain the concern" rows={5} className={inputClass} />
+              <div className="flex flex-wrap gap-3">
+                <button type="submit" disabled={reporting} className="inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-red-600 px-1 text-sm font-semibold text-red-600 disabled:opacity-50">
+                  {reporting ? <Loader2 className="animate-spin" size={16} /> : <AlertTriangle size={16} />} Submit report
+                </button>
+                <button type="button" onClick={() => setReportOpen(false)} className={secondaryButton}>Cancel</button>
+              </div>
             </div>
           </form>
         ) : null}
 
-        <Link href="/marketplace" className="flex items-center justify-between border-b border-[color:var(--loombus-border-muted)] py-5 text-sm font-semibold transition hover:text-[color:var(--loombus-gold)]">Browse more listings <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" /></Link>
+        <div className="flex flex-wrap items-center justify-between gap-4 py-6 text-sm">
+          <p className="text-[color:var(--loombus-text-muted)]">Confirm listing details directly with the seller before making plans.</p>
+          <Link href="/marketplace" className={secondaryButton}>Browse more listings</Link>
+        </div>
       </div>
     </main>
   );
@@ -251,7 +282,7 @@ export default function MarketplaceListingPage() {
 
 function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="border-b border-[color:var(--loombus-border-muted)] py-4 sm:px-4 lg:border-b-0 lg:border-r lg:first:pl-0 lg:last:border-r-0">
+    <div className="border-b border-[color:var(--loombus-border-muted)] py-4 sm:border-r sm:px-4 sm:first:pl-0 sm:last:border-r-0 lg:border-b-0">
       <span className="text-[color:var(--loombus-gold)]">{icon}</span>
       <strong className="mt-2 block text-xs uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">{label}</strong>
       <span className="mt-1 block text-sm font-semibold leading-6">{value}</span>
