@@ -4,6 +4,9 @@ import { findPublicMarketplaceListingById } from "@/lib/marketplace-public-serve
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// The ID route is a compatibility entry point, not a second listing UI.
+// Resolve it into the canonical /marketplace/[slug] Editorial UI surface so
+// ID-based links cannot drift into a separate presentation or behavior path.
 export default async function MarketplaceListingRedirect({
   params,
 }: {
