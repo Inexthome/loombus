@@ -27,14 +27,14 @@ for (const contract of [
   assertIncludes(page, contract, `Labs runtime contract ${contract}`);
 }
 
-for (const editorial of [
-  'className="labs-v2-program"',
-  'className="labs-v2-submit-section"',
-  'className="labs-v2-workflow"',
-  'className="labs-v2-board"',
-  'className="labs-v2-resources"',
+for (const editorialClass of [
+  "labs-v2-program",
+  "labs-v2-submit-section",
+  "labs-v2-workflow",
+  "labs-v2-board",
+  "labs-v2-resources",
 ]) {
-  assertIncludes(page, editorial, `Labs Editorial structure ${editorial}`);
+  assertIncludes(page, editorialClass, `Labs Editorial structure ${editorialClass}`);
 }
 
 assertIncludes(css, "background: var(--loombus-page-bg);", "original Loombus background");
