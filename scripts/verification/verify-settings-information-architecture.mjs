@@ -104,6 +104,13 @@ assertExcludes(editorialCss, "radial-gradient", "dashboard gradient chrome in Ed
 assertIncludes(mobileCss, "@media (max-width: 700px)", "mobile Editorial breakpoint");
 assertIncludes(mobileCss, "overflow-x: hidden", "mobile page overflow protection");
 assertIncludes(mobileCss, "min-height: 2.75rem", "minimum 44px mobile interaction target");
+assertIncludes(
+  mobileCss,
+  ".settings-workspace-nav button,\n  .settings-workspace-help summary {\n    width: auto;",
+  "content-width mobile Settings tabs"
+);
+assertIncludes(mobileCss, "flex: 0 0 auto;", "non-stretching mobile Settings tabs");
+assertIncludes(mobileCss, "gap: 0.15rem;", "compact mobile Settings tab spacing");
 assertIncludes(mobileCss, ".settings-v2-card-header .settings-v2-badge", "mobile header density reduction");
 assertIncludes(mobileCss, ".member-privacy-toggle-icon", "compact mobile privacy rows");
 assertIncludes(mobileCss, ".settings-subscription-actions,", "compact mobile subscription actions");
