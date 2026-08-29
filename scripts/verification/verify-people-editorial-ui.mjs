@@ -3,6 +3,7 @@ import fs from "node:fs";
 const files = {
   page: fs.readFileSync("src/app/people/page.tsx", "utf8"),
   client: fs.readFileSync("src/app/people/people-editorial-client.tsx", "utf8"),
+  grid: fs.readFileSync("src/app/people/people-directory-grid.css", "utf8"),
   requests: fs.readFileSync("src/app/people/people-follow-requests-panel.tsx", "utf8"),
 };
 
@@ -15,6 +16,7 @@ function forbidText(source, needle, label) {
 }
 
 requireText(files.page, 'PeopleEditorialClient', "Editorial client route");
+requireText(files.page, './people-directory-grid.css', "responsive People listing styles");
 forbidText(files.page, 'PeopleV2Client', "legacy People client route");
 requireText(files.client, 'data-people-editorial="directory"', "Editorial directory scope");
 requireText(files.client, 'bg-[var(--loombus-page-bg)]', "Loombus page background");
@@ -36,9 +38,17 @@ requireText(files.client, 'border-b-2 border-[var(--loombus-gold)]', "Gold edito
 forbidText(files.client, 'member.bio?.trim() || (member.privateAccount', "bio rendered in member listing");
 forbidText(files.client, 'shadow-sm', "card shadow");
 forbidText(files.client, 'rounded-[2rem]', "dashboard hero card");
-forbidText(files.client, 'sm:grid-cols-2 xl:grid-cols-3', "member card grid");
+forbidText(files.client, 'sm:grid-cols-2 xl:grid-cols-3', "legacy member card grid");
 forbidText(files.client, '#FEFBEC', "forced Cream background");
 forbidText(files.client, '#fefbec', "forced Cream background");
+
+requireText(files.grid, 'grid-template-columns: repeat(3, minmax(0, 1fr))', "three-across desktop People layout");
+requireText(files.grid, '@media (max-width: 959px)', "tablet People breakpoint");
+requireText(files.grid, 'grid-template-columns: repeat(2, minmax(0, 1fr))', "two-across tablet People layout");
+requireText(files.grid, '@media (max-width: 639px)', "mobile People breakpoint");
+requireText(files.grid, 'grid-template-columns: minmax(0, 1fr)', "single-column mobile People layout");
+requireText(files.grid, 'min-width: 0', "mobile-safe People width reset");
+requireText(files.grid, 'overflow-x: visible', "no forced horizontal People scrolling");
 
 requireText(files.requests, '/api/follows/requests?scope=all', "follow request loading");
 requireText(files.requests, 'action: "accept" | "decline"', "request decision actions");
