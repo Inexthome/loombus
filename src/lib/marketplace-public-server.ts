@@ -97,13 +97,7 @@ export async function findPublicMarketplaceListingById(
 
   if (error || !data) return null;
   const row = data as Record<string, unknown>;
-  if (!marketplaceRowIsPublic(row)) return null;
-  const listing = normalizeMarketplaceListing(row);
-
-  // This ID lookup backs new listing-originated buyer inquiries. Reserved
-  // listings remain public by slug and in discovery, but cannot open a new
-  // inquiry while the seller is completing another sale.
-  return listing.status === "reserved" ? null : listing;
+  return marketplaceRowIsPublic(row) ? normalizeMarketplaceListing(row) : null;
 }
 
 export async function listPublicMarketplaceForIdentity(options: {
