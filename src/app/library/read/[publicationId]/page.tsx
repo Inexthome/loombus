@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { LibraryDiscussPassageLauncher } from "@/components/library/library-discuss-passage-launcher";
 import { LibraryReaderAccessBoundary } from "@/components/library/library-reader-access-boundary";
+import { LibraryReaderMobileSafeArea } from "@/components/library/library-reader-mobile-safe-area";
 import { LibraryReaderModernization } from "@/components/library/library-reader-modernization";
 import { LibraryReaderPassageReturnBoundary } from "@/components/library/library-reader-passage-return-boundary";
 import { LibraryReaderRuntimeGuardrails } from "@/components/library/library-reader-runtime-guardrails";
@@ -41,6 +42,7 @@ export default async function LibraryReaderPage({
       <LibraryReaderPassageReturnBoundary publicationId={publicationId} focus={focus}>
         <LibraryReaderModernization />
         <LibraryReaderRuntimeGuardrails />
+        <LibraryReaderMobileSafeArea />
         <LibraryReaderSurface publicationId={publicationId} focus={focus} />
         <LibraryDiscussPassageLauncher publicationId={publicationId} />
       </LibraryReaderPassageReturnBoundary>
