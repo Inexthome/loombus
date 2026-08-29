@@ -67,21 +67,41 @@ export default function DiscussionDetailWorkspace() {
   const [profiles, setProfiles] = useState<Record<string, WorkspaceProfile>>({});
 
   useEffect(() => {
-    const column = document.querySelector<HTMLElement>(".discussion-v2-main-column");
-    const intelligence = document.querySelector<HTMLElement>(".discussion-v2-intelligence-card");
-    if (!column || !intelligence) return;
+    let disposed = false;
+    let workspaceHost: HTMLDivElement | null = null;
+    let mountedColumn: HTMLElement | null = null;
+    let observer: MutationObserver | null = null;
 
-    const workspaceHost = document.createElement("div");
-    workspaceHost.className = "discussion-detail-workspace-host";
-    workspaceHost.id = "discussion-workspace";
-    intelligence.before(workspaceHost);
-    column.dataset.workspaceMode = "state";
-    setHost(workspaceHost);
-    setMainColumn(column);
+    const mountWorkspace = () => {
+      if (disposed || workspaceHost) return Boolean(workspaceHost);
+
+      const column = document.querySelector<HTMLElement>(".discussion-v2-main-column");
+      const intelligence = document.querySelector<HTMLElement>(".discussion-v2-intelligence-card");
+      if (!column || !intelligence) return false;
+
+      workspaceHost = document.createElement("div");
+      workspaceHost.className = "discussion-detail-workspace-host";
+      workspaceHost.id = "discussion-workspace";
+      intelligence.before(workspaceHost);
+      column.dataset.workspaceMode = "state";
+      mountedColumn = column;
+      setHost(workspaceHost);
+      setMainColumn(column);
+      return true;
+    };
+
+    if (!mountWorkspace()) {
+      observer = new MutationObserver(() => {
+        if (mountWorkspace()) observer?.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     return () => {
-      delete column.dataset.workspaceMode;
-      workspaceHost.remove();
+      disposed = true;
+      observer?.disconnect();
+      if (mountedColumn) delete mountedColumn.dataset.workspaceMode;
+      workspaceHost?.remove();
     };
   }, []);
 
