@@ -1,4 +1,5 @@
 import { LibraryPublicationDetail } from "@/components/library/library-publication-detail";
+import "../../library-publication-workflows-editorial.css";
 
 export default async function LibraryPublicationDetailPage({
   params,
@@ -6,5 +7,9 @@ export default async function LibraryPublicationDetailPage({
   params: Promise<{ publicationId: string }>;
 }) {
   const { publicationId } = await params;
-  return <LibraryPublicationDetail publicationId={publicationId} />;
+  return (
+    <div data-library-publication-editorial>
+      <LibraryPublicationDetail publicationId={publicationId} />
+    </div>
+  );
 }
