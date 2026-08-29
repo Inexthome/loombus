@@ -57,8 +57,11 @@
   padding: 0.85rem 0 0.75rem !important;
 }
 
-[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[aria-current="page"]::after,
-[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[data-active="true"]::after {
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[class*="bg-[color:var(--loombus-cream)]"] {
+  color: var(--loombus-text) !important;
+}
+
+[data-marketplace-editorial="manage"] nav[aria-label="Marketplace management workspace"] button[class*="bg-[color:var(--loombus-cream)]"]::after {
   content: "";
   position: absolute;
   right: 0;
