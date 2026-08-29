@@ -70,6 +70,15 @@ function completeProfile(member: Member) {
   );
 }
 
+function relationshipLabel(member: Member) {
+  if (member.mutual) return "Mutual";
+  if (member.following && member.followsYou) return "Mutual";
+  if (member.following) return "Following";
+  if (member.followsYou) return "Follows you";
+  if (member.requested) return "Requested";
+  return "—";
+}
+
 async function getSessionToken() {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? "";
@@ -420,41 +429,51 @@ export default function PeopleEditorialClient() {
             </div>
 
             {filteredMembers.length ? (
-              <section className="divide-y divide-[var(--loombus-border)]" aria-label="People directory results">
-                {filteredMembers.map((member) => {
-                  const profile = { id: member.id, full_name: member.fullName, username: member.username, avatar_url: member.avatarUrl };
-                  const href = member.username ? `/u/${encodeURIComponent(member.username)}` : "/people";
-                  return (
-                    <article key={member.id} className="grid gap-5 py-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                      <div className="flex min-w-0 gap-4">
-                        <Link href={href} className="shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)]"><ProfileAvatar profile={profile} size="lg" /></Link>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <Link href={href} className="truncate text-lg font-semibold hover:underline">{displayName(member)}</Link>
-                            {member.isAdmin ? <span className="inline-flex items-center gap-1 text-[.68rem] font-semibold uppercase tracking-[.12em] text-[var(--loombus-gold)]"><ShieldCheck className="size-3" aria-hidden="true" /> Admin</span> : null}
-                            {member.privateAccount ? <span className="inline-flex items-center gap-1 text-[.68rem] font-semibold text-[var(--loombus-text-subtle)]"><LockKeyhole className="size-3" aria-hidden="true" /> Private</span> : null}
-                            {member.mutual ? <span className="text-[.68rem] font-semibold text-[var(--loombus-text-muted)]">Mutual</span> : member.followsYou ? <span className="text-[.68rem] font-semibold text-[var(--loombus-text-muted)]">Follows you</span> : null}
+              <section className="overflow-x-auto border-b border-[var(--loombus-border)]" aria-label="People directory results">
+                <div role="table" aria-label="People directory table" className="min-w-[860px]">
+                  <div role="row" className="grid grid-cols-[minmax(260px,2fr)_minmax(130px,1fr)_110px_110px_minmax(230px,auto)] gap-4 border-b border-[var(--loombus-border)] py-3 text-[.68rem] font-semibold uppercase tracking-[.16em] text-[var(--loombus-text-subtle)]">
+                    <div role="columnheader">Member</div>
+                    <div role="columnheader">Relationship</div>
+                    <div role="columnheader" className="text-right">Followers</div>
+                    <div role="columnheader" className="text-right">Following</div>
+                    <div role="columnheader" className="text-right">Actions</div>
+                  </div>
+
+                  {filteredMembers.map((member) => {
+                    const profile = { id: member.id, full_name: member.fullName, username: member.username, avatar_url: member.avatarUrl };
+                    const href = member.username ? `/u/${encodeURIComponent(member.username)}` : "/people";
+                    return (
+                      <div key={member.id} role="row" className="grid grid-cols-[minmax(260px,2fr)_minmax(130px,1fr)_110px_110px_minmax(230px,auto)] items-center gap-4 border-b border-[var(--loombus-border)] py-4 last:border-b-0">
+                        <div role="cell" className="flex min-w-0 items-center gap-3">
+                          <Link href={href} className="shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)]"><ProfileAvatar profile={profile} size="md" /></Link>
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Link href={href} className="truncate font-semibold hover:underline">{displayName(member)}</Link>
+                              {member.isAdmin ? <span className="inline-flex shrink-0 items-center gap-1 text-[.65rem] font-semibold uppercase tracking-[.1em] text-[var(--loombus-gold)]"><ShieldCheck className="size-3" aria-hidden="true" /> Admin</span> : null}
+                              {member.privateAccount ? <LockKeyhole className="size-3 shrink-0 text-[var(--loombus-text-subtle)]" aria-label="Private account" /> : null}
+                            </div>
+                            <p className="mt-1 truncate text-xs text-[var(--loombus-text-muted)]">{member.username ? `@${member.username}` : "Loombus member"}</p>
                           </div>
-                          <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{member.username ? `@${member.username}` : "Loombus member"}</p>
-                          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)]">{member.bio?.trim() || (member.privateAccount ? "This member has a private account." : "This member has not added a bio yet.")}</p>
-                          <p className="mt-3 text-xs font-medium text-[var(--loombus-text-subtle)]">{member.followerCount} followers · {member.followingCount} following</p>
+                        </div>
+
+                        <div role="cell" className="text-sm text-[var(--loombus-text-muted)]">{relationshipLabel(member)}</div>
+                        <div role="cell" className="text-right text-sm font-medium">{member.followerCount}</div>
+                        <div role="cell" className="text-right text-sm font-medium">{member.followingCount}</div>
+                        <div role="cell" className="flex items-center justify-end gap-4">
+                          <button type="button" disabled={working === member.id} onClick={() => void toggleFollow(member)} className="inline-flex min-h-10 items-center gap-2 border-b-2 border-[var(--loombus-gold)] px-1 text-sm font-semibold disabled:opacity-50">
+                            {member.requested ? <UserCheck className="size-4" aria-hidden="true" /> : <UserPlus className="size-4" aria-hidden="true" />}
+                            {working === member.id ? "Working…" : member.following ? "Following" : member.requested ? "Requested" : member.privateAccount ? "Request follow" : "Follow"}
+                          </button>
+                          {member.mutual ? (
+                            <button type="button" disabled={openingMessage === member.id} onClick={() => void openMessage(member)} className="inline-flex min-h-10 items-center gap-2 border-b border-[var(--loombus-border)] px-1 text-sm font-semibold disabled:opacity-50"><MessageCircle className="size-4" aria-hidden="true" /> {openingMessage === member.id ? "Opening…" : "Message"}</button>
+                          ) : (
+                            <Link href={href} className="inline-flex min-h-10 items-center border-b border-[var(--loombus-border)] px-1 text-sm font-semibold">Profile</Link>
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap gap-4 md:justify-end">
-                        <button type="button" disabled={working === member.id} onClick={() => void toggleFollow(member)} className="inline-flex min-h-11 items-center gap-2 border-b-2 border-[var(--loombus-gold)] px-1 text-sm font-semibold disabled:opacity-50">
-                          {member.requested ? <UserCheck className="size-4" aria-hidden="true" /> : <UserPlus className="size-4" aria-hidden="true" />}
-                          {working === member.id ? "Working…" : member.following ? "Following" : member.requested ? "Requested" : member.privateAccount ? "Request follow" : "Follow"}
-                        </button>
-                        {member.mutual ? (
-                          <button type="button" disabled={openingMessage === member.id} onClick={() => void openMessage(member)} className="inline-flex min-h-11 items-center gap-2 border-b border-[var(--loombus-border)] px-1 text-sm font-semibold disabled:opacity-50"><MessageCircle className="size-4" aria-hidden="true" /> {openingMessage === member.id ? "Opening…" : "Message"}</button>
-                        ) : (
-                          <Link href={href} className="inline-flex min-h-11 items-center border-b border-[var(--loombus-border)] px-1 text-sm font-semibold">View profile</Link>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </section>
             ) : (
               <section className="border-b border-[var(--loombus-border)] py-14 text-center">
