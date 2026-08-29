@@ -1,0 +1,28 @@
+name: Marketplace buyer inquiries
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/marketplace/contact/**"
+      - "src/components/marketplace-listing-page.tsx"
+      - "src/components/marketplace-seller-contact-actions.tsx"
+      - "src/components/marketplace-trust-actions.tsx"
+      - "src/app/api/messages/send/**"
+      - "src/app/api/messages/conversations/**"
+      - "src/app/api/messages/attachments/**"
+      - "src/app/messages/**"
+      - "scripts/verification/verify-marketplace-buyer-inquiries.mjs"
+      - ".github/workflows/marketplace-buyer-inquiries.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Marketplace buyer inquiries
+        run: node scripts/verification/verify-marketplace-buyer-inquiries.mjs

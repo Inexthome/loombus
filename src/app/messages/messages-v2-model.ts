@@ -1,3 +1,15 @@
+export type MarketplaceConversationContext = {
+  listingId: string;
+  slug: string;
+  title: string;
+  price: number;
+  currency: string;
+  isFree: boolean;
+  city: string;
+  region: string;
+  status: string;
+};
+
 export type Conversation = {
   id: string;
   otherUserId: string | null;
@@ -8,6 +20,7 @@ export type Conversation = {
   mutedAt: string | null;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
+  marketplaceContexts?: MarketplaceConversationContext[];
 };
 
 export type MessageAttachment = {
@@ -77,6 +90,37 @@ export function getConversationName(conversation?: Conversation | null) {
 
 export function getConversationHandle(conversation?: Conversation | null) {
   return conversation?.otherUsername ? `@${conversation.otherUsername}` : "Private conversation";
+}
+
+export function getConversationConnectionLabel(conversation?: Conversation | null) {
+  return conversation?.marketplaceContexts?.length ? "Marketplace inquiry" : "Mutual followers";
+}
+
+export function getPrimaryMarketplaceContext(conversation?: Conversation | null) {
+  return conversation?.marketplaceContexts?.[0] ?? null;
+}
+
+export function formatMarketplaceConversationPrice(
+  context: MarketplaceConversationContext | null | undefined
+) {
+  if (!context) return "";
+  if (context.isFree) return "Free";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: context.currency || "USD",
+      maximumFractionDigits: Number.isInteger(context.price) ? 0 : 2,
+    }).format(context.price);
+  } catch {
+    return `${context.currency || "USD"} ${context.price.toLocaleString()}`;
+  }
+}
+
+export function getMarketplaceConversationLocation(
+  context: MarketplaceConversationContext | null | undefined
+) {
+  if (!context) return "";
+  return [context.city, context.region].filter(Boolean).join(", ");
 }
 
 export function getPeopleResultName(person: PeopleSearchResult) {

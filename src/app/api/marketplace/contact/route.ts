@@ -11,6 +11,7 @@ import { MarketplaceError, cleanUuid } from "@/lib/marketplace-server-core";
 import { findPublicMarketplaceListingById } from "@/lib/marketplace-public-server";
 
 const CONTACT_COOLDOWN_SECONDS = 5;
+type MarketplaceInquiryType = "general" | "availability";
 
 type SensitiveProfile = {
   age_band: string | null;
@@ -43,6 +44,10 @@ function ageRestriction(profile: SensitiveProfile | null, role: "buyer" | "selle
     };
   }
   return null;
+}
+
+function inquiryType(value: unknown): MarketplaceInquiryType {
+  return value === "availability" ? "availability" : "general";
 }
 
 async function findExistingConversation(
@@ -78,6 +83,131 @@ async function findExistingConversation(
   return data?.conversation_id ? String(data.conversation_id) : null;
 }
 
+async function enforceContactCooldown(
+  service: ReturnType<typeof createRoomServiceSupabase>,
+  buyerId: string,
+  listingId: string
+) {
+  const cooldownSince = new Date(
+    Date.now() - CONTACT_COOLDOWN_SECONDS * 1000
+  ).toISOString();
+  const { data: recentAction } = await service
+    .from("action_rate_events")
+    .select("id")
+    .eq("user_id", buyerId)
+    .eq("action_key", "marketplace_contact")
+    .gte("created_at", cooldownSince)
+    .limit(1)
+    .maybeSingle();
+  if (recentAction) {
+    return jsonError("Please wait before contacting another seller.", 429);
+  }
+
+  await service.from("action_rate_events").insert({
+    user_id: buyerId,
+    action_key: "marketplace_contact",
+    target_id: listingId,
+  });
+  return null;
+}
+
+async function sendInquiryMessage(options: {
+  service: ReturnType<typeof createRoomServiceSupabase>;
+  conversationId: string;
+  buyerId: string;
+  sellerId: string;
+  listing: Awaited<ReturnType<typeof findPublicMarketplaceListingById>> & {};
+  type: MarketplaceInquiryType;
+}) {
+  const { service, conversationId, buyerId, sellerId, listing, type } = options;
+  const now = new Date().toISOString();
+  const listingUrl = `https://loombus.com/marketplace/${listing.slug}`;
+  const messageBody =
+    type === "availability"
+      ? `Is this still available?\n\nMarketplace listing: ${listing.title}\n${listingUrl}`
+      : `Marketplace inquiry: ${listing.title}\n${listingUrl}`;
+
+  const { data: message, error: messageError } = await service
+    .from("private_messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: buyerId,
+      message_type: "text",
+      body: messageBody,
+      created_at: now,
+    })
+    .select("id")
+    .single();
+  if (messageError || !message) {
+    throw new MarketplaceError(
+      messageError?.message ?? "Unable to send the inquiry.",
+      500,
+      "marketplace_inquiry_send_failed"
+    );
+  }
+
+  await Promise.all([
+    service
+      .from("private_conversations")
+      .update({ updated_at: now, last_message_at: now })
+      .eq("id", conversationId),
+    service
+      .from("private_conversation_members")
+      .update({ deleted_at: null, archived_at: null })
+      .eq("conversation_id", conversationId)
+      .in("user_id", [buyerId, sellerId]),
+  ]);
+
+  const { data: buyerProfile } = await service
+    .from("profiles")
+    .select("full_name, username")
+    .eq("id", buyerId)
+    .maybeSingle();
+  const buyerName =
+    buyerProfile?.full_name?.trim() ||
+    buyerProfile?.username?.trim() ||
+    "A Loombus member";
+
+  const { data: sellerMembership } = await service
+    .from("private_conversation_members")
+    .select("muted_at")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", sellerId)
+    .maybeSingle();
+
+  if (!sellerMembership?.muted_at) {
+    await createNotification({
+      user_id: sellerId,
+      actor_id: buyerId,
+      type: "new_message",
+      target_type: "conversation",
+      target_id: conversationId,
+      message:
+        type === "availability"
+          ? `${buyerName} asked if “${listing.title}” is still available.`
+          : `${buyerName} asked about “${listing.title}.”`,
+    });
+  }
+
+  await logAuditEvent({
+    actor_id: buyerId,
+    action:
+      type === "availability"
+        ? "marketplace.availability_asked"
+        : "marketplace.seller_contacted",
+    target_type: "marketplace_listing",
+    target_id: listing.id,
+    metadata: {
+      seller_id: sellerId,
+      conversation_id: conversationId,
+      message_id: message.id,
+      inquiry_type: type,
+    },
+  });
+
+  return message.id as string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const requestClient = createRequestSupabase(request);
@@ -88,11 +218,9 @@ export async function POST(request: NextRequest) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return jsonError("Invalid Marketplace contact request.", 400);
     }
-
-    const listingId = cleanUuid(
-      (body as Record<string, unknown>).listingId,
-      "listing id"
-    );
+    const input = body as Record<string, unknown>;
+    const type = inquiryType(input.inquiryType);
+    const listingId = cleanUuid(input.listingId, "listing id");
     const listing = await findPublicMarketplaceListingById(listingId);
     if (!listing) return jsonError("Listing not found.", 404, "listing_not_found");
     if (listing.sellerId === access.user.id) {
@@ -165,32 +293,37 @@ export async function POST(request: NextRequest) {
         .eq("conversation_id", existingContact.conversation_id)
         .in("user_id", [access.user.id, listing.sellerId]);
 
+      if (type === "availability") {
+        const cooldownResponse = await enforceContactCooldown(
+          service,
+          access.user.id,
+          listing.id
+        );
+        if (cooldownResponse) return cooldownResponse;
+        await sendInquiryMessage({
+          service,
+          conversationId: String(existingContact.conversation_id),
+          buyerId: access.user.id,
+          sellerId: listing.sellerId,
+          listing,
+          type,
+        });
+      }
+
       return NextResponse.json({
         conversationId: existingContact.conversation_id,
         created: false,
+        messageSent: type === "availability",
+        inquiryType: type,
       });
     }
 
-    const cooldownSince = new Date(
-      Date.now() - CONTACT_COOLDOWN_SECONDS * 1000
-    ).toISOString();
-    const { data: recentAction } = await service
-      .from("action_rate_events")
-      .select("id")
-      .eq("user_id", access.user.id)
-      .eq("action_key", "marketplace_contact")
-      .gte("created_at", cooldownSince)
-      .limit(1)
-      .maybeSingle();
-    if (recentAction) {
-      return jsonError("Please wait before contacting another seller.", 429);
-    }
-
-    await service.from("action_rate_events").insert({
-      user_id: access.user.id,
-      action_key: "marketplace_contact",
-      target_id: listing.id,
-    });
+    const cooldownResponse = await enforceContactCooldown(
+      service,
+      access.user.id,
+      listing.id
+    );
+    if (cooldownResponse) return cooldownResponse;
 
     let conversationId = await findExistingConversation(
       service,
@@ -241,88 +374,52 @@ export async function POST(request: NextRequest) {
         .eq("buyer_id", access.user.id)
         .maybeSingle();
       if (racedContact?.conversation_id) {
+        const racedConversationId = String(racedContact.conversation_id);
+        if (type === "availability") {
+          await sendInquiryMessage({
+            service,
+            conversationId: racedConversationId,
+            buyerId: access.user.id,
+            sellerId: listing.sellerId,
+            listing,
+            type,
+          });
+        }
         return NextResponse.json({
-          conversationId: racedContact.conversation_id,
+          conversationId: racedConversationId,
           created: false,
+          messageSent: type === "availability",
+          inquiryType: type,
         });
       }
       return jsonError(contactError?.message ?? "Unable to save the inquiry.", 500);
     }
 
-    const listingUrl = `https://loombus.com/marketplace/${listing.slug}`;
-    const messageBody = `Marketplace inquiry: ${listing.title}\n${listingUrl}`;
-    const { data: message, error: messageError } = await service
-      .from("private_messages")
-      .insert({
-        conversation_id: conversationId,
-        sender_id: access.user.id,
-        message_type: "text",
-        body: messageBody,
-        created_at: now,
-      })
-      .select("id")
-      .single();
-    if (messageError || !message) {
+    let messageId: string;
+    try {
+      messageId = await sendInquiryMessage({
+        service,
+        conversationId,
+        buyerId: access.user.id,
+        sellerId: listing.sellerId,
+        listing,
+        type,
+      });
+    } catch (error) {
       await service
         .from("marketplace_contact_threads")
         .delete()
         .eq("id", contactThread.id);
-      return jsonError(messageError?.message ?? "Unable to send the inquiry.", 500);
+      throw error;
     }
 
-    await Promise.all([
-      service
-        .from("private_conversations")
-        .update({ updated_at: now, last_message_at: now })
-        .eq("id", conversationId),
-      service
-        .from("private_conversation_members")
-        .update({ deleted_at: null, archived_at: null })
-        .eq("conversation_id", conversationId)
-        .in("user_id", [access.user.id, listing.sellerId]),
-    ]);
-
-    const { data: buyerProfile } = await service
-      .from("profiles")
-      .select("full_name, username")
-      .eq("id", access.user.id)
-      .maybeSingle();
-    const buyerName =
-      buyerProfile?.full_name?.trim() ||
-      buyerProfile?.username?.trim() ||
-      "A Loombus member";
-
-    const { data: sellerMembership } = await service
-      .from("private_conversation_members")
-      .select("muted_at")
-      .eq("conversation_id", conversationId)
-      .eq("user_id", listing.sellerId)
-      .maybeSingle();
-
-    if (!sellerMembership?.muted_at) {
-      await createNotification({
-        user_id: listing.sellerId,
-        actor_id: access.user.id,
-        type: "new_message",
-        target_type: "conversation",
-        target_id: conversationId,
-        message: `${buyerName} asked about “${listing.title}.”`,
-      });
-    }
-
-    await logAuditEvent({
-      actor_id: access.user.id,
-      action: "marketplace.seller_contacted",
-      target_type: "marketplace_listing",
-      target_id: listing.id,
-      metadata: {
-        seller_id: listing.sellerId,
-        conversation_id: conversationId,
-        message_id: message.id,
-      },
+    return NextResponse.json({
+      conversationId,
+      created: true,
+      messageSent: true,
+      messageId,
+      inquiryType: type,
     });
-
-    return NextResponse.json({ conversationId, created: true });
   } catch (error) {
     if (error instanceof MarketplaceError) {
       return jsonError(error.message, error.status, error.code);
