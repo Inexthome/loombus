@@ -128,15 +128,13 @@ begin
   if old.status = 'reserved'
     and new.status not in (
       'published',
-      'draft',
-      'pending',
       'sold',
       'suspended',
       'expired',
       'removed'
     )
   then
-    raise exception 'Invalid Marketplace reserved status transition.'
+    raise exception 'Release the Marketplace reservation before changing this listing state.'
       using errcode = '23514';
   end if;
 
