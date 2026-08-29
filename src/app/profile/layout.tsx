@@ -17,13 +17,14 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
             <p className="profile-v2-eyebrow">Identity studio</p>
             <h1>Shape your public Loombus identity.</h1>
             <p>
-              Manage how your name, perspective, creator links, and communication
-              preferences appear across Loombus.
+              Manage how your name, perspective, creator links, and public presence
+              appear across Loombus. Account, privacy, message, and notification
+              preferences remain in Settings.
             </p>
           </div>
 
           <div className="profile-v2-hero-actions">
-            <Link href="/settings" className="profile-v2-secondary-action">
+            <Link href="/settings?section=profile" className="profile-v2-secondary-action">
               Back to settings
             </Link>
             <Link href="/people" className="profile-v2-primary-action">
@@ -50,8 +51,8 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
           <article>
             <span>03</span>
             <div>
-              <strong>Communication</strong>
-              <p>In-app, push, topic, and digest preferences.</p>
+              <strong>Viewers &amp; sharing</strong>
+              <p>Profile viewers, preview, and public sharing.</p>
             </div>
           </article>
         </section>
