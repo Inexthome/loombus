@@ -13,6 +13,20 @@ const sizeClasses: Record<ProfileAvatarSize, string> = {
   xl: "h-12 w-12 text-base",
 };
 
+function getSafeProfileAvatarUrl(value: string | null | undefined) {
+  const candidate = value?.trim();
+  if (!candidate) return "";
+
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === "https:" || parsed.protocol === "http:"
+      ? parsed.toString()
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 export function getProfileInitials(profile: ProfileAvatarProfile) {
   const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
 
@@ -40,7 +54,7 @@ export function ProfileAvatar({
   profile: ProfileAvatarProfile;
   size?: ProfileAvatarSize;
 }) {
-  const avatarUrl = profile?.avatar_url?.trim();
+  const avatarUrl = getSafeProfileAvatarUrl(profile?.avatar_url);
 
   return (
     <span
