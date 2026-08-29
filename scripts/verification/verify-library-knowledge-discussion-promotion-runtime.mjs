@@ -4,8 +4,9 @@ const routePath = "src/app/api/library/knowledge-discussion/create/route.ts";
 const surfacePath = "src/components/library/library-knowledge-discussion-promotion-surface.tsx";
 const pagePath = "src/app/library/research/evidence/promote/page.tsx";
 const evidencePagePath = "src/app/library/research/evidence/page.tsx";
+const researchNavPath = "src/components/library/library-research-editorial-nav.tsx";
 
-for (const path of [routePath, surfacePath, pagePath, evidencePagePath]) {
+for (const path of [routePath, surfacePath, pagePath, evidencePagePath, researchNavPath]) {
   if (!fs.existsSync(path)) throw new Error(`Missing knowledge promotion runtime file: ${path}`);
 }
 
@@ -13,6 +14,7 @@ const route = fs.readFileSync(routePath, "utf8");
 const surface = fs.readFileSync(surfacePath, "utf8");
 const page = fs.readFileSync(pagePath, "utf8");
 const evidencePage = fs.readFileSync(evidencePagePath, "utf8");
+const researchNav = fs.readFileSync(researchNavPath, "utf8");
 
 function requireText(source, text, label) {
   if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`);
@@ -56,7 +58,9 @@ requireText(surface, 'fetch("/api/library/knowledge-discussion/create"', "guarde
 requireText(surface, 'Authorization: `Bearer ${token}`', "bearer forwarding");
 requireText(surface, 'window.location.href = `/discussions/${discussionId}`', "successful public discussion navigation");
 requireText(page, '<LibraryKnowledgeDiscussionPromotionSurface />', "promotion page wiring");
-requireText(evidencePage, 'href="/library/research/evidence/promote"', "Evidence & Knowledge promotion entry");
+requireText(evidencePage, '<LibraryResearchEditorialNav active="evidence" />', "Evidence & Knowledge shared navigation wiring");
+requireText(researchNav, 'href: "/library/research/evidence/promote"', "Evidence & Knowledge promotion entry");
+requireText(researchNav, 'label: "Promote"', "promotion navigation label");
 
 for (const [source, label] of [[route, "route"], [surface, "surface"]]) {
   rejectText(source, "SUPABASE_SERVICE_ROLE_KEY", `${label} service-role access`);
