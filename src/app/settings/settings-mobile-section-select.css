@@ -1,0 +1,60 @@
+[data-settings-mobile-section-select] {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .settings-workspace-nav {
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    padding-bottom: 0.35rem;
+  }
+
+  .settings-workspace-nav > .settings-workspace-mobile-heading,
+  .settings-workspace-nav > button {
+    display: none !important;
+  }
+
+  [data-settings-mobile-section-select] {
+    display: block;
+    width: 100%;
+  }
+
+  .settings-mobile-section-select-control {
+    width: 100%;
+    padding: 0.2rem 0 0.35rem;
+    border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18));
+  }
+
+  .settings-mobile-section-select-control select {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--loombus-text, #201b13);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 800;
+    line-height: 1.2;
+    padding: 0.55rem 2rem 0.55rem 0;
+    cursor: pointer;
+  }
+
+  .settings-mobile-section-select-control select:focus-visible {
+    outline: 2px solid #cbab5b;
+    outline-offset: 2px;
+  }
+
+  .settings-workspace-help {
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 0;
+  }
+
+  .settings-workspace-help summary {
+    min-height: 2.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.75rem;
+  }
+}

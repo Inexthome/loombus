@@ -17,10 +17,12 @@ function assertExcludes(source, needle, label) {
 }
 
 const controller = read("src/components/settings-workspace-controller.tsx");
+const mobileSectionSelect = read("src/components/settings-mobile-section-select.tsx");
 const page = read("src/app/settings/page.tsx");
 const workspaceCss = read("src/app/settings/settings-workspace.css");
 const editorialCss = read("src/app/settings/settings-editorial-ui.css");
 const mobileCss = read("src/app/settings/settings-editorial-mobile.css");
+const mobileSectionCss = read("src/app/settings/settings-mobile-section-select.css");
 const profileLayout = read("src/app/profile/layout.tsx");
 
 for (const label of [
@@ -34,6 +36,7 @@ for (const label of [
   "Data & Activity",
 ]) {
   assertIncludes(controller, `label: \"${label}\"`, `canonical Settings section ${label}`);
+  assertIncludes(mobileSectionSelect, `\"${label}\"`, `mobile Settings option ${label}`);
 }
 
 assertIncludes(
@@ -70,6 +73,12 @@ for (const legacy of [
 assertIncludes(controller, 'href="/account/enforcement"', "Account decisions & appeals placement");
 assertIncludes(controller, "Help & Legal", "secondary Help & Legal area");
 assertIncludes(page, "<SettingsWorkspaceController />", "canonical Settings workspace controller");
+assertIncludes(page, "<SettingsMobileSectionSelect />", "mobile Settings section selector");
+assertIncludes(
+  page,
+  'import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";',
+  "mobile Settings selector import"
+);
 assertExcludes(page, "settings-enforcement-link", "standalone account enforcement action");
 assertIncludes(workspaceCss, ".settings-v2-metrics", "dashboard metric removal rule");
 assertIncludes(workspaceCss, "#privacy > .settings-v2-resource-grid", "privacy duplicate-link cleanup");
@@ -82,11 +91,22 @@ assertExcludes(profileLayout, "<strong>Communication</strong>", "Profile communi
 
 assertIncludes(page, 'import "./settings-editorial-ui.css";', "Settings Editorial UI import");
 assertIncludes(page, 'import "./settings-editorial-mobile.css";', "Settings mobile Editorial polish import");
+assertIncludes(
+  page,
+  'import "./settings-mobile-section-select.css";',
+  "Settings mobile dropdown stylesheet import"
+);
 if (
   page.indexOf('import "./settings-editorial-mobile.css";') <
   page.indexOf('import "./settings-editorial-ui.css";')
 ) {
   throw new Error("Settings mobile Editorial polish must load after the main Editorial stylesheet.");
+}
+if (
+  page.indexOf('import "./settings-mobile-section-select.css";') <
+  page.indexOf('import "./settings-editorial-mobile.css";')
+) {
+  throw new Error("Settings mobile section dropdown must load after the mobile Editorial stylesheet.");
 }
 assertIncludes(editorialCss, "--settings-editorial-gold: #cbab5b", "canonical Loombus Gold");
 assertIncludes(editorialCss, "--settings-editorial-cream: #fefbec", "canonical Loombus Cream");
@@ -104,13 +124,6 @@ assertExcludes(editorialCss, "radial-gradient", "dashboard gradient chrome in Ed
 assertIncludes(mobileCss, "@media (max-width: 700px)", "mobile Editorial breakpoint");
 assertIncludes(mobileCss, "overflow-x: hidden", "mobile page overflow protection");
 assertIncludes(mobileCss, "min-height: 2.75rem", "minimum 44px mobile interaction target");
-assertIncludes(
-  mobileCss,
-  ".settings-workspace-nav button,\n  .settings-workspace-help summary {\n    width: auto;",
-  "content-width mobile Settings tabs"
-);
-assertIncludes(mobileCss, "flex: 0 0 auto;", "non-stretching mobile Settings tabs");
-assertIncludes(mobileCss, "gap: 0.15rem;", "compact mobile Settings tab spacing");
 assertIncludes(mobileCss, ".settings-v2-card-header .settings-v2-badge", "mobile header density reduction");
 assertIncludes(mobileCss, ".member-privacy-toggle-icon", "compact mobile privacy rows");
 assertIncludes(mobileCss, ".settings-subscription-actions,", "compact mobile subscription actions");
@@ -120,5 +133,30 @@ assertIncludes(
   "compact two-column mobile controls"
 );
 assertExcludes(mobileCss, "grid-template-columns: 1fr;\n  }\n\n  .settings-subscription-facts", "single-column subscription fact overfill");
+
+assertIncludes(
+  mobileSectionSelect,
+  'aria-label="Settings section"',
+  "accessible mobile Settings dropdown"
+);
+assertIncludes(mobileSectionSelect, "new MutationObserver", "mobile selector active-state synchronization");
+assertIncludes(mobileSectionSelect, "button.click();", "mobile selector reuses canonical Settings section behavior");
+assertIncludes(
+  mobileSectionCss,
+  "@media (max-width: 900px)",
+  "mobile/tablet Settings dropdown breakpoint"
+);
+assertIncludes(
+  mobileSectionCss,
+  ".settings-workspace-nav > button {\n    display: none !important;",
+  "mobile horizontal Settings tabs hidden"
+);
+assertIncludes(
+  mobileSectionCss,
+  ".settings-mobile-section-select-control select",
+  "mobile current-section dropdown styling"
+);
+assertIncludes(mobileSectionCss, "min-height: 2.75rem", "44px mobile dropdown target");
+assertIncludes(mobileSectionCss, "select:focus-visible", "visible dropdown keyboard focus");
 
 console.log("Settings information architecture and Editorial UI verification passed.");

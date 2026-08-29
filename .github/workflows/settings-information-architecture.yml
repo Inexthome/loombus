@@ -5,6 +5,7 @@ on:
     paths:
       - "src/app/settings/**"
       - "src/components/settings-workspace-controller.tsx"
+      - "src/components/settings-mobile-section-select.tsx"
       - "src/app/profile/layout.tsx"
       - "scripts/verification/verify-settings-information-architecture.mjs"
       - ".github/workflows/settings-information-architecture.yml"
