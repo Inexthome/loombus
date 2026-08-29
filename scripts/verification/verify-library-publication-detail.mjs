@@ -37,7 +37,7 @@ for (const fragment of [
 
 for (const fragment of [
   'import { redirect } from "next/navigation"',
-  'if (open !== "1") redirect(`/library/publication/${publicationId}`)',
+  'if (query.open !== "1") redirect(`/library/read/${encodeURIComponent(publicationId)}?open=1`)',
   'LibraryReaderAccessBoundary',
   'LibraryReaderSurface',
 ]) {
