@@ -13,6 +13,7 @@ const manageRoute = read("src/app/marketplace/manage/page.tsx");
 const savedRoute = read("src/app/marketplace/saved/page.tsx");
 const safetyRoute = read("src/app/marketplace/safety/page.tsx");
 const manager = read("src/components/marketplace-manager-page.tsx");
+const listingEditor = read("src/components/marketplace-listing-editor.tsx");
 const saved = read("src/components/marketplace-saved-page.tsx");
 const editorial = read("src/app/marketplace/marketplace-editorial.css");
 
@@ -74,6 +75,19 @@ check(
     manager.includes('aria-label="Marketplace management workspace"') &&
     !manager.includes('xl:grid-cols-[minmax(0,1fr)_20rem]'),
   "Marketplace management Editorial UI or lifecycle behavior is incomplete."
+);
+
+check(
+  listingEditor.includes('const editorialInputClass =') &&
+    listingEditor.includes('border-b border-[color:var(--loombus-border)] bg-transparent') &&
+    listingEditor.includes('aria-expanded={formOpen}') &&
+    listingEditor.includes('uploadPhotos') &&
+    listingEditor.includes('removePhoto') &&
+    listingEditor.includes('saveDraft') &&
+    listingEditor.includes('submitListing') &&
+    !listingEditor.includes('shadow-xl shadow-black/10') &&
+    !listingEditor.includes('rounded-[1.75rem]'),
+  "Marketplace create/edit listing form has not been fully migrated to the Editorial UI."
 );
 
 check(
