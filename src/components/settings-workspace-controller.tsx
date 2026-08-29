@@ -4,12 +4,10 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Bell,
-  BookOpen,
   CreditCard,
   Database,
   Eye,
   LifeBuoy,
-  Lock,
   MessageCircle,
   Shield,
   User,
@@ -476,6 +474,8 @@ export function SettingsWorkspaceController() {
         setPreferences({ ...DEFAULTS, ...(payload.preferences ?? {}) });
         setCanUseEmailDigest(Boolean(payload.canUseEmailDigest));
         setIsAdmin(Boolean(payload.isAdmin));
+      } else {
+        setNotice(payload.error ?? "Notification preferences could not load.");
       }
     }
 
@@ -538,7 +538,10 @@ export function SettingsWorkspaceController() {
               type="button"
               className={active === key ? "is-active" : ""}
               aria-current={active === key ? "page" : undefined}
-              onClick={() => setActive(key)}
+              onClick={() => {
+                setNotice("");
+                setActive(key);
+              }}
             >
               <Icon aria-hidden="true" />
               <span>{label}</span>
