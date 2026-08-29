@@ -7,6 +7,7 @@ import "./settings-workspace.css";
 import "./subscription-settings.css";
 import "./member-privacy-settings.css";
 import "./settings-editorial-ui.css";
+import "./settings-editorial-mobile.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
