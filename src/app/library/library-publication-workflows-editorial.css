@@ -1,0 +1,551 @@
+/* Loombus Editorial UI — publication detail and passage workflows only. */
+
+[data-library-publication-editorial],
+[data-library-ask-loombus-editorial],
+[data-library-discuss-passage-editorial] {
+  --library-workflow-gold: #CBAB5B;
+  --library-workflow-cream: #FEFBEC;
+  --loombus-gold: #CBAB5B;
+  min-height: 100vh;
+  color: var(--loombus-text);
+  background: var(--loombus-page-bg);
+}
+
+[data-library-publication-editorial] > main,
+[data-library-ask-loombus-editorial] > main,
+[data-library-discuss-passage-editorial] > main {
+  background: var(--loombus-page-bg) !important;
+}
+
+html[data-loombus-theme="light"] [data-library-publication-editorial],
+html[data-loombus-theme="light"] [data-library-ask-loombus-editorial],
+html[data-loombus-theme="light"] [data-library-discuss-passage-editorial],
+html[data-loombus-theme="light"] [data-library-publication-editorial] > main,
+html[data-loombus-theme="light"] [data-library-ask-loombus-editorial] > main,
+html[data-loombus-theme="light"] [data-library-discuss-passage-editorial] > main {
+  background: var(--library-workflow-cream) !important;
+}
+
+html[data-loombus-theme="dark"] [data-library-publication-editorial],
+html[data-loombus-theme="dark"] [data-library-ask-loombus-editorial],
+html[data-loombus-theme="dark"] [data-library-discuss-passage-editorial],
+html[data-loombus-theme="dark"] [data-library-publication-editorial] > main,
+html[data-loombus-theme="dark"] [data-library-ask-loombus-editorial] > main,
+html[data-loombus-theme="dark"] [data-library-discuss-passage-editorial] > main {
+  background: var(--loombus-page-bg) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-library-publication-editorial],
+  html[data-loombus-theme="system"] [data-library-ask-loombus-editorial],
+  html[data-loombus-theme="system"] [data-library-discuss-passage-editorial],
+  html[data-loombus-theme="system"] [data-library-publication-editorial] > main,
+  html[data-loombus-theme="system"] [data-library-ask-loombus-editorial] > main,
+  html[data-loombus-theme="system"] [data-library-discuss-passage-editorial] > main {
+    background: var(--library-workflow-cream) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-library-publication-editorial],
+  html[data-loombus-theme="system"] [data-library-ask-loombus-editorial],
+  html[data-loombus-theme="system"] [data-library-discuss-passage-editorial],
+  html[data-loombus-theme="system"] [data-library-publication-editorial] > main,
+  html[data-loombus-theme="system"] [data-library-ask-loombus-editorial] > main,
+  html[data-loombus-theme="system"] [data-library-discuss-passage-editorial] > main {
+    background: var(--loombus-page-bg) !important;
+  }
+}
+
+[data-library-publication-editorial] a:focus-visible,
+[data-library-publication-editorial] button:focus-visible,
+[data-library-ask-loombus-editorial] a:focus-visible,
+[data-library-ask-loombus-editorial] button:focus-visible,
+[data-library-ask-loombus-editorial] textarea:focus-visible,
+[data-library-discuss-passage-editorial] a:focus-visible,
+[data-library-discuss-passage-editorial] button:focus-visible,
+[data-library-discuss-passage-editorial] input:focus-visible,
+[data-library-discuss-passage-editorial] select:focus-visible,
+[data-library-discuss-passage-editorial] textarea:focus-visible {
+  outline: 2px solid var(--library-workflow-gold);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Publication detail                                                         */
+/* -------------------------------------------------------------------------- */
+
+[data-library-publication-editorial] > main {
+  padding-top: 5.25rem !important;
+}
+
+[data-library-publication-editorial] > main > div[class*="max-w-"] {
+  max-width: 70rem !important;
+}
+
+[data-library-publication-editorial] main > div > a[href="/library"] {
+  min-height: 2.75rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > a[href="/library"]:hover {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-publication-editorial] [role="alert"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type {
+  margin-top: 0.75rem !important;
+  padding-top: 1.5rem;
+  padding-bottom: 2rem !important;
+  border-top: 1px solid var(--loombus-border);
+}
+
+/* The book cover is a genuine discrete publication object. */
+[data-library-publication-editorial] main > div > section:first-of-type > div:first-child > div {
+  border-radius: 0.4rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main h1 {
+  max-width: 48rem;
+  font-size: clamp(2rem, 5vw, 3.1rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.03 !important;
+}
+
+/* Publication classification reads as metadata, not decorative pills. */
+[data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div:first-child {
+  gap: 0.85rem !important;
+  padding-bottom: 0.25rem;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div:first-child > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div:first-child > span:nth-child(2) {
+  color: var(--library-workflow-gold) !important;
+}
+
+/* Subject tags remain compact classifications but lose filled-chip chrome. */
+[data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div.flex.flex-wrap.gap-2 > span {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0.65rem 0 0 !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div.flex.flex-wrap.gap-2 > span:last-child {
+  border-right: 0 !important;
+}
+
+/* Reading is the dominant action. Library/lifecycle controls stay quieter. */
+[data-library-publication-editorial] main a[href^="/library/read/"][class*="bg-[var(--loombus-gold)]"] {
+  min-height: 2.85rem !important;
+  border-radius: 0.4rem !important;
+  background: var(--library-workflow-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type button {
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.45rem !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type button:hover {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type button svg {
+  color: var(--library-workflow-gold) !important;
+}
+
+[data-library-publication-editorial] main > div > section:first-of-type div[class*="h-1.5"] {
+  height: 2px !important;
+  border-radius: 0 !important;
+}
+
+/* Author identity is contextual editorial information, not a dashboard card. */
+[data-library-publication-editorial] section:has(a[href^="/u/"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.35rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] section:has(a[href^="/u/"]) > div > div > span:first-child {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  background: transparent !important;
+}
+
+[data-library-publication-editorial] section:has(a[href^="/u/"]) a[href^="/u/"] {
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  color: var(--library-workflow-gold) !important;
+  box-shadow: none !important;
+}
+
+/* Bibliographic facts become a compact editorial record. */
+[data-library-publication-editorial] main > div > section:last-child[class*="grid"] {
+  display: grid !important;
+  gap: 0 !important;
+  margin-top: 0 !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div {
+  min-height: 7rem;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div > svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+[data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div > p[class*="uppercase"] {
+  margin-top: 0.65rem !important;
+  color: var(--loombus-text-subtle) !important;
+  letter-spacing: 0.11em !important;
+}
+
+/* Unavailable publication is still part of the editorial flow. */
+[data-library-publication-editorial] main > div[class*="max-w-xl"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2.5rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-publication-editorial] main > div[class*="max-w-xl"] a[href="/library"] {
+  border-radius: 0.4rem !important;
+  background: var(--library-workflow-gold) !important;
+  color: #17140c !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Ask Loombus passage workflow                                               */
+/* -------------------------------------------------------------------------- */
+
+[data-library-ask-loombus-editorial] > main,
+[data-library-discuss-passage-editorial] > main {
+  padding-top: 5.25rem !important;
+}
+
+[data-library-ask-loombus-editorial] main > div,
+[data-library-discuss-passage-editorial] main > div {
+  width: 100%;
+}
+
+[data-library-ask-loombus-editorial] main > div > a[href^="/library/read/"],
+[data-library-discuss-passage-editorial] main > div > a[href^="/library/read/"] {
+  min-height: 2.75rem;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-library-ask-loombus-editorial] header,
+[data-library-discuss-passage-editorial] header {
+  padding-bottom: 1.35rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-library-ask-loombus-editorial] h1,
+[data-library-discuss-passage-editorial] h1 {
+  font-size: clamp(2rem, 5vw, 2.85rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.05 !important;
+}
+
+/* Selected passage is a source object; preserve the quote, remove card chrome. */
+[data-library-ask-loombus-editorial] section:has(blockquote),
+[data-library-discuss-passage-editorial] section:has(blockquote) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.35rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] blockquote,
+[data-library-discuss-passage-editorial] blockquote {
+  max-width: 46rem;
+  color: var(--loombus-text-muted) !important;
+}
+
+/* Ask modes are compact text-led tabs. */
+[data-library-ask-loombus-editorial] section:has(textarea[placeholder^="Add a specific question"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.35rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] button[aria-pressed] {
+  position: relative;
+  min-height: 2.75rem;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0.8rem !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] button[aria-pressed="true"] {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-ask-loombus-editorial] button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0;
+  left: 0.8rem;
+  height: 2px;
+  background: var(--library-workflow-gold);
+}
+
+[data-library-ask-loombus-editorial] textarea {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] textarea:focus {
+  border-bottom-color: var(--library-workflow-gold) !important;
+}
+
+[data-library-ask-loombus-editorial] section:has(textarea[placeholder^="Add a specific question"]) > div:last-of-type > button[class*="bg-[var(--loombus-gold)]"] {
+  min-height: 2.85rem !important;
+  border-radius: 0.4rem !important;
+  background: var(--library-workflow-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] [role="alert"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 !important;
+}
+
+/* Answer becomes the continuation of the editorial document. */
+[data-library-ask-loombus-editorial] main > div > section:last-child:not(:has(textarea)) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.4rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] main > div > section:last-child:not(:has(textarea)) button {
+  min-height: 2.75rem;
+  color: var(--library-workflow-gold) !important;
+}
+
+/* Empty passage state is informative, not a modal-looking card. */
+[data-library-ask-loombus-editorial] main > section,
+[data-library-discuss-passage-editorial] main > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2.5rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-ask-loombus-editorial] main > section a[href="/library"],
+[data-library-discuss-passage-editorial] main > section a[href="/library"] {
+  border-radius: 0.4rem !important;
+  background: var(--library-workflow-gold) !important;
+  color: #17140c !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Discuss passage composer                                                   */
+/* -------------------------------------------------------------------------- */
+
+[data-library-discuss-passage-editorial] section:has(input[placeholder^="What should the community examine"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.35rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-discuss-passage-editorial] input,
+[data-library-discuss-passage-editorial] select,
+[data-library-discuss-passage-editorial] textarea {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-library-discuss-passage-editorial] input:focus,
+[data-library-discuss-passage-editorial] select:focus,
+[data-library-discuss-passage-editorial] textarea:focus {
+  border-bottom-color: var(--library-workflow-gold) !important;
+}
+
+[data-library-discuss-passage-editorial] [role="alert"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 !important;
+}
+
+[data-library-discuss-passage-editorial] section:has(input[placeholder^="What should the community examine"]) > div:last-child {
+  align-items: flex-end !important;
+}
+
+[data-library-discuss-passage-editorial] button[class*="bg-[var(--loombus-gold)]"] {
+  min-height: 2.85rem !important;
+  border-radius: 0.4rem !important;
+  background: var(--library-workflow-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+/* Mobile keeps the reading order and usable touch targets. */
+@media (max-width: 767px) {
+  [data-library-publication-editorial] > main,
+  [data-library-ask-loombus-editorial] > main,
+  [data-library-discuss-passage-editorial] > main {
+    padding-top: 4.25rem !important;
+    padding-bottom: max(5rem, calc(3.5rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:first-of-type {
+    gap: 1.5rem !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:first-of-type > div:first-child {
+    max-width: 10.5rem !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:first-of-type > div:last-child > div[class*="mt-7"] {
+    align-items: stretch;
+  }
+
+  [data-library-publication-editorial] main a[href^="/library/read/"][class*="bg-[var(--loombus-gold)]"] {
+    width: 100%;
+    justify-content: center;
+  }
+
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div {
+    min-height: 0;
+  }
+
+  [data-library-ask-loombus-editorial] button[aria-pressed] {
+    flex: 0 0 auto;
+  }
+
+  [data-library-ask-loombus-editorial] section:has(textarea[placeholder^="Add a specific question"]) > div:last-of-type,
+  [data-library-discuss-passage-editorial] section:has(input[placeholder^="What should the community examine"]) > div:last-child {
+    align-items: stretch !important;
+  }
+
+  [data-library-ask-loombus-editorial] section:has(textarea[placeholder^="Add a specific question"]) > div:last-of-type > button,
+  [data-library-discuss-passage-editorial] section:has(input[placeholder^="What should the community examine"]) > div:last-child > button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 640px) {
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div:nth-child(odd) {
+    padding-right: 1rem !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div:nth-child(even) {
+    padding-left: 1rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div {
+    border-right: 1px solid var(--loombus-border) !important;
+    padding-right: 1rem !important;
+    padding-left: 1rem !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div:first-child {
+    padding-left: 0 !important;
+  }
+
+  [data-library-publication-editorial] main > div > section:last-child[class*="grid"] > div:last-child {
+    border-right: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-library-publication-editorial] *,
+  [data-library-ask-loombus-editorial] *,
+  [data-library-discuss-passage-editorial] * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
