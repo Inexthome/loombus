@@ -13,7 +13,7 @@ function assertExcludes(source, needle, label) {
 }
 
 const requestsRoute = read("src/app/api/follows/requests/route.ts");
-const people = read("src/app/people/people-v2-client.tsx");
+const people = read("src/app/people/people-editorial-client.tsx");
 const peopleRequests = read("src/app/people/people-follow-requests-panel.tsx");
 const notificationActions = read("src/app/notifications/follow-request-actions.tsx");
 const privacySettings = read("src/components/member-privacy-settings-bridge.tsx");
