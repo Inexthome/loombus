@@ -1,0 +1,424 @@
+/* Loombus Editorial UI — /library/research/evidence/graph only. */
+
+[data-library-knowledge-graph-editorial] {
+  --graph-editorial-gold: #CBAB5B;
+  --graph-editorial-cream: #FEFBEC;
+  --loombus-gold: #CBAB5B;
+  min-height: 100vh;
+  color: var(--loombus-text);
+  background: var(--loombus-page-bg);
+}
+
+html[data-loombus-theme="light"] [data-library-knowledge-graph-editorial] {
+  background: var(--graph-editorial-cream);
+}
+
+html[data-loombus-theme="dark"] [data-library-knowledge-graph-editorial] {
+  background: var(--loombus-page-bg);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-library-knowledge-graph-editorial] {
+    background: var(--graph-editorial-cream);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-library-knowledge-graph-editorial] {
+    background: var(--loombus-page-bg);
+  }
+}
+
+[data-library-knowledge-graph-editorial] > div.min-h-screen,
+[data-library-knowledge-graph-editorial] main,
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] {
+  background: transparent !important;
+}
+
+/* Shared Research workspace navigation. */
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav {
+  position: relative;
+  z-index: 10;
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 4.5rem 1rem 0;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav-inner {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 1.15rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--loombus-border);
+  scrollbar-width: none;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--loombus-text-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a:hover,
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a:focus-visible,
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a[data-active="true"] {
+  color: var(--loombus-text);
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--graph-editorial-gold);
+}
+
+/* V7 status becomes editorial context rather than a dashboard card. */
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0 1rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] > div:first-child {
+  gap: 0.65rem !important;
+}
+
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] > div:first-child > svg {
+  color: var(--graph-editorial-gold) !important;
+}
+
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] span[role="status"],
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] button {
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.5rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] button {
+  color: var(--graph-editorial-gold) !important;
+}
+
+/* V4 graph page hierarchy. */
+[data-library-knowledge-graph-editorial] main {
+  padding-top: 1rem !important;
+}
+
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+[data-library-knowledge-graph-editorial] main header {
+  padding-bottom: 1.4rem !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+}
+
+[data-library-knowledge-graph-editorial] main header > a {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+[data-library-knowledge-graph-editorial] main h1 {
+  font-size: clamp(1.95rem, 4vw, 2.65rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.05 !important;
+}
+
+[data-library-knowledge-graph-editorial] main h2 {
+  letter-spacing: -0.02em;
+}
+
+[data-library-knowledge-graph-editorial] main [role="alert"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Provenance remains available without competing with the graph. */
+[data-library-knowledge-graph-editorial] main header a[href="/library/research/evidence/provenance"] {
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Graph search/filter controls become one flat metadata band. */
+[data-library-knowledge-graph-editorial] main section:has(input[placeholder="Search graph…"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0 1rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main label:has(input[placeholder="Search graph…"]),
+[data-library-knowledge-graph-editorial] main input[placeholder="New workspace name"],
+[data-library-knowledge-graph-editorial] main input[placeholder="Filter node choices…"],
+[data-library-knowledge-graph-editorial] main input[placeholder="Name this investigation (optional)"],
+[data-library-knowledge-graph-editorial] main select {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main label:has(input[placeholder="Search graph…"]) {
+  padding-inline: 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] main input[placeholder="New workspace name"],
+[data-library-knowledge-graph-editorial] main input[placeholder="Filter node choices…"],
+[data-library-knowledge-graph-editorial] main input[placeholder="Name this investigation (optional)"] {
+  min-height: 2.75rem !important;
+  padding-inline: 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] main select {
+  min-height: 2.75rem !important;
+  padding-left: 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] main label:has(input[placeholder="Search graph…"]):focus-within,
+[data-library-knowledge-graph-editorial] main input:focus,
+[data-library-knowledge-graph-editorial] main select:focus {
+  border-bottom-color: var(--graph-editorial-gold) !important;
+}
+
+[data-library-knowledge-graph-editorial] main section:has(input[placeholder="Search graph…"]) button {
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main section:has(input[placeholder="Search graph…"]) button:hover {
+  color: var(--loombus-text) !important;
+}
+
+/* The graph canvas is a genuine visualization surface: keep containment, reduce ornament. */
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] {
+  border-radius: 0.75rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] > div:first-child {
+  min-height: 3.25rem;
+  padding-block: 0.55rem !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] button {
+  min-width: 2.75rem;
+  min-height: 2.75rem !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph minimap"] {
+  border-radius: 0.5rem !important;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.14) !important;
+}
+
+/* Topology inspector becomes an editorial record list below the visualization. */
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] > section:last-child {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] > section:last-child > div.grid > div {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] > section:last-child > div.grid > div:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+/* V6 persistent workspace is one continuous investigation workflow. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] {
+  padding-top: 1.25rem !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div {
+  max-width: 72rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.4rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div:first-child > div:last-child {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+/* Workspace creation/search wrappers lose pill chrome. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] div:has(> svg + input[placeholder="New workspace name"]),
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] div:has(> svg + input[placeholder="Filter node choices…"]) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Workspace chips become quiet file tabs. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div.flex.flex-wrap.gap-2 > div {
+  min-height: 2.5rem;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0.75rem 0 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div.flex.flex-wrap.gap-2 > div button:first-child {
+  min-height: 2.5rem;
+}
+
+/* Save/create are the completion actions for their local workflow. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] button[class*="bg-[var(--loombus-gold)]"] {
+  min-height: 2.75rem !important;
+  border-radius: 0.4rem !important;
+  background: var(--graph-editorial-gold) !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+/* Shortest-path result is a continuous trace, not a card stack. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div.rounded-2xl:has(> p.uppercase) {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div.rounded-2xl:has(> p.uppercase) .rounded-xl {
+  border-radius: 0.4rem !important;
+  box-shadow: none !important;
+}
+
+/* Saved investigations become rows; each saved view remains an actionable record. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div:last-child > div.grid {
+  display: block !important;
+  border-top: 1px solid var(--loombus-border);
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div:last-child > div.grid > div {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] > div > div:last-child > div.grid > div > button:last-child {
+  color: var(--loombus-text-muted) !important;
+}
+
+/* Recovery remains obvious but editorial. */
+[data-library-knowledge-graph-editorial] section[role="alert"][aria-live="assertive"] {
+  max-width: 72rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] button:focus-visible,
+[data-library-knowledge-graph-editorial] a:focus-visible,
+[data-library-knowledge-graph-editorial] input:focus-visible,
+[data-library-knowledge-graph-editorial] select:focus-visible {
+  outline: 2px solid var(--graph-editorial-gold) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 767px) {
+  [data-library-knowledge-graph-editorial] .research-editorial-route-nav {
+    padding-top: 4.15rem;
+  }
+
+  [data-library-knowledge-graph-editorial] main {
+    padding-top: 0.75rem !important;
+    padding-bottom: max(6rem, calc(4.5rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  [data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] {
+    align-items: flex-start !important;
+  }
+
+  [data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] {
+    border-radius: 0.5rem !important;
+  }
+
+  [data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph minimap"] {
+    right: 0.75rem !important;
+    bottom: 0.75rem !important;
+    max-width: calc(100% - 1.5rem);
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-library-knowledge-graph-editorial] *,
+  [data-library-knowledge-graph-editorial] *::before,
+  [data-library-knowledge-graph-editorial] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

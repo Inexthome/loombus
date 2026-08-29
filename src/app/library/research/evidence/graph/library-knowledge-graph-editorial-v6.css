@@ -1,0 +1,24 @@
+/* Persistent V6 workspace controls sit outside the V4 <main>, so scope their field treatment explicitly. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] input:not([type="checkbox"]):not([type="radio"]),
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] select {
+  min-height: 2.75rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] input:not([type="checkbox"]):not([type="radio"]) {
+  padding-inline: 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] select {
+  padding-left: 0 !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] input:focus,
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"] select:focus {
+  border-bottom-color: var(--graph-editorial-gold) !important;
+}
