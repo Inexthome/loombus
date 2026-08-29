@@ -9,11 +9,14 @@ const check = (value, message) => {
 
 const directoryPage = read("src/app/marketplace/page.tsx");
 const detailPage = read("src/app/marketplace/[slug]/page.tsx");
+const idRedirectPage = read("src/app/marketplace/listing/[id]/page.tsx");
 const manageRoute = read("src/app/marketplace/manage/page.tsx");
 const savedRoute = read("src/app/marketplace/saved/page.tsx");
 const safetyRoute = read("src/app/marketplace/safety/page.tsx");
 const manager = read("src/components/marketplace-manager-page.tsx");
 const listingEditor = read("src/components/marketplace-listing-editor.tsx");
+const adminMetrics = read("src/components/marketplace-admin-metrics.tsx");
+const listingDetail = read("src/components/marketplace-listing-page.tsx");
 const saved = read("src/components/marketplace-saved-page.tsx");
 const editorial = read("src/app/marketplace/marketplace-editorial.css");
 
@@ -53,8 +56,18 @@ check(
   detailPage.includes('listing.status === "reserved"') &&
     detailPage.includes('listing.status === "published"') &&
     detailPage.includes("MarketplacePickupScheduler") &&
-    detailPage.includes("MarketplaceTrustActions"),
-  "Marketplace detail Reserved/pickup/trust behavior was not preserved."
+    detailPage.includes("MarketplaceTrustActions") &&
+    listingDetail.includes("MarketplaceSellerContactActions") &&
+    editorial.includes('data-marketplace-editorial="detail"') &&
+    editorial.includes('xl:grid-cols-[minmax(0,1fr)_22rem]'),
+  "Marketplace detail Editorial UI or Reserved/pickup/trust behavior is incomplete."
+);
+
+check(
+  idRedirectPage.includes("findPublicMarketplaceListingById") &&
+    idRedirectPage.includes("/marketplace/${listing.slug}") &&
+    idRedirectPage.includes("compatibility entry point"),
+  "Marketplace ID route must hand off to the canonical Editorial listing detail surface."
 );
 
 check(
@@ -91,6 +104,14 @@ check(
 );
 
 check(
+  adminMetrics.includes('if (state === "unavailable") return null') &&
+    adminMetrics.includes('aria-labelledby="marketplace-diagnostics-heading"') &&
+    !adminMetrics.includes("AdminMetricCard") &&
+    !adminMetrics.includes("AdminQueueSection"),
+  "Marketplace diagnostics still use the legacy admin-card presentation or expose unavailable metrics to sellers."
+);
+
+check(
   safetyRoute.includes("Transactions remain between buyer and seller") &&
     safetyRoute.includes("Loombus does not process Marketplace payments") &&
     safetyRoute.includes("/marketplace/manage") &&
@@ -99,4 +120,4 @@ check(
   "Marketplace Safety Editorial UI or transaction-boundary guidance is incomplete."
 );
 
-console.log("Marketplace Editorial UI verification passed.");
+console.log("Marketplace Editorial UI verification passed for all Marketplace routes.");
