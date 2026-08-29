@@ -34,11 +34,37 @@ export function LibraryAuthorCoverUpload({ publicationId, editable, published }:
   useEffect(() => { setFile(null); setError(null); setMessage(null); void loadMeta(); }, [loadMeta]);
 
   async function uploadCover() {
-    if (!publicationId || !editable || !file || busy) return;
+    if (!publicationId || (!editable && !published) || !file || busy) return;
     setBusy(true); setError(null); setMessage(null);
     try {
       if (!ALLOWED_TYPES.has(file.type)) throw new Error("Choose a JPEG, PNG, or WebP cover image.");
       if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MAX_COVER_BYTES) throw new Error("Cover images must be 8 MiB or smaller.");
+
+      if (published) {
+        const prepare = await supabase.rpc("prepare_library_author_published_cover", { p_publication_id: publicationId, p_media_type: file.type, p_byte_size: file.size });
+        if (prepare.error) throw prepare.error;
+        const prepared = ((prepare.data ?? []) as PreparedCover[])[0];
+        if (!prepared) throw new Error("Unable to prepare this published cover replacement.");
+
+        const upload = await supabase.storage.from(prepared.storage_bucket).upload(prepared.storage_path, file, { upsert: false, cacheControl: "3600", contentType: file.type });
+        if (upload.error) throw upload.error;
+
+        const commit = await supabase.rpc("commit_library_author_published_cover", { p_publication_id: publicationId, p_storage_path: prepared.storage_path });
+        if (commit.error) {
+          await supabase.storage.from(prepared.storage_bucket).remove([prepared.storage_path]);
+          throw commit.error;
+        }
+
+        const previousPath = typeof commit.data === "string" ? commit.data : null;
+        if (previousPath && previousPath !== prepared.storage_path) {
+          const cleanup = await supabase.storage.from(COVER_BUCKET).remove([previousPath]);
+          if (cleanup.error) console.warn("Published Library cover replaced, but old cover cleanup failed.", cleanup.error);
+        }
+        setFile(null); await loadMeta(); setMessage("Published cover replaced. The book remains published.");
+        return;
+      }
+
+      if (!editable) return;
       const prepare = await supabase.rpc("prepare_library_author_cover", { p_publication_id: publicationId, p_media_type: file.type, p_byte_size: file.size });
       if (prepare.error) throw prepare.error;
       const prepared = ((prepare.data ?? []) as PreparedCover[])[0];
@@ -53,7 +79,7 @@ export function LibraryAuthorCoverUpload({ publicationId, editable, published }:
   }
 
   async function removeCover() {
-    if (!publicationId || !meta?.cover_url || !editable || busy) return;
+    if (!publicationId || !meta?.cover_url || !editable || published || busy) return;
     setBusy(true); setError(null); setMessage(null);
     try {
       const remove = await supabase.storage.from(COVER_BUCKET).remove([meta.cover_url]);
@@ -66,13 +92,15 @@ export function LibraryAuthorCoverUpload({ publicationId, editable, published }:
     } finally { setBusy(false); }
   }
 
+  const canUpload = Boolean(publicationId && (editable || published));
+
   return (
     <section className="mt-6 border-t border-[var(--loombus-border)] pt-5" aria-labelledby="library-cover-heading">
       <div className="flex items-start justify-between gap-3"><div><p id="library-cover-heading" className="text-sm font-semibold">Book cover</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">JPEG, PNG, or WebP · maximum 8 MiB. Draft covers remain private until the publication is published.</p></div>{loading ? <Loader2 className="h-4 w-4 animate-spin text-[var(--loombus-gold)]" aria-label="Loading cover" /> : null}</div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="grid aspect-[2/3] w-32 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]"><LibraryCoverImage storagePath={meta?.cover_url ?? null} alt={`${meta?.title ?? "Publication"} cover`} fallbackClassName="h-7 w-7" /></div>
         <div className="min-w-0 flex-1">
-          {!publicationId ? <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Save the publication draft before uploading its cover.</p> : published ? <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Published covers are locked from author-side replacement.</p> : editable ? <div className="space-y-3"><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--loombus-gold-surface)] file:px-3 file:py-1.5 file:font-semibold" /><div className="flex flex-wrap gap-2"><button type="button" disabled={!file || busy} onClick={() => void uploadCover()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : meta?.cover_url ? <RefreshCw className="h-4 w-4" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}{meta?.cover_url ? "Replace cover" : "Upload cover"}</button>{meta?.cover_url ? <button type="button" disabled={busy} onClick={() => void removeCover()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Remove cover</button> : null}</div></div> : <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Cover replacement is locked while this publication is under review.</p>}
+          {!publicationId ? <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Save the publication draft before uploading its cover.</p> : canUpload ? <div className="space-y-3"><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--loombus-gold-surface)] file:px-3 file:py-1.5 file:font-semibold" />{published ? <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Replacing this cover does not unpublish the book or change its publication ID. Published covers cannot be removed without a replacement.</p> : null}<div className="flex flex-wrap gap-2"><button type="button" disabled={!file || busy} onClick={() => void uploadCover()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-black disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : meta?.cover_url ? <RefreshCw className="h-4 w-4" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}{meta?.cover_url ? "Replace cover" : "Upload cover"}</button>{meta?.cover_url && !published ? <button type="button" disabled={busy} onClick={() => void removeCover()} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold disabled:opacity-50"><Trash2 className="h-4 w-4" aria-hidden="true" />Remove cover</button> : null}</div></div> : <p className="text-xs leading-5 text-[var(--loombus-text-subtle)]">Cover replacement is locked while this publication is under review.</p>}
           {error ? <p role="alert" className="mt-3 text-xs text-rose-500">{error}</p> : null}{message ? <p role="status" className="mt-3 text-xs text-[var(--loombus-text-muted)]">{message}</p> : null}
         </div>
       </div>
