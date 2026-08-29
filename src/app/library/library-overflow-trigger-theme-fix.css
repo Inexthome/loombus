@@ -1,25 +1,29 @@
-/* /library book overflow trigger: Light/System-light appearance only.
+/* /library book overflow trigger appearance only.
    The dropdown menu itself is intentionally unchanged. */
 
+[data-library-editorial-home]
+  main
+  details
+  > summary[aria-label^="More options for "] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-library-editorial-home]
+  main
+  details
+  > summary[aria-label^="More options for "]:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Keep the dots readable in Light and System-light. */
 html[data-loombus-theme="light"]
   [data-library-editorial-home]
   main
   details
   > summary[aria-label^="More options for "] {
-  background: rgb(254 251 236 / 0.94) !important;
   color: #17140c !important;
-  box-shadow:
-    0 1px 4px rgb(0 0 0 / 0.14),
-    inset 0 0 0 1px rgb(23 20 12 / 0.2) !important;
-}
-
-html[data-loombus-theme="light"]
-  [data-library-editorial-home]
-  main
-  details
-  > summary[aria-label^="More options for "]:hover {
-  background: #FEFBEC !important;
-  color: #000 !important;
 }
 
 @media (prefers-color-scheme: light) {
@@ -28,19 +32,6 @@ html[data-loombus-theme="light"]
     main
     details
     > summary[aria-label^="More options for "] {
-    background: rgb(254 251 236 / 0.94) !important;
     color: #17140c !important;
-    box-shadow:
-      0 1px 4px rgb(0 0 0 / 0.14),
-      inset 0 0 0 1px rgb(23 20 12 / 0.2) !important;
-  }
-
-  html[data-loombus-theme="system"]
-    [data-library-editorial-home]
-    main
-    details
-    > summary[aria-label^="More options for "]:hover {
-    background: #FEFBEC !important;
-    color: #000 !important;
   }
 }
