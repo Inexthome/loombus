@@ -91,6 +91,30 @@ export default function MarketplaceSellerContactActions({
 
   const updated = formatMarketplaceDate(listing.updatedAt ?? listing.publishedAt);
 
+  if (listing.status === "reserved") {
+    return (
+      <section
+        className="mb-6 border-y border-[color:var(--loombus-border-muted)] py-5"
+        aria-labelledby="marketplace-buyer-actions-heading"
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
+          Reserved
+        </p>
+        <h2
+          id="marketplace-buyer-actions-heading"
+          className="mt-1 text-xl font-semibold tracking-[-0.025em]"
+        >
+          This item is currently reserved.
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          New inquiries are paused while the seller completes another sale
+          {updated ? ` · Updated ${updated}` : ""}. If the reservation is released,
+          buyer actions will become available again.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="mb-6 border-y border-[color:var(--loombus-border-muted)] py-5" aria-labelledby="marketplace-buyer-actions-heading">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
