@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - "src/app/businesses/**"
+      - "src/app/services/manage/**"
       - "src/components/business-*.tsx"
+      - "src/components/services-manager-page.tsx"
       - "scripts/verification/verify-businesses-editorial-ui.mjs"
       - ".github/workflows/businesses-editorial-ui.yml"
 
@@ -18,5 +20,5 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify Businesses Editorial UI
+      - name: Verify Businesses and Services management Editorial UI
         run: node scripts/verification/verify-businesses-editorial-ui.mjs
