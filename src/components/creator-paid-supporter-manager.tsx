@@ -96,19 +96,8 @@ export function CreatorPaidSupporterManager() {
 
   function applyPayload(next: BillingPayload) {
     setPayload(next);
-    setPrices(
-      Object.fromEntries(
-        (next.tiers ?? []).map((tier) => [
-          tier.id,
-          tier.price_cents ? (tier.price_cents / 100).toFixed(2) : "",
-        ])
-      )
-    );
-    setModes(
-      Object.fromEntries(
-        (next.tiers ?? []).map((tier) => [tier.id, tier.access_mode ?? "free"])
-      )
-    );
+    setPrices(Object.fromEntries((next.tiers ?? []).map((tier) => [tier.id, tier.price_cents ? (tier.price_cents / 100).toFixed(2) : ""])));
+    setModes(Object.fromEntries((next.tiers ?? []).map((tier) => [tier.id, tier.access_mode ?? "free"])));
   }
 
   async function load(refreshPayout = false) {
@@ -120,10 +109,7 @@ export function CreatorPaidSupporterManager() {
     if (refreshPayout) {
       await fetch("/api/creator/supporter-billing/settings", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({ action: "refresh_payout" }),
       });
     }
@@ -156,10 +142,7 @@ export function CreatorPaidSupporterManager() {
     if (!accessToken) return null;
     const response = await fetch("/api/creator/supporter-billing/settings", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ action: actionName, ...extras }),
     });
     const result = await response.json().catch(() => ({}));
@@ -191,21 +174,12 @@ export function CreatorPaidSupporterManager() {
     })) as BillingPayload | null;
     if (result?.configuration) {
       applyPayload(result);
-      setMessage(
-        mode === "paid"
-          ? `${tier.name} is configured as a paid monthly tier.`
-          : `${tier.name} remains a free tier.`
-      );
+      setMessage(mode === "paid" ? `${tier.name} is configured as a paid monthly tier.` : `${tier.name} remains a free tier.`);
     }
   }
 
   const liveSubscriptions = useMemo(
-    () =>
-      (payload?.subscriptions ?? []).filter((subscription) =>
-        ["incomplete", "trialing", "active", "past_due", "unpaid"].includes(
-          subscription.status
-        )
-      ),
+    () => (payload?.subscriptions ?? []).filter((subscription) => ["incomplete", "trialing", "active", "past_due", "unpaid"].includes(subscription.status)),
     [payload?.subscriptions]
   );
 
@@ -219,9 +193,7 @@ export function CreatorPaidSupporterManager() {
   }
   if (!payload) return null;
 
-  const payoutReady = Boolean(
-    payload.payout?.details_submitted && payload.payout?.payouts_enabled
-  );
+  const payoutReady = Boolean(payload.payout?.details_submitted && payload.payout?.payouts_enabled);
   const approvedFeePercent = payload.configuration.approvedFeeBps / 100;
   const minimumMonthlyPrice = payload.configuration.minimumPriceCents / 100;
   const maximumMonthlyPrice = payload.configuration.maximumPriceCents / 100;
@@ -230,15 +202,15 @@ export function CreatorPaidSupporterManager() {
     <section className="creator-paid-supporter-manager">
       <header>
         <div>
-          <p>Creator Supporters · Phase 2B</p>
-          <h3>Paid monthly supporter subscriptions</h3>
+          <p>Paid supporters</p>
+          <h3>Build recurring support around your work.</h3>
           <span>
-            Web checkout uses Stripe Connect. Loombus retains the approved 15% platform fee and transfers the remaining subscription revenue to the creator payout account.
+            Set up monthly supporter tiers, creator payouts, and subscription management. Loombus retains the approved 15% platform fee on paid supporter subscriptions.
           </span>
         </div>
         <div className={payload.configuration.ready ? "is-ready" : ""}>
           <ShieldCheck aria-hidden="true" />
-          {payload.configuration.ready ? "Paid beta configured" : "Paid beta gated"}
+          {payload.configuration.ready ? "Available" : "Not yet enabled"}
         </div>
       </header>
 
@@ -246,24 +218,20 @@ export function CreatorPaidSupporterManager() {
         <div className="creator-paid-supporter-notice is-warning">
           <WalletCards aria-hidden="true" />
           <div>
-            <strong>Use Loombus on the web for creator billing setup</strong>
-            <p>
-              Paid tier setup and external checkout are not presented inside the iOS or Android app in this release. Existing supporters can still use their access in the app.
-            </p>
+            <strong>Use Loombus on the web for billing setup</strong>
+            <p>Paid tier setup and external checkout are not presented inside the iOS or Android app in this release. Existing supporters can still use their access in the app.</p>
           </div>
         </div>
       ) : null}
 
       {!payload.configuration.ready ? (
         <div className="creator-paid-supporter-readiness">
-          <strong>Production controls required before paid checkout opens</strong>
-          <span data-ready={payload.configuration.betaEnabled}>Paid beta feature flag</span>
-          <span data-ready={payload.configuration.stripeReady}>Stripe key and webhook</span>
-          <span data-ready={payload.configuration.serviceReady}>Supabase service role</span>
-          <span data-ready={payload.configuration.automaticTaxEnabled}>Stripe automatic tax decision</span>
-          <span data-ready={payload.configuration.platformFeeApproved}>
-            Approved 15% Loombus platform fee
-          </span>
+          <strong>Paid supporter checkout is being prepared.</strong>
+          <span data-ready={payload.configuration.betaEnabled}>Checkout access</span>
+          <span data-ready={payload.configuration.stripeReady}>Payments</span>
+          <span data-ready={payload.configuration.serviceReady}>Account services</span>
+          <span data-ready={payload.configuration.automaticTaxEnabled}>Tax handling</span>
+          <span data-ready={payload.configuration.platformFeeApproved}>Platform fee</span>
         </div>
       ) : null}
 
@@ -271,12 +239,12 @@ export function CreatorPaidSupporterManager() {
         <article>
           <BadgeDollarSign aria-hidden="true" />
           <strong>{approvedFeePercent}%</strong>
-          <span>Approved Loombus platform fee</span>
+          <span>Platform fee</span>
         </article>
         <article>
           <Banknote aria-hidden="true" />
           <strong>{liveSubscriptions.length}</strong>
-          <span>Live paid subscriptions</span>
+          <span>Active paid supporters</span>
         </article>
         <article>
           <RefreshCw aria-hidden="true" />
@@ -288,35 +256,18 @@ export function CreatorPaidSupporterManager() {
       <section className="creator-paid-supporter-card">
         <div className="creator-paid-supporter-card-heading">
           <div>
-            <strong>Creator payout account</strong>
-            <span>
-              Stripe collects creator identity, tax, and bank information. Loombus does not store bank credentials.
-            </span>
+            <strong>Payout account</strong>
+            <span>Connect the account that receives supporter revenue. Stripe collects identity, tax, and bank information; Loombus does not store bank credentials.</span>
           </div>
-          <span className={payoutReady ? "is-ready" : ""}>
-            {payoutReady ? "Payouts ready" : "Setup required"}
-          </span>
+          <span className={payoutReady ? "is-ready" : ""}>{payoutReady ? "Payouts ready" : "Setup required"}</span>
         </div>
         <div className="creator-paid-supporter-actions">
-          <button
-            type="button"
-            disabled={native || Boolean(working) || !payload.configuration.ready}
-            onClick={() => void startOnboarding()}
-          >
-            {working === "start_onboarding" ? (
-              <Loader2 className="animate-spin" aria-hidden="true" />
-            ) : (
-              <WalletCards aria-hidden="true" />
-            )}
-            {payoutReady ? "Review payout setup" : "Start payout setup"}
+          <button type="button" disabled={native || Boolean(working) || !payload.configuration.ready} onClick={() => void startOnboarding()}>
+            {working === "start_onboarding" ? <Loader2 className="animate-spin" aria-hidden="true" /> : <WalletCards aria-hidden="true" />}
+            {payoutReady ? "Review payout setup" : "Set up payouts"}
           </button>
           {payload.payout?.details_submitted ? (
-            <button
-              type="button"
-              className="is-secondary"
-              disabled={native || Boolean(working)}
-              onClick={() => void openDashboard()}
-            >
+            <button type="button" className="is-secondary" disabled={native || Boolean(working)} onClick={() => void openDashboard()}>
               <ExternalLink aria-hidden="true" /> Open Stripe Express
             </button>
           ) : null}
@@ -326,10 +277,8 @@ export function CreatorPaidSupporterManager() {
       <section className="creator-paid-supporter-card">
         <div className="creator-paid-supporter-card-heading">
           <div>
-            <strong>Tier pricing</strong>
-            <span>
-              The controlled beta supports USD monthly prices from $5 to $1,000. Free tiers remain available. Existing paid subscriptions must be cancelled before changing their billing contract.
-            </span>
+            <strong>Support tiers</strong>
+            <span>Configure free or paid monthly access. Paid tiers support USD monthly prices from $5 to $1,000.</span>
           </div>
         </div>
         <div className="creator-paid-supporter-tier-list">
@@ -337,24 +286,11 @@ export function CreatorPaidSupporterManager() {
             <article key={tier.id}>
               <div>
                 <strong>{tier.name}</strong>
-                <small>
-                  {tier.access_mode === "paid"
-                    ? `${money(tier.price_cents)}/month`
-                    : "Free access"}
-                </small>
+                <small>{tier.access_mode === "paid" ? `${money(tier.price_cents)}/month` : "Free access"}</small>
               </div>
               <label>
                 <span>Access</span>
-                <select
-                  value={modes[tier.id] ?? tier.access_mode}
-                  disabled={native || Boolean(working)}
-                  onChange={(event) =>
-                    setModes((current) => ({
-                      ...current,
-                      [tier.id]: event.target.value === "paid" ? "paid" : "free",
-                    }))
-                  }
-                >
+                <select value={modes[tier.id] ?? tier.access_mode} disabled={native || Boolean(working)} onChange={(event) => setModes((current) => ({ ...current, [tier.id]: event.target.value === "paid" ? "paid" : "free" }))}>
                   <option value="free">Free</option>
                   <option value="paid">Paid monthly</option>
                 </select>
@@ -363,40 +299,12 @@ export function CreatorPaidSupporterManager() {
                 <span>Monthly price</span>
                 <div className="creator-paid-supporter-price-input">
                   <span>$</span>
-                  <input
-                    type="number"
-                    min={minimumMonthlyPrice}
-                    max={maximumMonthlyPrice}
-                    step="0.01"
-                    value={prices[tier.id] ?? ""}
-                    disabled={
-                      native || Boolean(working) || (modes[tier.id] ?? "free") !== "paid"
-                    }
-                    onChange={(event) =>
-                      setPrices((current) => ({
-                        ...current,
-                        [tier.id]: event.target.value,
-                      }))
-                    }
-                  />
+                  <input type="number" min={minimumMonthlyPrice} max={maximumMonthlyPrice} step="0.01" value={prices[tier.id] ?? ""} disabled={native || Boolean(working) || (modes[tier.id] ?? "free") !== "paid"} onChange={(event) => setPrices((current) => ({ ...current, [tier.id]: event.target.value }))} />
                   <span>/month</span>
                 </div>
               </label>
-              <button
-                type="button"
-                disabled={
-                  native ||
-                  Boolean(working) ||
-                  !payoutReady ||
-                  !payload.configuration.ready
-                }
-                onClick={() => void savePricing(tier)}
-              >
-                {working === "save_pricing" ? (
-                  <Loader2 className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <Save aria-hidden="true" />
-                )}
+              <button type="button" disabled={native || Boolean(working) || !payoutReady || !payload.configuration.ready} onClick={() => void savePricing(tier)}>
+                {working === "save_pricing" ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Save aria-hidden="true" />}
                 Save pricing
               </button>
             </article>
@@ -407,10 +315,8 @@ export function CreatorPaidSupporterManager() {
       <section className="creator-paid-supporter-card">
         <div className="creator-paid-supporter-card-heading">
           <div>
-            <strong>Paid subscription operations</strong>
-            <span>
-              Renewals, failed payments, cancellations, and disputes synchronize from Stripe. Refund requests remain manual review in this beta.
-            </span>
+            <strong>Subscriptions</strong>
+            <span>Review active supporters, renewals, cancellations, payment status, and refund activity.</span>
           </div>
         </div>
         {payload.subscriptions.length ? (
@@ -418,19 +324,10 @@ export function CreatorPaidSupporterManager() {
             {payload.subscriptions.map((subscription) => (
               <article key={subscription.id}>
                 <div>
-                  <strong>
-                    {subscription.profile?.full_name ||
-                      subscription.profile?.username ||
-                      "Loombus supporter"}
-                  </strong>
-                  <small>
-                    {money(subscription.amount_cents)}/month · {subscription.status}
-                    {subscription.cancel_at_period_end ? " · ends after current period" : ""}
-                  </small>
+                  <strong>{subscription.profile?.full_name || subscription.profile?.username || "Loombus supporter"}</strong>
+                  <small>{money(subscription.amount_cents)}/month · {subscription.status}{subscription.cancel_at_period_end ? " · ends after current period" : ""}</small>
                 </div>
-                <span className={subscription.billing_hold ? "is-hold" : ""}>
-                  {subscription.billing_hold ? "Billing hold" : "Synchronized"}
-                </span>
+                <span className={subscription.billing_hold ? "is-hold" : ""}>{subscription.billing_hold ? "Billing hold" : "Synchronized"}</span>
               </article>
             ))}
           </div>
@@ -443,10 +340,8 @@ export function CreatorPaidSupporterManager() {
         <section className="creator-paid-supporter-card">
           <div className="creator-paid-supporter-card-heading">
             <div>
-              <strong>Refund review queue</strong>
-              <span>
-                These requests require manual provider review. No refund is issued automatically by this screen.
-              </span>
+              <strong>Refund reviews</strong>
+              <span>Requests remain subject to manual provider review. No refund is issued automatically from this screen.</span>
             </div>
           </div>
           <div className="creator-paid-supporter-refunds">
