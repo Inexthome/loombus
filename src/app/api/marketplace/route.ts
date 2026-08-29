@@ -5,17 +5,27 @@ import {
   getMarketplaceManageData,
   getPublicMarketplaceListing,
   listPublicMarketplace,
-  markMarketplaceListingSold,
   moderateMarketplaceListing,
   removeMarketplaceListing,
-  reopenMarketplaceListing,
-  reportMarketplaceListing,
   reviewMarketplaceReport,
   updateMarketplaceListing,
 } from "@/lib/marketplace-server";
+import {
+  markMarketplaceListingSoldSafely,
+  releaseMarketplaceListing,
+  reopenMarketplaceListingSafely,
+  reportMarketplaceListingWithReserved,
+  reserveMarketplaceListing,
+} from "@/lib/marketplace-server-lifecycle";
 import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
 
-const ADULT_ONLY_ACTIONS = new Set(["create", "update", "reopen"]);
+const ADULT_ONLY_ACTIONS = new Set([
+  "create",
+  "update",
+  "reopen",
+  "reserve",
+  "release",
+]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -96,17 +106,23 @@ export async function POST(request: NextRequest) {
     if (action === "update") {
       return response({ listing: await updateMarketplaceListing(request, input) });
     }
+    if (action === "reserve") {
+      return response(await reserveMarketplaceListing(request, input));
+    }
+    if (action === "release") {
+      return response(await releaseMarketplaceListing(request, input));
+    }
     if (action === "sold") {
-      return response(await markMarketplaceListingSold(request, input));
+      return response(await markMarketplaceListingSoldSafely(request, input));
     }
     if (action === "reopen") {
-      return response(await reopenMarketplaceListing(request, input));
+      return response(await reopenMarketplaceListingSafely(request, input));
     }
     if (action === "remove") {
       return response(await removeMarketplaceListing(request, input));
     }
     if (action === "report") {
-      return response(await reportMarketplaceListing(request, input), 201);
+      return response(await reportMarketplaceListingWithReserved(request, input), 201);
     }
     if (action === "moderate") {
       return response(await moderateMarketplaceListing(request, input));
