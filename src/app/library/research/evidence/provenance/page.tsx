@@ -10,12 +10,11 @@ export default async function LibraryKnowledgeProvenancePage({ searchParams }: {
   const focusKind = typeof params.focusKind === "string" ? params.focusKind : "";
   const focusId = typeof params.focusId === "string" ? params.focusId : "";
   const relation = typeof params.relation === "string" ? params.relation : "";
-  const focused = (focusKind === "claim" || focusKind === "knowledge") && focusId && relation;
 
   return (
     <div data-library-research-editorial="provenance">
       <LibraryResearchEditorialNav active="provenance" />
-      {focused ? (
+      {(focusKind === "claim" || focusKind === "knowledge") && focusId && relation ? (
         <LibraryFocusedProvenanceSurface focusKind={focusKind} focusId={focusId} relation={relation} />
       ) : (
         <LibraryKnowledgeProvenanceSurface />
