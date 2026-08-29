@@ -1,0 +1,22 @@
+name: Requests Directory Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/requests/page.tsx"
+      - "src/components/requests-directory-page.tsx"
+      - "scripts/verification/verify-requests-directory-editorial-ui.mjs"
+      - ".github/workflows/requests-directory-editorial-ui.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Requests directory Editorial UI
+        run: node scripts/verification/verify-requests-directory-editorial-ui.mjs

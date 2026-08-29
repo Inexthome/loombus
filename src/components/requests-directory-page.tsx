@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Bookmark,
   BriefcaseBusiness,
-  ChevronRight,
   Clock3,
   HandHeart,
   Loader2,
@@ -13,7 +12,6 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -29,7 +27,9 @@ import {
 } from "@/lib/service-requests";
 
 const controlClass =
-  "h-12 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 text-sm text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
+  "h-11 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 text-sm text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-0";
+const quietAction =
+  "inline-flex items-center gap-2 border-b border-transparent py-2 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-text)]";
 
 export default function RequestsDirectoryPage() {
   const [requests, setRequests] = useState<PublicServiceRequest[]>([]);
@@ -106,221 +106,218 @@ export default function RequestsDirectoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[86rem]">
-        <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">Requests</h1>
-            <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
-              Find accountable public needs for services, quotes, recommendations, consultations, community help, volunteer support, and local problem solving.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/requests/saved"
-              className="inline-flex h-12 items-center gap-2 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold shadow-sm transition hover:border-[color:var(--loombus-gold)]"
-            >
-              <Bookmark size={16} className="text-[color:var(--loombus-gold)]" /> Saved Requests
-            </Link>
-            <Link
-              href="/requests/manage"
-              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90"
-            >
-              <SlidersHorizontal size={16} /> Create or manage
-            </Link>
+    <main
+      data-requests-editorial="directory"
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-6 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+    >
+      <div className="mx-auto max-w-[78rem]">
+        <header className="border-b border-[color:var(--loombus-border)] pb-7">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
+                Public needs
+              </p>
+              <h1 className="mt-2 text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">Requests</h1>
+              <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
+                Find accountable public needs for services, quotes, recommendations, consultations, community help, volunteer support, and local problem solving.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              <Link href="/requests/saved" className={quietAction}>
+                <Bookmark size={15} className="text-[color:var(--loombus-gold)]" /> Saved Requests
+              </Link>
+              <Link
+                href="/requests/manage"
+                className="inline-flex items-center gap-2 border-b-2 border-[color:var(--loombus-gold)] py-2 text-sm font-semibold"
+              >
+                <SlidersHorizontal size={15} /> Create or manage
+              </Link>
+            </div>
           </div>
         </header>
 
-        <section className="mb-6 grid gap-3 sm:grid-cols-3">
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-4 text-[color:var(--loombus-cream-contrast)] shadow-sm dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Open Requests</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{total}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Urgent in view</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{urgentCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Responses in view</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{responseCount}</strong>
-          </article>
+        <section className="grid border-b border-[color:var(--loombus-border)] sm:grid-cols-3" aria-label="Request signals">
+          {[
+            ["Open Requests", total],
+            ["Urgent in view", urgentCount],
+            ["Responses in view", responseCount],
+          ].map(([label, value], index) => (
+            <div
+              key={String(label)}
+              className={`py-4 sm:px-5 ${index > 0 ? "border-t border-[color:var(--loombus-border-muted)] sm:border-l sm:border-t-0" : ""}`}
+            >
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">{label}</span>
+              <strong className="ml-3 text-lg font-semibold tracking-[-0.03em] text-[color:var(--loombus-text)]">{value}</strong>
+            </div>
+          ))}
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <section className="min-w-0">
-            <div className="mb-4 flex gap-3">
-              <label className="relative flex-1">
-                <span className="sr-only">Search Requests</span>
-                <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--loombus-text-subtle)]" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search need, skill, category, or place"
-                  className="h-14 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] pl-14 pr-5 text-base outline-none shadow-sm transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-sm transition hover:border-[color:var(--loombus-gold)]"
-                aria-label="Clear Request filters"
-              >
-                <SlidersHorizontal className="h-5 w-5" />
-                {activeFilterCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[color:var(--loombus-gold)] px-1 text-[10px] font-bold text-[color:var(--loombus-gold-contrast)]">{activeFilterCount}</span>
-                ) : null}
-              </button>
-            </div>
+        <section className="border-b border-[color:var(--loombus-border)] py-6" aria-label="Request discovery controls">
+          <label className="relative block border-b border-[color:var(--loombus-border)] pb-3">
+            <span className="sr-only">Search Requests</span>
+            <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--loombus-gold)]" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search need, skill, category, or place"
+              className="h-12 w-full bg-transparent pl-8 pr-4 text-base outline-none placeholder:text-[color:var(--loombus-text-subtle)]"
+            />
+          </label>
 
-            <nav className="mb-6 flex gap-2 overflow-x-auto pb-1" aria-label="Request types">
+          <nav className="mt-5 flex gap-6 overflow-x-auto border-b border-[color:var(--loombus-border-muted)]" aria-label="Request types">
+            <button
+              type="button"
+              onClick={() => setType("all")}
+              className={`shrink-0 border-b-2 pb-3 text-sm font-semibold transition ${
+                type === "all"
+                  ? "border-[color:var(--loombus-gold)] text-[color:var(--loombus-text)]"
+                  : "border-transparent text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"
+              }`}
+            >
+              All Requests
+            </button>
+            {SERVICE_REQUEST_TYPES.map((item) => (
               <button
+                key={item.value}
                 type="button"
-                onClick={() => setType("all")}
-                className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
-                  type === "all"
-                    ? "border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
-                    : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] hover:border-[color:var(--loombus-gold)]"
+                onClick={() => setType(item.value)}
+                className={`shrink-0 border-b-2 pb-3 text-sm font-semibold transition ${
+                  type === item.value
+                    ? "border-[color:var(--loombus-gold)] text-[color:var(--loombus-text)]"
+                    : "border-transparent text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"
                 }`}
               >
-                All Requests
+                {item.label}
               </button>
-              {SERVICE_REQUEST_TYPES.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setType(item.value)}
-                  className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
-                    type === item.value
-                      ? "border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
-                      : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] hover:border-[color:var(--loombus-gold)]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+            ))}
+          </nav>
+
+          <div className="mt-5 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label>
+              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">Category</span>
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className={controlClass} aria-label="Request category">
+                <option value="all">All categories</option>
+                {SERVICE_REQUEST_CATEGORIES.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">Urgency</span>
+              <select value={urgency} onChange={(event) => setUrgency(event.target.value)} className={controlClass} aria-label="Request urgency">
+                <option value="all">All urgency</option>
+                <option value="normal">Normal</option>
+                <option value="soon">Needed soon</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </label>
+            <label>
+              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">Location</span>
+              <span className="relative block">
+                <MapPin className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--loombus-gold)]" />
+                <input
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="City, region, or postal code"
+                  className={`${controlClass} pl-6`}
+                />
+              </span>
+            </label>
+            <div className="flex items-end justify-between gap-4 border-b border-[color:var(--loombus-border)] pb-2">
+              <span className="text-sm text-[color:var(--loombus-text-muted)]">
+                {activeFilterCount} active filter{activeFilterCount === 1 ? "" : "s"}
+              </span>
+              <button type="button" onClick={clearFilters} className="text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline">
+                Clear
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {notice ? (
+          <section className="border-b border-red-500/30 py-4 text-sm text-red-500" role="alert">{notice}</section>
+        ) : null}
+
+        <section className="py-7">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Discovery</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">{total} open Request{total === 1 ? "" : "s"}</h2>
+            </div>
+            <div className="flex flex-wrap gap-x-5">
+              <Link href="/services" className={quietAction}>Browse Services <ArrowUpRight size={13} /></Link>
+              <Link href="/rooms" className={quietAction}>Private Room Requests <ArrowUpRight size={13} /></Link>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="border-y border-[color:var(--loombus-border)] py-12 text-center text-[color:var(--loombus-text-muted)]">
+              <Loader2 className="mx-auto animate-spin text-[color:var(--loombus-gold)]" size={26} />
+              <p className="mt-3">Gathering open Requests…</p>
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="border-y border-[color:var(--loombus-border)] py-12 text-center">
+              <HandHeart className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
+              <h3 className="mt-4 text-xl font-semibold tracking-[-0.03em]">No Requests match this view.</h3>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">Clear a filter or create the first Request for this need.</p>
+              <Link href="/requests/manage" className="mt-4 inline-flex border-b-2 border-[color:var(--loombus-gold)] py-2 text-sm font-semibold">Create Request</Link>
+            </div>
+          ) : (
+            <div className="border-t border-[color:var(--loombus-border)]" aria-label="Public Requests">
+              {requests.map((item) => {
+                const deadline = formatRequestDate(item.deadline);
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/requests/${item.slug}`}
+                    className="group grid gap-4 border-b border-[color:var(--loombus-border)] py-6 transition hover:border-b-[color:var(--loombus-gold)] md:grid-cols-[minmax(0,1fr)_15rem]"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                        <span className="text-[color:var(--loombus-gold)]">{requestTypeLabel(item.requestType)}</span>
+                        <span>{requestUrgencyLabel(item.urgency)}</span>
+                        <span>{item.category}</span>
+                      </div>
+                      <h3 className="mt-2 text-2xl font-semibold leading-tight tracking-[-0.035em] group-hover:underline">{item.title}</h3>
+                      <p className="mt-2 line-clamp-3 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">{item.description}</p>
+                      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[color:var(--loombus-text-muted)]">
+                        <span className="inline-flex items-center gap-2"><MapPin size={15} className="text-[color:var(--loombus-gold)]" />{requestLocationLabel(item)}</span>
+                        <span className="inline-flex items-center gap-2"><BriefcaseBusiness size={15} className="text-[color:var(--loombus-gold)]" />{formatRequestBudget(item)}</span>
+                        {item.deadline ? <span className="inline-flex items-center gap-2"><Clock3 size={15} className="text-[color:var(--loombus-gold)]" />Deadline {deadline}</span> : null}
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-between border-l-0 border-[color:var(--loombus-border-muted)] text-sm md:border-l md:pl-5">
+                      <div>
+                        <p className="font-semibold">{item.businessName || item.requesterName}</p>
+                        <p className="mt-1 text-[color:var(--loombus-text-muted)]">{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</p>
+                      </div>
+                      <span className="mt-4 inline-flex items-center gap-1 font-semibold text-[color:var(--loombus-gold)] md:mt-0">Open Request <ArrowUpRight size={13} /></span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {pageCount > 1 ? (
+            <nav className="mt-6 flex items-center justify-center gap-4 border-t border-[color:var(--loombus-border)] pt-5" aria-label="Requests pages">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(current - 1, 1))} className="border-b border-transparent py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-40">Previous</button>
+              <span className="text-sm text-[color:var(--loombus-text-muted)]">Page {page} of {pageCount}</span>
+              <button type="button" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(current + 1, pageCount))} className="border-b border-transparent py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-40">Next</button>
             </nav>
+          ) : null}
+        </section>
 
-            {notice ? (
-              <section className="mb-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm" role="alert">{notice}</section>
-            ) : null}
-
-            {loading ? (
-              <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-10 text-center text-[color:var(--loombus-text-muted)] shadow-xl shadow-black/10">
-                <Loader2 className="mx-auto animate-spin text-[color:var(--loombus-gold)]" size={28} />
-                <p className="mt-3">Gathering open Requests…</p>
-              </section>
-            ) : requests.length === 0 ? (
-              <section className="rounded-[1.75rem] border border-dashed border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-10 text-center shadow-xl shadow-black/10">
-                <HandHeart className="mx-auto text-[color:var(--loombus-gold)]" size={42} />
-                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">No Requests match this view.</h2>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">Clear a filter or create the first Request for this need.</p>
-                <Link href="/requests/manage" className="mt-5 inline-flex rounded-full bg-[color:var(--loombus-gold)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-gold-contrast)]">Create Request</Link>
-              </section>
-            ) : (
-              <section>
-                <div className="mb-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Public needs</p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">{total} open Request{total === 1 ? "" : "s"}</h2>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2" aria-label="Public Requests">
-                  {requests.map((item) => {
-                    const deadline = formatRequestDate(item.deadline);
-                    return (
-                      <Link
-                        key={item.id}
-                        href={`/requests/${item.slug}`}
-                        className="group flex min-h-[350px] flex-col rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-lg shadow-black/5 transition hover:-translate-y-0.5 hover:border-[color:var(--loombus-gold)] hover:shadow-xl"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]"><HandHeart size={20} /></span>
-                          <div className="flex flex-wrap justify-end gap-2 text-[11px] font-semibold text-[color:var(--loombus-text-muted)]">
-                            <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1">{requestTypeLabel(item.requestType)}</span>
-                            <span className={`rounded-full px-3 py-1 ${item.urgency === "urgent" ? "bg-red-500/10 text-red-500" : "border border-[color:var(--loombus-border)]"}`}>{requestUrgencyLabel(item.urgency)}</span>
-                          </div>
-                        </div>
-
-                        <h3 className="mt-5 text-2xl font-semibold leading-tight tracking-[-0.035em] group-hover:underline">{item.title}</h3>
-                        <p className="mt-3 line-clamp-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">{item.description}</p>
-
-                        <div className="mt-auto space-y-3 pt-6 text-sm text-[color:var(--loombus-text-muted)]">
-                          <span className="flex items-start gap-3"><MapPin className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />{requestLocationLabel(item)}</span>
-                          <span className="flex items-start gap-3"><BriefcaseBusiness className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />{formatRequestBudget(item)}</span>
-                          {item.deadline ? <span className="flex items-start gap-3"><Clock3 className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />Deadline {deadline}</span> : null}
-                        </div>
-
-                        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[color:var(--loombus-border-muted)] pt-4 text-xs text-[color:var(--loombus-text-muted)]">
-                          <span>{item.businessName || item.requesterName}</span>
-                          <span>{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</span>
-                          <span className="inline-flex items-center gap-1 font-semibold text-[color:var(--loombus-gold)]">Open Request <ArrowUpRight size={13} /></span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {pageCount > 1 ? (
-              <nav className="mt-6 flex justify-center gap-3" aria-label="Requests pages">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(current - 1, 1))} className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-5 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-40">Previous</button>
-                <span className="py-2 text-sm text-[color:var(--loombus-text-muted)]">Page {page} of {pageCount}</span>
-                <button type="button" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(current + 1, pageCount))} className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-5 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-40">Next</button>
-              </nav>
-            ) : null}
-          </section>
-
-          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-[0.3em]">Request filters</p>
-                <SlidersHorizontal className="h-5 w-5 text-[color:var(--loombus-gold)]" />
-              </div>
-              <div className="mt-4 space-y-3">
-                <select value={category} onChange={(event) => setCategory(event.target.value)} className={controlClass} aria-label="Request category">
-                  <option value="all">All categories</option>
-                  {SERVICE_REQUEST_CATEGORIES.map((item) => <option key={item}>{item}</option>)}
-                </select>
-                <select value={urgency} onChange={(event) => setUrgency(event.target.value)} className={controlClass} aria-label="Request urgency">
-                  <option value="all">All urgency</option>
-                  <option value="normal">Normal</option>
-                  <option value="soon">Needed soon</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                <label className="relative block">
-                  <span className="sr-only">Request location</span>
-                  <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--loombus-text-subtle)]" />
-                  <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="City, region, or postal code" className={`${controlClass} pl-11`} />
-                </label>
-                <button type="button" onClick={clearFilters} className="w-full rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]">Clear filters</button>
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Request tools</p>
-              <div className="mt-4 space-y-2">
-                <Link href="/requests/manage" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Create or manage <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" /></Link>
-                <Link href="/requests/saved" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Saved Requests <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" /></Link>
-                <Link href="/services" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Browse Services <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" /></Link>
-                <Link href="/rooms" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Private Room Requests <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" /></Link>
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]"><ShieldCheck className="h-5 w-5" /></span>
-                <div>
-                  <h3 className="font-semibold">Requester stays in control</h3>
-                  <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Private conversation begins only after the requester selects a response. Responses remain attributable to a member or business.</p>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex gap-3"><Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" /><p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">Loombus does not process payment or guarantee qualifications, pricing, licensing, or outcomes. <Link href="/requests/safety" className="font-semibold text-[color:var(--loombus-gold)] hover:underline">Read Requests safety</Link>.</p></div>
-            </section>
-          </aside>
-        </div>
+        <footer className="grid gap-6 border-t border-[color:var(--loombus-border)] py-7 md:grid-cols-2">
+          <div className="flex gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
+            <div>
+              <h3 className="font-semibold">Requester stays in control</h3>
+              <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Private conversation begins only after the requester selects a response. Responses remain attributable to a member or business.</p>
+            </div>
+          </div>
+          <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+            Loombus does not process payment or guarantee qualifications, pricing, licensing, or outcomes. <Link href="/requests/safety" className="font-semibold text-[color:var(--loombus-gold)] hover:underline">Read Requests safety</Link>.
+          </p>
+        </footer>
       </div>
     </main>
   );
