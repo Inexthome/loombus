@@ -1,0 +1,23 @@
+name: Local runtime load
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/local/**"
+      - "src/components/local-discovery-page.tsx"
+      - "src/lib/local-discovery*.ts"
+      - "scripts/verification/verify-local-runtime-load.mjs"
+      - ".github/workflows/local-runtime-load.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Local runtime load contract
+        run: node scripts/verification/verify-local-runtime-load.mjs
