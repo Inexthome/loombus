@@ -40,39 +40,70 @@ export async function GET(request: NextRequest) {
   const { user } = await requireMemberUser(request);
   if (!user) return jsonError("Unauthorized.", 401);
 
-  const { data: requests, error } = await service
-    .from("follow_requests")
-    .select("id, requester_id, created_at")
-    .eq("target_id", user.id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const includeSent = request.nextUrl.searchParams.get("scope") === "all";
 
-  if (error) return jsonError(error.message, 500);
+  const [{ data: receivedRows, error: receivedError }, sentResult] = await Promise.all([
+    service
+      .from("follow_requests")
+      .select("id, requester_id, created_at")
+      .eq("target_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(50),
+    includeSent
+      ? service
+          .from("follow_requests")
+          .select("id, target_id, created_at")
+          .eq("requester_id", user.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: [] as Array<{ id: string; target_id: string; created_at: string }>, error: null }),
+  ]);
 
-  const requesterIds = [...new Set((requests ?? []).map((row) => row.requester_id))];
-  const { data: profiles } = requesterIds.length
+  if (receivedError) return jsonError(receivedError.message, 500);
+  if (sentResult.error) return jsonError(sentResult.error.message, 500);
+
+  const receivedProfileIds = (receivedRows ?? []).map((row) => row.requester_id);
+  const sentProfileIds = (sentResult.data ?? []).map((row) => row.target_id);
+  const profileIds = [...new Set([...receivedProfileIds, ...sentProfileIds])];
+
+  const { data: profiles, error: profilesError } = profileIds.length
     ? await service
         .from("profiles")
         .select("id, full_name, username, avatar_url, bio")
-        .in("id", requesterIds)
-    : { data: [] };
+        .in("id", profileIds)
+    : { data: [], error: null };
+
+  if (profilesError) return jsonError(profilesError.message, 500);
 
   const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
-  const items = (requests ?? []).map((row) => ({
+  const fallbackProfile = (id: string) => ({
+    id,
+    full_name: null,
+    username: null,
+    avatar_url: null,
+    bio: null,
+  });
+
+  const receivedRequests = (receivedRows ?? []).map((row) => ({
     id: row.id,
     createdAt: row.created_at,
-    requester: profileMap.get(row.requester_id) ?? {
-      id: row.requester_id,
-      full_name: null,
-      username: null,
-      avatar_url: null,
-      bio: null,
-    },
+    requester: profileMap.get(row.requester_id) ?? fallbackProfile(row.requester_id),
+  }));
+
+  const sentRequests = (sentResult.data ?? []).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    target: profileMap.get(row.target_id) ?? fallbackProfile(row.target_id),
   }));
 
   return NextResponse.json(
-    { requests: items },
+    {
+      requests: receivedRequests,
+      receivedRequests,
+      ...(includeSent ? { sentRequests } : {}),
+    },
     { headers: { "Cache-Control": "private, no-store" } }
   );
 }
