@@ -26,6 +26,18 @@ type ConversationMemberRow = {
   } | null;
 };
 
+type MarketplaceConversationContext = {
+  listingId: string;
+  slug: string;
+  title: string;
+  price: number;
+  currency: string;
+  isFree: boolean;
+  city: string;
+  region: string;
+  status: string;
+};
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -248,6 +260,79 @@ async function findExistingConversation(
   return matchingMembership?.conversation_id ?? null;
 }
 
+async function loadMarketplaceConversationContexts(conversationIds: string[]) {
+  const contexts = new Map<string, MarketplaceConversationContext[]>();
+  if (conversationIds.length === 0) return contexts;
+
+  let service;
+  try {
+    service = getSupabaseServiceRole();
+  } catch {
+    return contexts;
+  }
+
+  const { data: contactRows, error: contactError } = await service
+    .from("marketplace_contact_threads")
+    .select("conversation_id, listing_id")
+    .in("conversation_id", conversationIds);
+
+  if (contactError) {
+    console.error("Unable to load Marketplace conversation context:", contactError.message);
+    return contexts;
+  }
+
+  const contacts = (contactRows ?? []) as Array<{
+    conversation_id: string;
+    listing_id: string;
+  }>;
+  const listingIds = [...new Set(contacts.map((row) => row.listing_id).filter(Boolean))];
+  if (listingIds.length === 0) return contexts;
+
+  const { data: listingRows, error: listingError } = await service
+    .from("marketplace_listings")
+    .select("id, slug, title, price, currency, is_free, city, region, status")
+    .in("id", listingIds);
+
+  if (listingError) {
+    console.error("Unable to load Marketplace listing context:", listingError.message);
+    return contexts;
+  }
+
+  const listingMap = new Map(
+    (listingRows ?? []).map((row: any) => [String(row.id), row])
+  );
+
+  for (const contact of contacts) {
+    const listing = listingMap.get(contact.listing_id);
+    if (!listing) continue;
+    const current = contexts.get(contact.conversation_id) ?? [];
+    if (current.some((item) => item.listingId === contact.listing_id)) continue;
+    current.push({
+      listingId: String(listing.id),
+      slug: String(listing.slug ?? ""),
+      title: String(listing.title ?? "Marketplace listing"),
+      price: Number(listing.price ?? 0),
+      currency: String(listing.currency ?? "USD"),
+      isFree: Boolean(listing.is_free),
+      city: String(listing.city ?? ""),
+      region: String(listing.region ?? ""),
+      status: String(listing.status ?? ""),
+    });
+    contexts.set(contact.conversation_id, current);
+  }
+
+  return contexts;
+}
+
+function mergeMarketplaceContexts(
+  left: MarketplaceConversationContext[] = [],
+  right: MarketplaceConversationContext[] = []
+) {
+  const merged = new Map<string, MarketplaceConversationContext>();
+  for (const item of [...left, ...right]) merged.set(item.listingId, item);
+  return [...merged.values()];
+}
+
 export async function GET(request: NextRequest) {
   let supabase;
 
@@ -310,17 +395,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ conversations: [] });
   }
 
-  const [{ data: allMembers }, { data: lastMessages }] = await Promise.all([
-    supabase
-      .from("private_conversation_members")
-      .select("conversation_id, user_id")
-      .in("conversation_id", conversationIds),
-    supabase
-      .from("private_messages")
-      .select("id, conversation_id, sender_id, body, created_at")
-      .in("conversation_id", conversationIds)
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: allMembers }, { data: lastMessages }, marketplaceContextMap] =
+    await Promise.all([
+      supabase
+        .from("private_conversation_members")
+        .select("conversation_id, user_id")
+        .in("conversation_id", conversationIds),
+      supabase
+        .from("private_messages")
+        .select("id, conversation_id, sender_id, body, created_at")
+        .in("conversation_id", conversationIds)
+        .order("created_at", { ascending: false }),
+      loadMarketplaceConversationContexts(conversationIds),
+    ]);
 
   const otherUserIds = [
     ...new Set(
@@ -391,6 +478,7 @@ export async function GET(request: NextRequest) {
           ? String(lastMessage.body).slice(0, 140)
           : null,
         lastMessageSenderId: lastMessage?.sender_id ?? null,
+        marketplaceContexts: marketplaceContextMap.get(conversation.id) ?? [],
       };
     })
     .filter(Boolean)
@@ -426,16 +514,22 @@ export async function GET(request: NextRequest) {
     ).getTime();
 
     const mergedUnread = Boolean(existing.hasUnread || conversation.hasUnread);
+    const marketplaceContexts = mergeMarketplaceContexts(
+      existing.marketplaceContexts,
+      conversation.marketplaceContexts
+    );
 
     if (conversationTime > existingTime) {
       conversationsByCounterpart.set(counterpartKey, {
         ...conversation,
         hasUnread: mergedUnread,
+        marketplaceContexts,
       });
-    } else if (mergedUnread !== existing.hasUnread) {
+    } else {
       conversationsByCounterpart.set(counterpartKey, {
         ...existing,
         hasUnread: mergedUnread,
+        marketplaceContexts,
       });
     }
   }
