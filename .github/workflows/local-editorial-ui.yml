@@ -1,0 +1,27 @@
+name: Local Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/local/**"
+      - "src/components/local-discovery-page.tsx"
+      - "src/components/local-discovery-editorial.css"
+      - "scripts/verification/verify-local-editorial-ui.mjs"
+      - ".github/workflows/local-editorial-ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Local Editorial UI
+        run: node scripts/verification/verify-local-editorial-ui.mjs
