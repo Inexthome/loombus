@@ -1,102 +1,31 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Building2,
-  MapPin,
-  Wrench,
-} from "lucide-react";
-import {
-  type BusinessProfile,
-  businessLocationLabel,
-  businessServiceAreaLabel,
-} from "@/lib/business-directory";
+import { BadgeCheck, Building2, MapPin, Wrench } from "lucide-react";
+import { type BusinessProfile, businessLocationLabel, businessServiceAreaLabel } from "@/lib/business-directory";
 
-export function BusinessProfileOverview({
-  business,
-}: {
-  business: BusinessProfile;
-}) {
+export function BusinessProfileOverview({ business }: { business: BusinessProfile }) {
   const location = businessLocationLabel(business) || "Location not published";
   const serviceArea = businessServiceAreaLabel(business);
 
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
-      {business.coverImageUrl ? (
-        <div className="h-40 overflow-hidden border-b border-[color:var(--loombus-border-muted)] sm:h-56">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={business.coverImageUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        </div>
-      ) : null}
-
-      <div className="p-5 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] shadow-sm dark:bg-[color:var(--loombus-gold-soft)]">
-            {business.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={business.logoUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <Building2 size={32} />
-            )}
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
-                {business.category}
-              </span>
-              {business.verificationStatus === "verified" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--loombus-cream)] px-3 py-1.5 text-xs font-semibold text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]">
-                  <BadgeCheck size={14} /> Verified business
-                </span>
-              ) : (
-                <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5 text-xs text-[color:var(--loombus-text-subtle)]">
-                  Ownership not verified
-                </span>
-              )}
-            </div>
-
-            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">
-              {business.name}
-            </h1>
-            <p className="mt-4 max-w-4xl whitespace-pre-wrap text-base leading-7 text-[color:var(--loombus-text-muted)]">
-              {business.description}
-            </p>
+    <section className="border-b border-[color:var(--loombus-border)] py-7">
+      {business.coverImageUrl ? <div className="mb-7 h-44 overflow-hidden border-y border-[color:var(--loombus-border)] sm:h-60"><img src={business.coverImageUrl} alt="" className="h-full w-full object-cover" /></div> : null}
+      <div className="grid gap-6 lg:grid-cols-[5rem_minmax(0,1fr)]">
+        <span className="flex h-20 w-20 items-center justify-center overflow-hidden border border-[color:var(--loombus-border)] text-[color:var(--loombus-gold)]">{business.logoUrl ? <img src={business.logoUrl} alt="" className="h-full w-full object-cover" /> : <Building2 size={31} />}</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--loombus-text-subtle)]">
+            <span>{business.category}</span>
+            {business.verificationStatus === "verified" ? <span className="inline-flex items-center gap-1.5 text-[color:var(--loombus-gold)]"><BadgeCheck size={14} /> Verified business</span> : <span>Ownership not verified</span>}
           </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-            <MapPin className="text-[color:var(--loombus-gold)]" size={18} />
-            <strong className="mt-3 block text-sm">Public location</strong>
-            <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-              {location}
-            </span>
-          </article>
-          <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-            <Wrench className="text-[color:var(--loombus-gold)]" size={18} />
-            <strong className="mt-3 block text-sm">Service area</strong>
-            <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-              {serviceArea}
-            </span>
-          </article>
-          <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-            <Building2 className="text-[color:var(--loombus-gold)]" size={18} />
-            <strong className="mt-3 block text-sm">Listed offerings</strong>
-            <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-              {business.services.length} service{business.services.length === 1 ? "" : "s"} on this profile
-            </span>
-          </article>
+          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">{business.name}</h1>
+          <p className="mt-4 max-w-4xl whitespace-pre-wrap text-base leading-7 text-[color:var(--loombus-text-muted)]">{business.description}</p>
         </div>
       </div>
+      <dl className="mt-7 grid border-t border-[color:var(--loombus-border)] sm:grid-cols-3">
+        <div className="border-b border-[color:var(--loombus-border-muted)] py-4 sm:border-b-0 sm:border-r sm:pr-5"><dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[color:var(--loombus-text-subtle)]"><MapPin size={14} className="text-[color:var(--loombus-gold)]" />Public location</dt><dd className="mt-2 text-sm leading-6">{location}</dd></div>
+        <div className="border-b border-[color:var(--loombus-border-muted)] py-4 sm:border-b-0 sm:border-r sm:px-5"><dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[color:var(--loombus-text-subtle)]"><Wrench size={14} className="text-[color:var(--loombus-gold)]" />Service area</dt><dd className="mt-2 text-sm leading-6">{serviceArea}</dd></div>
+        <div className="py-4 sm:pl-5"><dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[color:var(--loombus-text-subtle)]"><Building2 size={14} className="text-[color:var(--loombus-gold)]" />Listed offerings</dt><dd className="mt-2 text-sm leading-6">{business.services.length} service{business.services.length === 1 ? "" : "s"}</dd></div>
+      </dl>
     </section>
   );
 }
