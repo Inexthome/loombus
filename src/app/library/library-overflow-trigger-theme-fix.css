@@ -1,0 +1,20 @@
+/* /library book overflow trigger appearance only.
+   The dropdown menu itself is intentionally unchanged. */
+
+[data-library-editorial-home]
+  main
+  details
+  > summary[aria-label^="More options for "] {
+  background: transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+[data-library-editorial-home]
+  main
+  details
+  > summary[aria-label^="More options for "]:hover {
+  background: transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
