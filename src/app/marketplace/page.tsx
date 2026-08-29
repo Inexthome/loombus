@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarketplaceDirectoryPage from "@/components/marketplace-directory-page";
+import "./marketplace-editorial.css";
 
 export const metadata: Metadata = {
   title: "Marketplace | Loombus",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function MarketplacePage() {
-  return <MarketplaceDirectoryPage />;
+  return (
+    <div data-marketplace-editorial="directory">
+      <MarketplaceDirectoryPage />
+    </div>
+  );
 }

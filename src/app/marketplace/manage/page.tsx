@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import MarketplaceAdminMetrics from "@/components/marketplace-admin-metrics";
 import MarketplaceManagerPage from "@/components/marketplace-manager-page";
+import "../marketplace-editorial.css";
 
 export const metadata: Metadata = {
   title: "Manage Marketplace | Loombus",
@@ -11,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function ManageMarketplacePage() {
   return (
-    <>
+    <div data-marketplace-editorial="manage">
       <MarketplaceManagerPage />
       <MarketplaceAdminMetrics />
-    </>
+    </div>
   );
 }

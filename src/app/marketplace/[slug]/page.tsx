@@ -3,6 +3,7 @@ import MarketplaceListingPage from "@/components/marketplace-listing-page";
 import MarketplacePickupScheduler from "@/components/marketplace-pickup-scheduler";
 import MarketplaceTrustActions from "@/components/marketplace-trust-actions";
 import { findPublicMarketplaceListingBySlug } from "@/lib/marketplace-public-server";
+import "../marketplace-editorial.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -99,7 +100,7 @@ export default async function ListingPage({
     : null;
 
   return (
-    <>
+    <div data-marketplace-editorial="detail">
       <MarketplaceListingPage />
       {listing ? (
         <MarketplacePickupScheduler
@@ -121,6 +122,6 @@ export default async function ListingPage({
           }}
         />
       ) : null}
-    </>
+    </div>
   );
 }

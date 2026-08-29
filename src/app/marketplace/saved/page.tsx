@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarketplaceSavedPage from "@/components/marketplace-saved-page";
+import "../marketplace-editorial.css";
 
 export const metadata: Metadata = {
   title: "Saved Marketplace Items | Loombus",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function SavedMarketplacePage() {
-  return <MarketplaceSavedPage />;
+  return (
+    <div data-marketplace-editorial="saved">
+      <MarketplaceSavedPage />
+    </div>
+  );
 }
