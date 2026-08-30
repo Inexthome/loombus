@@ -33,6 +33,12 @@ type PayoutState = {
   paymentPlatformFeeBps: number;
 };
 
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+
+const primaryActionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-bold text-[color:var(--loombus-gold)] transition hover:text-[color:var(--loombus-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+
 function acceptedAtLabel(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
@@ -169,56 +175,54 @@ export default function ProfessionalBookingPayoutCard() {
   const feePercent = data ? data.paymentPlatformFeeBps / 100 : 8;
 
   return (
-    <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
+    <section data-professional-booking-payout-editorial="center">
+      <header className="flex flex-col gap-5 border-b border-[color:var(--loombus-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Professional Booking</p>
-            <span className="rounded-full border border-[color:var(--loombus-gold)]/40 bg-[color:var(--loombus-gold-soft)] px-2.5 py-1 text-[11px] font-bold text-[color:var(--loombus-gold)]">Premium Pro</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">Premium Pro</span>
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em]">Stripe payout setup</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Stripe payout setup</h1>
+          <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
             Connect one shared Stripe Express payout identity for Loombus professional services. Connecting Stripe alone does not activate paid appointments. Professional Booking payment terms must also be accepted, payout setup must be complete, and Loombus must enable the controlled payment flow.
           </p>
         </div>
-        <button type="button" onClick={() => void load()} disabled={loading || working} className="inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50">
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} /> Refresh
+        <button type="button" onClick={() => void load()} disabled={loading || working} className={actionClass}>
+          <RefreshCw size={15} className={loading ? "animate-spin motion-reduce:animate-none" : ""} /> Refresh
         </button>
+      </header>
+
+      <div className="grid gap-4 border-b border-[color:var(--loombus-border)] py-5 text-sm leading-6 text-[color:var(--loombus-text-muted)] sm:grid-cols-[auto_minmax(0,1fr)]">
+        <WalletCards className="h-5 w-5 text-[color:var(--loombus-gold)]" aria-hidden="true" />
+        <p>The same Stripe Express identity can support multiple eligible Loombus products, but each product keeps its own economics and terms. Creator Supporter terms and its 15% fee do not apply to Professional Booking.</p>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-        <div className="flex gap-3">
-          <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
-          <p>The same Stripe Express identity can support multiple eligible Loombus products, but each product keeps its own economics and terms. Creator Supporter terms and its 15% fee do not apply to Professional Booking.</p>
-        </div>
-      </div>
-
-      {notice ? <div className="mt-4 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm" role="status">{notice}</div> : null}
+      {notice ? <div className="border-b border-[color:var(--loombus-border)] py-4 text-sm" role="status">{notice}</div> : null}
 
       {loading ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">Loading payout setup…</div>
+        <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">Loading payout setup…</div>
       ) : data ? (
-        <div className="mt-5 space-y-4">
+        <div>
           {!data.canUseProfessionalBooking ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
+            <section className="border-b border-[color:var(--loombus-border)] py-6">
               <p className="text-sm font-semibold">{data.hasPayoutIdentity ? "Your shared payout identity is preserved read-only." : "Premium Pro is required for Professional Booking payout setup."}</p>
-              <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Downgrading does not delete or disconnect a shared Stripe identity or erase prior payment-term acceptance.</p>
-              <button type="button" onClick={requestAccess} className="mt-3 rounded-full border border-[color:var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[color:var(--loombus-gold)]">View Premium Pro</button>
-            </div>
+              <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Downgrading does not delete or disconnect a shared Stripe identity or erase prior payment-term acceptance.</p>
+              <button type="button" onClick={requestAccess} className={`${actionClass} mt-3`}>View Premium Pro</button>
+            </section>
           ) : !data.hasProviderService ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm">Create an active or paused appointment service before connecting Stripe for Professional Booking.</div>
+            <div className="border-b border-[color:var(--loombus-border)] py-6 text-sm">Create an active or paused appointment service before connecting Stripe for Professional Booking.</div>
           ) : !data.ageSafetyAvailable || !data.adultProviderEligible ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm">Professional Booking payout setup is available only after Loombus can verify adult-provider eligibility.</div>
+            <div className="border-b border-[color:var(--loombus-border)] py-6 text-sm">Professional Booking payout setup is available only after Loombus can verify adult-provider eligibility.</div>
           ) : null}
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Stripe identity</p><p className="mt-2 font-semibold">{data.hasPayoutIdentity ? "Connected" : "Not connected"}</p></div>
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Details submitted</p><p className="mt-2 font-semibold">{data.payout?.detailsSubmitted ? "Yes" : "No"}</p></div>
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Payouts enabled</p><p className="mt-2 font-semibold">{data.payout?.payoutsEnabled ? "Yes" : "No"}</p></div>
-          </div>
+          <section className="grid border-b border-[color:var(--loombus-border)] md:grid-cols-3">
+            <div className="py-5 md:pr-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Stripe identity</p><p className="mt-2 font-semibold">{data.hasPayoutIdentity ? "Connected" : "Not connected"}</p></div>
+            <div className="border-t border-[color:var(--loombus-border)] py-5 md:border-l md:border-t-0 md:px-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Details submitted</p><p className="mt-2 font-semibold">{data.payout?.detailsSubmitted ? "Yes" : "No"}</p></div>
+            <div className="border-t border-[color:var(--loombus-border)] py-5 md:border-l md:border-t-0 md:pl-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Payouts enabled</p><p className="mt-2 font-semibold">{data.payout?.payoutsEnabled ? "Yes" : "No"}</p></div>
+          </section>
 
           {canManage ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-5">
+            <section className="border-b border-[color:var(--loombus-border)] py-6">
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
                 <div>
@@ -228,17 +232,17 @@ export default function ProfessionalBookingPayoutCard() {
               </div>
 
               {data.paymentTermsAccepted ? (
-                <div className="mt-4 rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm">
+                <div className="mt-5 border-l-2 border-[color:var(--loombus-gold)] pl-4 text-sm">
                   <strong>Accepted</strong>
                   {data.paymentTermsAcceptedAt ? (
                     <span className="ml-2 text-[color:var(--loombus-text-muted)]">{acceptedAtLabel(data.paymentTermsAcceptedAt)}</span>
                   ) : null}
                 </div>
               ) : !data.paymentTermsStorageAvailable ? (
-                <p className="mt-4 text-sm text-[color:var(--loombus-text-muted)]">Payment terms storage is not available in this deployment yet.</p>
+                <p className="mt-5 text-sm text-[color:var(--loombus-text-muted)]">Payment terms storage is not available in this deployment yet.</p>
               ) : (
                 <>
-                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  <ul className="mt-5 list-disc space-y-2 pl-5 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                     <li>For paid Professional Booking, Loombus applies the current Premium Pro service transaction fee of {feePercent}% to the requester&apos;s exact accepted service price.</li>
                     <li>The requester authorizes payment when submitting the paid booking. Loombus captures it only when the appointment is accepted.</li>
                     <li>If an authorization expires before acceptance, the requester must authorize again. Loombus does not silently charge an expired authorization.</li>
@@ -246,51 +250,51 @@ export default function ProfessionalBookingPayoutCard() {
                     <li>The provider amount shown by Loombus is the service price less the Loombus fee before Stripe processing, taxes, disputes, refunds, or other settlement adjustments.</li>
                     <li>The shared Stripe payout identity may be reused, but these terms are separate from Creator Supporter or other Loombus product terms.</li>
                   </ul>
-                  <label className="mt-4 flex items-start gap-3 rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm leading-6">
-                    <input type="checkbox" checked={termsChecked} onChange={(event) => setTermsChecked(event.target.checked)} className="mt-1" />
+                  <label className="mt-5 grid min-h-11 grid-cols-[auto_minmax(0,1fr)] items-start gap-3 border-y border-[color:var(--loombus-border)] py-4 text-sm leading-6">
+                    <input type="checkbox" checked={termsChecked} onChange={(event) => setTermsChecked(event.target.checked)} className="mt-1 h-5 w-5 accent-[color:var(--loombus-gold)]" />
                     <span>I have reviewed and accept these Professional Booking payment terms.</span>
                   </label>
-                  <button type="button" onClick={() => void action("accept_payment_terms")} disabled={working || !termsChecked} className="mt-3 rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">Accept payment terms</button>
+                  <button type="button" onClick={() => void action("accept_payment_terms")} disabled={working || !termsChecked} className={`${primaryActionClass} mt-3`}>Accept payment terms</button>
                 </>
               )}
-            </div>
+            </section>
           ) : null}
 
           {canManage &&
           data.payoutOnboardingEnabled &&
           (!data.hasPayoutIdentity || !data.payout?.detailsSubmitted) &&
           (!data.paymentEligibilityReviewAvailable || !data.paymentEligible) ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
+            <section className="border-b border-[color:var(--loombus-border)] py-6">
               <p className="text-sm font-semibold">
                 {data.paymentEligibilityReviewAvailable
                   ? "Payment eligibility review required"
                   : "Payment eligibility review unavailable"}
               </p>
-              <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+              <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                 {data.paymentEligibilityReviewAvailable
                   ? "Loombus must approve your current Professional Booking payment scope before Stripe payout onboarding can begin."
                   : "Loombus cannot verify your current Professional Booking payment eligibility right now. Retry before connecting Stripe."}
               </p>
-            </div>
+            </section>
           ) : null}
 
           {canManage &&
           (!data.hasPayoutIdentity || !data.payout?.detailsSubmitted) &&
           !data.payoutOnboardingEnabled ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm text-[color:var(--loombus-text-muted)]">
+            <div className="border-b border-[color:var(--loombus-border)] py-6 text-sm text-[color:var(--loombus-text-muted)]">
               Professional Booking Stripe payout onboarding is not enabled in this deployment.
             </div>
           ) : null}
 
           {data.payout?.requirementsDue?.length ? (
-            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
+            <section className="border-b border-[color:var(--loombus-border)] py-6">
               <p className="text-sm font-semibold">Stripe requirements still due</p>
-              <p className="mt-1 break-words text-sm text-[color:var(--loombus-text-muted)]">{data.payout.requirementsDue.join(", ")}</p>
-            </div>
+              <p className="mt-2 break-words text-sm text-[color:var(--loombus-text-muted)]">{data.payout.requirementsDue.join(", ")}</p>
+            </section>
           ) : null}
 
           {canManage ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 py-6">
               {!data.hasPayoutIdentity || !data.payout?.detailsSubmitted ? (
                 <button
                   type="button"
@@ -301,7 +305,7 @@ export default function ProfessionalBookingPayoutCard() {
                     !data.paymentEligibilityReviewAvailable ||
                     !data.paymentEligible
                   }
-                  className="rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50"
+                  className={primaryActionClass}
                 >
                   {!data.payoutOnboardingEnabled
                     ? "Stripe setup unavailable"
@@ -314,9 +318,9 @@ export default function ProfessionalBookingPayoutCard() {
                           : "Connect Stripe"}
                 </button>
               ) : (
-                <button type="button" onClick={() => void action("open_dashboard")} disabled={working} className="inline-flex items-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">Open Stripe dashboard <ExternalLink size={14} /></button>
+                <button type="button" onClick={() => void action("open_dashboard")} disabled={working} className={primaryActionClass}>Open Stripe dashboard <ExternalLink size={14} /></button>
               )}
-              {data.hasPayoutIdentity ? <button type="button" onClick={() => void action("refresh")} disabled={working} className="rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Refresh status</button> : null}
+              {data.hasPayoutIdentity ? <button type="button" onClick={() => void action("refresh")} disabled={working} className={actionClass}>Refresh status</button> : null}
             </div>
           ) : null}
         </div>
