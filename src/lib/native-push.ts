@@ -12,6 +12,7 @@ let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
 
 const NATIVE_PUSH_TOKEN_STORAGE_KEY = "loombus:native-push-token";
+const NATIVE_PUSH_INSTALLATION_ID_STORAGE_KEY = "loombus:native-push-installation-id";
 
 type StoredNativePushToken = {
   token: string;
@@ -44,6 +45,37 @@ function clearStoredNativePushToken(token: string) {
   if (typeof window === "undefined") return;
   if (getStoredNativePushToken()?.token === token) {
     window.localStorage.removeItem(NATIVE_PUSH_TOKEN_STORAGE_KEY);
+  }
+}
+
+function createNativePushInstallationId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+}
+
+function getOrCreateNativePushInstallationId() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = window.localStorage.getItem(NATIVE_PUSH_INSTALLATION_ID_STORAGE_KEY)?.trim();
+    if (stored) return stored;
+
+    const installationId = createNativePushInstallationId();
+    window.localStorage.setItem(NATIVE_PUSH_INSTALLATION_ID_STORAGE_KEY, installationId);
+    return installationId;
+  } catch {
+    return null;
   }
 }
 
@@ -128,9 +160,12 @@ function registerNativeBadgeSyncListeners() {
 }
 
 async function registerPushToken(token: string, platform: string) {
-  storeNativePushToken(token, platform);
   const tokenType = getNativePushTokenType(platform);
   const accessToken = await getAccessToken();
+  const storedToken = getStoredNativePushToken();
+  const previousToken =
+    storedToken && storedToken.token !== token ? storedToken.token : null;
+  const deviceId = getOrCreateNativePushInstallationId();
 
   if (!accessToken) {
     pendingPushToken = { token, platform };
@@ -143,10 +178,17 @@ async function registerPushToken(token: string, platform: string) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ token, platform, tokenType }),
+    body: JSON.stringify({
+      token,
+      platform,
+      tokenType,
+      deviceId,
+      previousToken,
+    }),
   });
 
   if (response.ok) {
+    storeNativePushToken(token, platform);
     if (pendingPushToken?.token === token) pendingPushToken = null;
     return;
   }

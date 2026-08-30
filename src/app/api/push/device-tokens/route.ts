@@ -7,6 +7,7 @@ type PushTokenPayload = {
   tokenType?: unknown;
   deviceId?: unknown;
   appVersion?: unknown;
+  previousToken?: unknown;
 };
 
 const ALLOWED_PLATFORMS = new Set(["ios", "android", "web", "unknown"]);
@@ -84,12 +85,18 @@ function normalizePushTokenPayload(body: PushTokenPayload) {
     ? tokenTypeCandidate
     : "unknown";
 
+  const previousToken = cleanOptionalText(body.previousToken, 4096);
+
   return {
     token,
     platform,
     tokenType,
     deviceId: cleanOptionalText(body.deviceId, 160),
     appVersion: cleanOptionalText(body.appVersion, 80),
+    previousToken:
+      previousToken && previousToken.length >= 16 && previousToken !== token
+        ? previousToken
+        : null,
   };
 }
 
@@ -164,6 +171,35 @@ export async function POST(request: NextRequest) {
   if (upsertError) {
     console.error("Push token registration failed:", upsertError.message);
     return jsonError("Unable to register push token.", 400);
+  }
+
+  if (normalized.previousToken) {
+    const { error: previousTokenError } = await serviceSupabase
+      .from("user_push_device_tokens")
+      .update({ enabled: false, updated_at: now })
+      .eq("user_id", userId)
+      .eq("token", normalized.previousToken)
+      .eq("enabled", true);
+
+    if (previousTokenError) {
+      console.error("Superseded push token cleanup failed:", previousTokenError.message);
+    }
+  }
+
+  if (normalized.deviceId) {
+    const { error: deviceCleanupError } = await serviceSupabase
+      .from("user_push_device_tokens")
+      .update({ enabled: false, updated_at: now })
+      .eq("user_id", userId)
+      .eq("platform", normalized.platform)
+      .eq("token_type", normalized.tokenType)
+      .eq("device_id", normalized.deviceId)
+      .eq("enabled", true)
+      .neq("token", normalized.token);
+
+    if (deviceCleanupError) {
+      console.error("Duplicate push installation cleanup failed:", deviceCleanupError.message);
+    }
   }
 
   return NextResponse.json({ ok: true });
