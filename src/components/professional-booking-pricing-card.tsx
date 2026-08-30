@@ -12,7 +12,11 @@ type ManagePayload = {
 };
 
 const fieldClass =
-  "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)] disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+const primaryActionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-bold text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
 
 function centsToInput(amountCents: number) {
   const dollars = Math.floor(amountCents / 100);
@@ -23,11 +27,9 @@ function centsToInput(amountCents: number) {
 function inputToCents(value: string) {
   const normalized = value.trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
-
   const [whole, fraction = ""] = normalized.split(".");
   const centsText = `${whole}${`${fraction}00`.slice(0, 2)}`;
   const amount = Number(centsText);
-
   if (!Number.isSafeInteger(amount) || amount <= 0) return null;
   return amount;
 }
@@ -55,7 +57,6 @@ export default function ProfessionalBookingPricingCard() {
     () => services.filter((service) => service.status !== "archived"),
     [services],
   );
-
   const selectedService = useMemo(
     () => services.find((service) => service.id === selectedServiceId) ?? null,
     [services, selectedServiceId],
@@ -64,7 +65,6 @@ export default function ProfessionalBookingPricingCard() {
   const loadServices = useCallback(async () => {
     setLoadingServices(true);
     setNotice("");
-
     try {
       const response = await scheduleAuthorizedFetch(
         "/api/appointments?manage=1",
@@ -72,31 +72,17 @@ export default function ProfessionalBookingPricingCard() {
         "/appointments/professional-pricing",
       );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to load appointment services.");
-      }
-
+      if (!response.ok) throw new Error(payload.error ?? "Unable to load appointment services.");
       const nextServices = Array.isArray((payload as ManagePayload).services)
         ? ((payload as ManagePayload).services as AppointmentService[])
         : [];
       setServices(nextServices);
       setSelectedServiceId((current) => {
-        if (
-          current &&
-          nextServices.some(
-            (service) => service.id === current && service.status !== "archived",
-          )
-        ) {
-          return current;
-        }
+        if (current && nextServices.some((service) => service.id === current && service.status !== "archived")) return current;
         return nextServices.find((service) => service.status !== "archived")?.id ?? "";
       });
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to load appointment services.",
-      );
+      setNotice(error instanceof Error ? error.message : "Unable to load appointment services.");
     } finally {
       setLoadingServices(false);
     }
@@ -108,10 +94,8 @@ export default function ProfessionalBookingPricingCard() {
       setAmountText("");
       return;
     }
-
     setLoadingPricing(true);
     setNotice("");
-
     try {
       const params = new URLSearchParams({ serviceId });
       const response = await scheduleAuthorizedFetch(
@@ -120,46 +104,30 @@ export default function ProfessionalBookingPricingCard() {
         "/appointments/professional-pricing",
       );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to load structured pricing.");
-      }
-
+      if (!response.ok) throw new Error(payload.error ?? "Unable to load structured pricing.");
       const next = payload as ProfessionalBookingPricingResponse;
       setData(next);
       setAmountText(next.pricing ? centsToInput(next.pricing.amountCents) : "");
     } catch (error) {
       setData(null);
       setAmountText("");
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to load structured pricing.",
-      );
+      setNotice(error instanceof Error ? error.message : "Unable to load structured pricing.");
     } finally {
       setLoadingPricing(false);
     }
   }, []);
 
-  useEffect(() => {
-    void loadServices();
-  }, [loadServices]);
-
-  useEffect(() => {
-    void loadPricing(selectedServiceId);
-  }, [loadPricing, selectedServiceId]);
+  useEffect(() => { void loadServices(); }, [loadServices]);
+  useEffect(() => { void loadPricing(selectedServiceId); }, [loadPricing, selectedServiceId]);
 
   const canEdit = data?.canUseProfessionalBooking === true;
 
   function requestAccess() {
     if (!data) return;
-
     if (!data.subscriptionResolutionAvailable) {
-      setNotice(
-        "Loombus cannot verify Premium Pro access right now. Retry before changing structured pricing.",
-      );
+      setNotice("Loombus cannot verify Premium Pro access right now. Retry before changing structured pricing.");
       return;
     }
-
     requireSubscriptionEntitlement({
       plan: data.subscriptionPlan,
       entitlement: "professional_booking",
@@ -169,53 +137,35 @@ export default function ProfessionalBookingPricingCard() {
 
   async function save() {
     if (!data || !selectedServiceId || saving) return;
-
     if (!canEdit) {
       requestAccess();
       return;
     }
-
     const amountCents = inputToCents(amountText);
     if (amountCents === null) {
       setNotice("Enter a valid USD service price greater than zero, with no more than two decimal places.");
       return;
     }
-
     setSaving(true);
     setNotice("");
-
     try {
       const response = await scheduleAuthorizedFetch(
         "/api/appointments/professional-pricing",
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            serviceId: selectedServiceId,
-            amountCents,
-          }),
+          body: JSON.stringify({ serviceId: selectedServiceId, amountCents }),
         },
         "/appointments/professional-pricing",
       );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to save structured pricing.");
-      }
-
+      if (!response.ok) throw new Error(payload.error ?? "Unable to save structured pricing.");
       const updated = payload as ProfessionalBookingPricingResponse;
       setData(updated);
       setAmountText(updated.pricing ? centsToInput(updated.pricing.amountCents) : "");
-      setNotice(
-        updated.pricing
-          ? `Structured price saved at ${displayUsd(updated.pricing.amountCents)}.`
-          : "Structured price cleared.",
-      );
+      setNotice(updated.pricing ? `Structured price saved at ${displayUsd(updated.pricing.amountCents)}.` : "Structured price cleared.");
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to save structured pricing.",
-      );
+      setNotice(error instanceof Error ? error.message : "Unable to save structured pricing.");
     } finally {
       setSaving(false);
     }
@@ -223,15 +173,12 @@ export default function ProfessionalBookingPricingCard() {
 
   async function clearPricing() {
     if (!data || !selectedServiceId || saving || !data.hasSavedPricing) return;
-
     if (!canEdit) {
       requestAccess();
       return;
     }
-
     setSaving(true);
     setNotice("");
-
     try {
       const response = await scheduleAuthorizedFetch(
         "/api/appointments/professional-pricing",
@@ -243,202 +190,115 @@ export default function ProfessionalBookingPricingCard() {
         "/appointments/professional-pricing",
       );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to clear structured pricing.");
-      }
-
+      if (!response.ok) throw new Error(payload.error ?? "Unable to clear structured pricing.");
       const updated = payload as ProfessionalBookingPricingResponse;
       setData(updated);
       setAmountText("");
       setNotice("Structured price cleared. Existing appointment service details were not changed.");
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to clear structured pricing.",
-      );
+      setNotice(error instanceof Error ? error.message : "Unable to clear structured pricing.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
-              Professional Booking
-            </p>
-            <span className="rounded-full border border-[color:var(--loombus-gold)]/40 bg-[color:var(--loombus-gold-soft)] px-2.5 py-1 text-[11px] font-bold text-[color:var(--loombus-gold)]">
-              Premium Pro
-            </span>
+    <section data-professional-booking-pricing-editorial="root">
+      <header className="flex flex-col gap-5 border-b border-[color:var(--loombus-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Professional Booking</p>
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">Premium Pro</span>
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em]">
-            Paid-service pricing
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Paid-service pricing</h1>
+          <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
             Store an exact fixed USD price for a Professional Booking service without converting the existing free-form appointment price label into a chargeable amount.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => void loadServices()}
-          disabled={loadingServices || loadingPricing || saving}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
-        >
-          <RefreshCw
-            size={15}
-            className={loadingServices || loadingPricing ? "animate-spin" : ""}
-          />
-          Refresh
+        <button type="button" onClick={() => void loadServices()} disabled={loadingServices || loadingPricing || saving} className={actionClass}>
+          <RefreshCw size={15} className={loadingServices || loadingPricing ? "animate-spin motion-reduce:animate-none" : ""} /> Refresh
         </button>
-      </div>
+      </header>
 
-      <div className="mt-5 rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-        <div className="flex gap-3">
-          <DollarSign
-            className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]"
-            aria-hidden="true"
-          />
-          <p>
-            This foundation does not show the structured price to requesters and does not create a Stripe product, checkout, charge, transfer, payout, platform fee, tax calculation, refund, or payment obligation. Free Appointments continues to work exactly as it does today.
-          </p>
+      <section className="grid gap-6 border-b border-[color:var(--loombus-border)] py-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">Payment boundary</p>
+        <div className="flex max-w-3xl gap-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          <DollarSign className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
+          <p>This foundation does not show the structured price to requesters and does not create a Stripe product, checkout, charge, transfer, payout, platform fee, tax calculation, refund, or payment obligation. Free Appointments continues to work exactly as it does today.</p>
         </div>
-      </div>
+      </section>
 
-      {notice ? (
-        <div
-          className="mt-4 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm"
-          role="status"
-        >
-          {notice}
-        </div>
-      ) : null}
+      {notice ? <div className="border-b border-[color:var(--loombus-border)] py-4 text-sm text-[color:var(--loombus-text-muted)]" role="status">{notice}</div> : null}
 
       {loadingServices ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
-          Loading appointment services…
-        </div>
+        <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">Loading appointment services…</div>
       ) : usableServices.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
-          Create an appointment service first, then return here to configure structured Professional Booking pricing.
-        </div>
+        <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">Create an appointment service first, then return here to configure structured Professional Booking pricing.</div>
       ) : (
-        <div className="mt-5 space-y-5">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold">Appointment service</span>
-            <select
-              value={selectedServiceId}
-              onChange={(event) => setSelectedServiceId(event.target.value)}
-              className={fieldClass}
-              disabled={loadingPricing || saving}
-            >
-              {usableServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.businessName} · {service.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="divide-y divide-[color:var(--loombus-border)]">
+          <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">Service</p>
+            <label className="block max-w-3xl">
+              <span className="block text-sm font-semibold">Appointment service</span>
+              <select value={selectedServiceId} onChange={(event) => setSelectedServiceId(event.target.value)} className={fieldClass} disabled={loadingPricing || saving}>
+                {usableServices.map((service) => <option key={service.id} value={service.id}>{service.businessName} · {service.name}</option>)}
+              </select>
+            </label>
+          </section>
 
           {loadingPricing ? (
-            <div className="rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
-              Loading structured pricing…
-            </div>
+            <div className="py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">Loading structured pricing…</div>
           ) : data ? (
             <>
               {!canEdit ? (
-                <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
-                  <p className="text-sm font-semibold">
-                    {data.hasSavedPricing
-                      ? "Saved structured pricing is preserved read-only."
-                      : "Premium Pro is required to configure paid-service pricing."}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    Downgrading does not delete saved pricing. It becomes editable again when Professional Booking access returns.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={requestAccess}
-                    className="mt-3 rounded-full border border-[color:var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[color:var(--loombus-gold)]"
-                  >
-                    View Premium Pro
-                  </button>
-                </div>
+                <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">Access</p>
+                  <div className="max-w-3xl">
+                    <p className="text-sm font-semibold">{data.hasSavedPricing ? "Saved structured pricing is preserved read-only." : "Premium Pro is required to configure paid-service pricing."}</p>
+                    <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Downgrading does not delete saved pricing. It becomes editable again when Professional Booking access returns.</p>
+                    <button type="button" onClick={requestAccess} className={`${actionClass} mt-3 text-[color:var(--loombus-gold)]`}>View Premium Pro</button>
+                  </div>
+                </section>
               ) : null}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
-                    Existing appointment price label
-                  </p>
-                  <p className="mt-2 text-sm font-semibold">
-                    {selectedService?.priceText || "Not set"}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-                    This remains the ordinary Free Appointments field and is not interpreted as money by this foundation.
-                  </p>
-                </div>
+              <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">Price context</p>
+                <dl className="grid max-w-3xl border-t border-[color:var(--loombus-border)] md:grid-cols-2">
+                  <div className="border-b border-[color:var(--loombus-border)] py-5 md:border-b-0 md:border-r md:pr-6">
+                    <dt className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Existing appointment price label</dt>
+                    <dd className="mt-2 text-sm font-semibold">{selectedService?.priceText || "Not set"}</dd>
+                    <dd className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-muted)]">This remains the ordinary Free Appointments field and is not interpreted as money by this foundation.</dd>
+                  </div>
+                  <div className="py-5 md:pl-6">
+                    <dt className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Saved structured price</dt>
+                    <dd className="mt-2 text-sm font-semibold">{data.pricing ? displayUsd(data.pricing.amountCents) : "Not configured"}</dd>
+                    <dd className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-muted)]">Currency is fixed to USD in this initial foundation. No payment is collected.</dd>
+                  </div>
+                </dl>
+              </section>
 
-                <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
-                    Saved structured price
-                  </p>
-                  <p className="mt-2 text-sm font-semibold">
-                    {data.pricing ? displayUsd(data.pricing.amountCents) : "Not configured"}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-                    Currency is fixed to USD in this initial foundation. No payment is collected.
-                  </p>
-                </div>
-              </div>
+              <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">Fixed price</p>
+                <label className="block max-w-3xl">
+                  <span className="block text-sm font-semibold">Fixed service price in USD</span>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 font-semibold text-[color:var(--loombus-text-muted)]">$</span>
+                    <input type="text" inputMode="decimal" value={amountText} onChange={(event) => setAmountText(event.target.value)} disabled={!canEdit || saving} className={`${fieldClass} pl-5`} placeholder="125.00" aria-label="Fixed service price in US dollars" />
+                  </div>
+                  <span className="mt-2 block text-xs leading-5 text-[color:var(--loombus-text-muted)]">Enter an exact positive amount with up to two decimal places. Loombus stores the amount as integer cents so later payment work never has to infer money from text.</span>
+                </label>
+              </section>
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold">Fixed service price in USD</span>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-[color:var(--loombus-text-muted)]">
-                    $
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={amountText}
-                    onChange={(event) => setAmountText(event.target.value)}
-                    disabled={!canEdit || saving}
-                    className={`${fieldClass} pl-8`}
-                    placeholder="125.00"
-                    aria-label="Fixed service price in US dollars"
-                  />
-                </div>
-                <span className="mt-2 block text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-                  Enter an exact positive amount with up to two decimal places. Loombus stores the amount as integer cents so later payment work never has to infer money from text.
-                </span>
-              </label>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => void save()}
-                  disabled={saving || !selectedServiceId}
-                  className="inline-flex items-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-5 py-2.5 text-sm font-bold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Save size={16} />
-                  {saving ? "Saving…" : "Save structured price"}
+              <footer className="flex flex-wrap items-center gap-5 py-7">
+                <button type="button" onClick={() => void save()} disabled={saving || !selectedServiceId} className={primaryActionClass}>
+                  <Save size={16} /> {saving ? "Saving…" : "Save structured price"}
                 </button>
                 {data.hasSavedPricing ? (
-                  <button
-                    type="button"
-                    onClick={() => void clearPricing()}
-                    disabled={saving || !canEdit}
-                    className="inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-5 py-2.5 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 size={16} />
-                    Clear structured price
+                  <button type="button" onClick={() => void clearPricing()} disabled={saving || !canEdit} className={actionClass}>
+                    <Trash2 size={16} /> Clear structured price
                   </button>
                 ) : null}
-              </div>
+              </footer>
             </>
           ) : null}
         </div>
