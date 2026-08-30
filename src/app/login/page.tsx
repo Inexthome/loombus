@@ -210,55 +210,92 @@ export default function LoginPage() {
   return (
     <main
       data-loombus-auth-shell
-      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+      data-loombus-login-editorial
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-8 text-[color:var(--loombus-text)] sm:px-6 sm:py-14"
     >
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl flex-col justify-center sm:min-h-0 sm:block">
-        <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white sm:mb-12">
+      <div className="mx-auto w-full max-w-5xl">
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center text-sm text-[color:var(--loombus-text-muted)] underline-offset-4 transition hover:text-[color:var(--loombus-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+        >
           ← Back to home
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Loombus</p>
+        <header className="mt-10 border-b border-[color:var(--loombus-border)] pb-8 sm:mt-14 sm:pb-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">
+            Loombus
+          </p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+            Log in
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
+            Return to your discussions, saved ideas, and Loombus activity.
+          </p>
+        </header>
 
-        <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">Log in.</h1>
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <section className="border-b border-[color:var(--loombus-border)] py-8 lg:border-b-0 lg:border-r lg:pr-10 sm:py-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+              Continue with a provider
+            </p>
+            <div className="mt-6 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
+              <button
+                type="button"
+                onClick={() => void handleOAuthLogin("apple")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                <span className="flex items-center gap-3">
+                  <AppleLogoMark />
+                  Continue with Apple
+                </span>
+                <span className="text-xs text-[color:var(--loombus-text-muted)]">
+                  {oauthLoading === "apple" ? "Opening…" : "→"}
+                </span>
+              </button>
 
-        <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
-          Return to your Loombus signal hub.
-        </p>
+              <button
+                type="button"
+                onClick={() => void handleOAuthLogin("google")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                <span className="flex items-center gap-3">
+                  <GoogleLogoMark />
+                  Continue with Google
+                </span>
+                <span className="text-xs text-[color:var(--loombus-text-muted)]">
+                  {oauthLoading === "google" ? "Opening…" : "→"}
+                </span>
+              </button>
+            </div>
 
-        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-          <button
-            type="button"
-            onClick={() => void handleOAuthLogin("apple")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="mb-3 flex w-full items-center justify-center gap-3 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <AppleLogoMark />
-            {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
-          </button>
+            <p className="mt-6 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+              Prefer email? Use your Loombus email and password in the sign-in form.
+            </p>
+          </section>
 
-          <button
-            type="button"
-            onClick={() => void handleOAuthLogin("google")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <GoogleLogoMark />
-            {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
-          </button>
-
-          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-            <span className="h-px flex-1 bg-zinc-900" />
-            Or log in with email
-            <span className="h-px flex-1 bg-zinc-900" />
-          </div>
-        </div>
-
-        <form
-          onSubmit={handleLogin}
-          className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-        >
+          <section className="py-8 lg:pl-10 sm:py-10">
+            <div className="flex items-end justify-between gap-4 border-b border-[color:var(--loombus-border)] pb-4">
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm text-zinc-400">Email</label>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+                  Email access
+                </p>
+                <h2 className="mt-2 text-xl font-semibold tracking-tight">Sign in to your account</h2>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="min-h-11 shrink-0 content-center text-sm text-[color:var(--loombus-text-muted)] underline underline-offset-4 transition hover:text-[color:var(--loombus-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <form onSubmit={handleLogin} className="mt-6 space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-[color:var(--loombus-text)]">
+                  Email
+                </label>
                 <input
                   id="email"
                   name="email"
@@ -273,12 +310,14 @@ export default function LoginPage() {
                     setEmail(event.target.value);
                     setShowResendVerification(false);
                   }}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-2 block text-sm text-zinc-400">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-[color:var(--loombus-text)]">
+                  Password
+                </label>
                 <input
                   id="password"
                   name="password"
@@ -287,45 +326,40 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                 />
               </div>
 
-              <div className="text-right">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium text-zinc-400 underline decoration-zinc-600 underline-offset-4 transition hover:text-white"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
               {nativeApp === true ? (
-                <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
+                <div className="border-y border-[color:var(--loombus-border)] py-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
                   After a successful email login, your device password manager can offer to save or update this login. Face ID or device biometrics remain an optional app lock.
-                </p>
+                </div>
               ) : null}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
               >
                 {loading ? "Logging in..." : "Log In"}
               </button>
 
-              {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
+              {message ? (
+                <p role="status" className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  {message}
+                </p>
+              ) : null}
 
               {showResendVerification ? (
-                <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                  <p className="text-sm leading-relaxed text-zinc-400">
+                <div className="border-t border-[color:var(--loombus-border)] pt-5">
+                  <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                     The previous confirmation link may have expired. Send a new link to the email above.
                   </p>
                   <button
                     type="button"
                     onClick={() => void handleResendVerification()}
                     disabled={resendingVerification}
-                    className="mt-3 w-full rounded-full border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-4 min-h-11 border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                   >
                     {resendingVerification
                       ? "Sending verification email..."
@@ -333,29 +367,36 @@ export default function LoginPage() {
                   </button>
                 </div>
               ) : null}
+            </form>
 
-              <p className="text-xs leading-relaxed text-zinc-500">
-                By logging in or continuing with Apple, Google, or email, you agree to the{" "}
-                <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">Terms</Link>
-                ,{" "}
-                <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">Privacy Policy</Link>
-                ,{" "}
-                <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">Cookie Use</Link>
-                ,{" "}
-                <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">Community Guidelines</Link>
-                ,{" "}
-                <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">Safety</Link>
-                , and{" "}
-                <Link href="/support" className="text-zinc-400 underline-offset-4 hover:underline">Support</Link>.
-              </p>
-
-              <p className="text-center text-sm text-zinc-500">
+            <div className="mt-8 border-t border-[color:var(--loombus-border)] pt-6">
+              <p className="text-sm text-[color:var(--loombus-text-muted)]">
                 Don’t have an account?{" "}
-                <Link href="/signup" className="text-zinc-300 underline underline-offset-4 hover:text-white">
+                <Link
+                  href="/signup"
+                  className="font-medium text-[color:var(--loombus-text)] underline decoration-[color:var(--loombus-gold)] underline-offset-4 transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                >
                   Create one
                 </Link>
               </p>
-        </form>
+            </div>
+          </section>
+        </div>
+
+        <section className="border-t border-[color:var(--loombus-border)] py-6 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+          By logging in or continuing with Apple, Google, or email, you agree to the{" "}
+          <Link href="/terms" className="underline-offset-4 hover:underline">Terms</Link>
+          ,{" "}
+          <Link href="/privacy" className="underline-offset-4 hover:underline">Privacy Policy</Link>
+          ,{" "}
+          <Link href="/cookies" className="underline-offset-4 hover:underline">Cookie Use</Link>
+          ,{" "}
+          <Link href="/guidelines" className="underline-offset-4 hover:underline">Community Guidelines</Link>
+          ,{" "}
+          <Link href="/safety" className="underline-offset-4 hover:underline">Safety</Link>
+          , and{" "}
+          <Link href="/support" className="underline-offset-4 hover:underline">Support</Link>.
+        </section>
       </div>
     </main>
   );
