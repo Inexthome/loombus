@@ -6,12 +6,9 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Bookmark,
-  BriefcaseBusiness,
-  CalendarClock,
   FileText,
   Flag,
   Loader2,
-  MapPin,
   Send,
   ShieldCheck,
   UserRound,
@@ -48,11 +45,11 @@ type DetailPayload = {
 };
 
 const primaryButtonClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] bg-transparent px-0 py-2 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50";
 const secondaryButtonClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-5 py-3 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-2 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50";
 const controlClass =
-  "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
+  "w-full rounded-none border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-sm text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-0";
 
 export default function RequestDetailPage() {
   const params = useParams();
@@ -212,7 +209,7 @@ export default function RequestDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)] sm:px-6">
-        <div className="mx-auto grid min-h-64 max-w-[88rem] place-items-center rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
+        <div className="mx-auto flex min-h-56 max-w-5xl items-center justify-center border-y border-[color:var(--loombus-border)]">
           <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)]">
             <Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={18} /> Loading Request
           </span>
@@ -224,14 +221,14 @@ export default function RequestDetailPage() {
   if (!payload?.request) {
     return (
       <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)] sm:px-6">
-        <div className="mx-auto max-w-3xl rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-10 text-center shadow-xl shadow-black/10">
-          <BriefcaseBusiness className="mx-auto text-[color:var(--loombus-gold)]" size={42} />
-          <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Request unavailable</h1>
+        <section className="mx-auto max-w-3xl border-y border-[color:var(--loombus-border)] py-14 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Requests</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Request unavailable</h1>
           <p className="mt-3 text-[color:var(--loombus-text-muted)]">{notice || "This Request is not public."}</p>
           <Link href="/requests" className={`${secondaryButtonClass} mt-6`}>
             <ArrowLeft size={16} /> Back to Requests
           </Link>
-        </div>
+        </section>
       </main>
     );
   }
@@ -245,145 +242,154 @@ export default function RequestDetailPage() {
 
   return (
     <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-20 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[88rem]">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto max-w-5xl">
+        <nav className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--loombus-border)] pb-4" aria-label="Request navigation">
           <Link href="/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-gold)]">
             <ArrowLeft size={16} /> Back to Requests
           </Link>
-          <Link href="/services" className="inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]">
-            Browse Services <ArrowUpRight size={14} />
-          </Link>
-        </div>
-
-        <header className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-7">
-          <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5">{requestTypeLabel(item.requestType)}</span>
-            <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5">{item.category}</span>
-            <span className="rounded-full bg-[color:var(--loombus-cream)] px-3 py-1.5 text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]">{requestUrgencyLabel(item.urgency)}</span>
+          <div className="flex flex-wrap items-center gap-5">
+            <Link href="/requests/saved" className="text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-gold)]">Saved</Link>
+            <Link href="/requests/manage" className="text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-gold)]">Manage</Link>
+            <Link href="/services" className="inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-gold)]">Services <ArrowUpRight size={13} /></Link>
           </div>
-          <h1 className="mt-4 max-w-5xl text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">{item.title}</h1>
+        </nav>
+
+        <header className="border-b border-[color:var(--loombus-border)] py-8 sm:py-10">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+            <span>{requestTypeLabel(item.requestType)}</span>
+            <span aria-hidden="true">/</span>
+            <span>{item.category}</span>
+            <span aria-hidden="true">/</span>
+            <span className="text-[color:var(--loombus-gold)]">{requestUrgencyLabel(item.urgency)}</span>
+          </div>
+          <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">{item.title}</h1>
           <p className="mt-3 text-sm font-semibold text-[color:var(--loombus-text-muted)]">Requested by {item.businessName || item.requesterName}</p>
         </header>
 
         {notice ? (
-          <div className="mt-5 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm shadow-sm" role="status">{notice}</div>
+          <div className="border-b border-[color:var(--loombus-border)] py-4 text-sm text-[color:var(--loombus-text-muted)]" role="status">{notice}</div>
         ) : null}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <section className="min-w-0 space-y-5">
-            <article className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Request overview</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">What is needed</h2>
-              <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-[color:var(--loombus-text-muted)]">{item.description}</p>
+        <section className="border-b border-[color:var(--loombus-border)] py-7" aria-labelledby="request-facts-heading">
+          <p id="request-facts-heading" className="sr-only">Request facts</p>
+          <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-text-subtle)]">Location</dt>
+              <dd className="mt-2 text-sm font-semibold">{requestLocationLabel(item)}</dd>
+              <dd className="mt-1 text-xs text-[color:var(--loombus-text-muted)]">{requestModeLabel(item.serviceMode)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-text-subtle)]">Budget</dt>
+              <dd className="mt-2 text-sm font-semibold">{formatRequestBudget(item)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-text-subtle)]">Timing</dt>
+              <dd className="mt-2 text-sm font-semibold">{item.deadline ? `Needed by ${formatRequestDate(item.deadline)}` : "No deadline stated"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-text-subtle)]">Responses</dt>
+              <dd className="mt-2 text-sm font-semibold">{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</dd>
+            </div>
+          </dl>
+        </section>
 
-              <div className="mt-6 grid gap-3 md:grid-cols-3">
-                <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-                  <MapPin className="text-[color:var(--loombus-gold)]" size={19} />
-                  <strong className="mt-3 block text-sm">Location</strong>
-                  <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">{requestLocationLabel(item)}</span>
-                  <small className="mt-2 block text-[color:var(--loombus-text-subtle)]">{requestModeLabel(item.serviceMode)}</small>
-                </article>
-                <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-                  <BriefcaseBusiness className="text-[color:var(--loombus-gold)]" size={19} />
-                  <strong className="mt-3 block text-sm">Budget context</strong>
-                  <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">{formatRequestBudget(item)}</span>
-                </article>
-                <article className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-                  <CalendarClock className="text-[color:var(--loombus-gold)]" size={19} />
-                  <strong className="mt-3 block text-sm">Timing and responses</strong>
-                  <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">{item.deadline ? `Needed by ${formatRequestDate(item.deadline)}` : "No deadline stated"}</span>
-                  <small className="mt-2 block text-[color:var(--loombus-text-subtle)]">{item.responseCount} response{item.responseCount === 1 ? "" : "s"}</small>
-                </article>
-              </div>
-            </article>
+        <section className="border-b border-[color:var(--loombus-border)] py-8" aria-labelledby="request-overview-heading">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Request overview</p>
+          <h2 id="request-overview-heading" className="mt-2 text-2xl font-semibold tracking-[-0.035em]">What is needed</h2>
+          <p className="mt-5 max-w-4xl whitespace-pre-wrap text-base leading-8 text-[color:var(--loombus-text-muted)]">{item.description}</p>
+        </section>
 
-            {responseOpen && !item.viewerCanManage && !item.viewerHasResponded ? (
-              <form onSubmit={submitResponse} className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Private response</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">Explain how you can help</h2>
-                <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">The requester and administrators can review this response. Private messaging begins only if the requester selects it.</p>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">How can you help?</span><textarea required minLength={20} maxLength={8000} rows={6} value={message} onChange={(event) => setMessage(event.target.value)} className={controlClass} /></label>
-                  <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">Availability</span><input value={availabilityText} onChange={(event) => setAvailabilityText(event.target.value)} className={controlClass} /></label>
-                  <label><span className="mb-2 block text-sm font-semibold">Estimate minimum</span><input type="number" min={0} step="0.01" value={estimateMin} onChange={(event) => setEstimateMin(event.target.value)} className={controlClass} /></label>
-                  <label><span className="mb-2 block text-sm font-semibold">Estimate maximum</span><input type="number" min={0} step="0.01" value={estimateMax} onChange={(event) => setEstimateMax(event.target.value)} className={controlClass} /></label>
-                  <label><span className="mb-2 block text-sm font-semibold">Currency</span><input maxLength={3} value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} className={controlClass} /></label>
-                  <label><span className="mb-2 block text-sm font-semibold">Business attribution</span><select value={businessId} onChange={(event) => { setBusinessId(event.target.value); setAppointmentServiceId(""); }} className={controlClass}><option value="">Personal profile</option>{(payload.responderBusinesses ?? []).map((business) => <option key={business.id} value={business.id}>{business.name}</option>)}</select></label>
-                  <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">Appointment service</span><select value={appointmentServiceId} onChange={(event) => setAppointmentServiceId(event.target.value)} className={controlClass}><option value="">No appointment service</option>{appointmentOptions.map((service) => <option key={service.id} value={service.id}>{service.businessName}: {service.name}</option>)}</select></label>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="submit" disabled={working === "respond"} className={primaryButtonClass}>{working === "respond" ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />} Submit response</button>
-                  <button type="button" onClick={() => setResponseOpen(false)} className={secondaryButtonClass}>Cancel</button>
-                </div>
-              </form>
-            ) : null}
+        <section className="border-b border-[color:var(--loombus-border)] py-6" aria-labelledby="request-actions-heading">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p id="request-actions-heading" className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-text-subtle)]">Request actions</p>
+              <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">Respond privately, save this Request, or review responses you manage.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {item.viewerCanManage ? (
+                <Link href="/requests/manage" className={primaryButtonClass}>Review responses</Link>
+              ) : (
+                <button type="button" onClick={() => setResponseOpen((current) => !current)} disabled={item.viewerHasResponded} className={primaryButtonClass}><Send size={16} /> {item.viewerHasResponded ? "Response submitted" : "Respond to Request"}</button>
+              )}
+              <button type="button" onClick={() => void action({ action: item.viewerSaved ? "unsave" : "save", requestId: item.id }, "save", item.viewerSaved ? "Request removed from saved items." : "Request saved.")} className={secondaryButtonClass}><Bookmark size={16} /> {item.viewerSaved ? "Saved" : "Save Request"}</button>
+            </div>
+          </div>
+        </section>
 
-            {item.attachmentUrls.length ? (
-              <article className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-                <div className="flex items-center gap-2"><FileText className="text-[color:var(--loombus-gold)]" size={18} /><h2 className="text-xl font-semibold">Attachments</h2></div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {item.attachmentUrls.map((url, index) => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer" className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]">
-                      {item.attachmentNames[index] || `Attachment ${index + 1}`} <ArrowUpRight className="ml-1 inline" size={13} />
-                    </a>
-                  ))}
-                </div>
-              </article>
-            ) : null}
+        {responseOpen && !item.viewerCanManage && !item.viewerHasResponded ? (
+          <form onSubmit={submitResponse} className="border-b border-[color:var(--loombus-border)] py-8">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Private response</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">Explain how you can help</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">The requester and administrators can review this response. Private messaging begins only if the requester selects it.</p>
+            <div className="mt-6 grid gap-x-6 gap-y-5 sm:grid-cols-2">
+              <label className="sm:col-span-2"><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">How can you help?</span><textarea required minLength={20} maxLength={8000} rows={6} value={message} onChange={(event) => setMessage(event.target.value)} className={controlClass} /></label>
+              <label className="sm:col-span-2"><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Availability</span><input value={availabilityText} onChange={(event) => setAvailabilityText(event.target.value)} className={controlClass} /></label>
+              <label><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Estimate minimum</span><input type="number" min={0} step="0.01" value={estimateMin} onChange={(event) => setEstimateMin(event.target.value)} className={controlClass} /></label>
+              <label><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Estimate maximum</span><input type="number" min={0} step="0.01" value={estimateMax} onChange={(event) => setEstimateMax(event.target.value)} className={controlClass} /></label>
+              <label><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Currency</span><input maxLength={3} value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} className={controlClass} /></label>
+              <label><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Business attribution</span><select value={businessId} onChange={(event) => { setBusinessId(event.target.value); setAppointmentServiceId(""); }} className={controlClass}><option value="">Personal profile</option>{(payload.responderBusinesses ?? []).map((business) => <option key={business.id} value={business.id}>{business.name}</option>)}</select></label>
+              <label className="sm:col-span-2"><span className="block text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">Appointment service</span><select value={appointmentServiceId} onChange={(event) => setAppointmentServiceId(event.target.value)} className={controlClass}><option value="">No appointment service</option>{appointmentOptions.map((service) => <option key={service.id} value={service.id}>{service.businessName}: {service.name}</option>)}</select></label>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
+              <button type="submit" disabled={working === "respond"} className={primaryButtonClass}>{working === "respond" ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />} Submit response</button>
+              <button type="button" onClick={() => setResponseOpen(false)} className={secondaryButtonClass}>Cancel</button>
+            </div>
+          </form>
+        ) : null}
 
-            {reportOpen ? (
-              <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Accountability</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">Report Request</h2>
-                <div className="mt-5 grid gap-4">
-                  <select value={reportReason} onChange={(event) => setReportReason(event.target.value)} className={controlClass}><option>Safety concern</option><option>Fraud or misleading information</option><option>Prohibited activity</option><option>Harassment or discrimination</option><option>Other</option></select>
-                  <textarea rows={5} maxLength={3000} value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} className={controlClass} placeholder="Explain the concern" />
-                  <div className="flex flex-wrap gap-3">
-                    <button type="button" onClick={() => void submitReport()} disabled={reportDetails.trim().length < 10 || working === "report"} className={primaryButtonClass}>{working === "report" ? <Loader2 className="animate-spin" size={16} /> : <Flag size={16} />} Submit report</button>
-                    <button type="button" onClick={() => setReportOpen(false)} className={secondaryButtonClass}>Cancel</button>
-                  </div>
-                </div>
-              </section>
-            ) : null}
+        {item.attachmentUrls.length ? (
+          <section className="border-b border-[color:var(--loombus-border)] py-8" aria-labelledby="request-attachments-heading">
+            <div className="flex items-center gap-2"><FileText className="text-[color:var(--loombus-gold)]" size={18} /><h2 id="request-attachments-heading" className="text-xl font-semibold">Attachments</h2></div>
+            <div className="mt-4 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
+              {item.attachmentUrls.map((url, index) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-4 py-4 text-sm font-semibold transition hover:text-[color:var(--loombus-gold)]">
+                  <span>{item.attachmentNames[index] || `Attachment ${index + 1}`}</span><ArrowUpRight size={14} />
+                </a>
+              ))}
+            </div>
           </section>
+        ) : null}
 
-          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Request actions</p>
-              <div className="mt-4 grid gap-2">
-                {item.viewerCanManage ? (
-                  <Link href="/requests/manage" className={primaryButtonClass}>Review responses</Link>
-                ) : (
-                  <button type="button" onClick={() => setResponseOpen((current) => !current)} disabled={item.viewerHasResponded} className={primaryButtonClass}><Send size={16} /> {item.viewerHasResponded ? "Response submitted" : "Respond to Request"}</button>
-                )}
-                <button type="button" onClick={() => void action({ action: item.viewerSaved ? "unsave" : "save", requestId: item.id }, "save", item.viewerSaved ? "Request removed from saved items." : "Request saved.")} className={secondaryButtonClass}><Bookmark size={16} /> {item.viewerSaved ? "Saved" : "Save Request"}</button>
+        <section className="grid border-b border-[color:var(--loombus-border)] py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:divide-x md:divide-[color:var(--loombus-border)]" aria-label="Requester and safety">
+          <div className="pb-7 md:pb-0 md:pr-8">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-text-subtle)]">Requester</p>
+            <div className="mt-4 flex items-start gap-3">
+              <UserRound className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={18} />
+              <div className="min-w-0">
+                <strong>{item.businessName || item.requesterName}</strong>
+                {ownerHref ? <Link href={ownerHref} className="mt-2 flex items-center gap-1 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline">Open attributable profile <ArrowUpRight size={13} /></Link> : null}
               </div>
-            </section>
-
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Requester</p>
-              <div className="mt-4 flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]"><UserRound size={18} /></span>
-                <div className="min-w-0">
-                  <strong>{item.businessName || item.requesterName}</strong>
-                  {ownerHref ? <Link href={ownerHref} className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline">Open attributable profile <ArrowUpRight size={13} /></Link> : null}
+            </div>
+          </div>
+          <div className="border-t border-[color:var(--loombus-border)] pt-7 md:border-t-0 md:pl-8 md:pt-0">
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
+              <div>
+                <h3 className="font-semibold">Safety boundary</h3>
+                <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Loombus does not process payments, verify licensing, guarantee credentials, or guarantee completion. Confirm every material detail independently.</p>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                  <Link href="/requests/safety" className="inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline">Read Requests safety <ArrowUpRight size={13} /></Link>
+                  <button type="button" onClick={() => setReportOpen((current) => !current)} className="flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-gold)]"><Flag size={15} /> Report this Request</button>
                 </div>
               </div>
-            </section>
+            </div>
+          </div>
+        </section>
 
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="flex gap-3">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
-                <div>
-                  <h3 className="font-semibold">Safety boundary</h3>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Loombus does not process payments, verify licensing, guarantee credentials, or guarantee completion. Confirm every material detail independently.</p>
-                  <Link href="/requests/safety" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--loombus-gold)] hover:underline">Read Requests safety <ArrowUpRight size={13} /></Link>
-                  <button type="button" onClick={() => setReportOpen((current) => !current)} className="mt-4 flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-gold)]"><Flag size={15} /> Report this Request</button>
-                </div>
+        {reportOpen ? (
+          <section className="border-b border-[color:var(--loombus-border)] py-8">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Accountability</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">Report Request</h2>
+            <div className="mt-6 grid max-w-3xl gap-5">
+              <label><span className="sr-only">Report reason</span><select value={reportReason} onChange={(event) => setReportReason(event.target.value)} className={controlClass}><option>Safety concern</option><option>Fraud or misleading information</option><option>Prohibited activity</option><option>Harassment or discrimination</option><option>Other</option></select></label>
+              <label><span className="sr-only">Report details</span><textarea rows={5} maxLength={3000} value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} className={controlClass} placeholder="Explain the concern" /></label>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                <button type="button" onClick={() => void submitReport()} disabled={reportDetails.trim().length < 10 || working === "report"} className={primaryButtonClass}>{working === "report" ? <Loader2 className="animate-spin" size={16} /> : <Flag size={16} />} Submit report</button>
+                <button type="button" onClick={() => setReportOpen(false)} className={secondaryButtonClass}>Cancel</button>
               </div>
-            </section>
-          </aside>
-        </div>
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
