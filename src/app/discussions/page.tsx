@@ -378,20 +378,32 @@ export default function DiscussionsPage() {
     async function loadDiscussions() {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("discussions")
-        .select(
-          "id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, discussion_status, resolved_at"
-        )
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const [discussionResult, questionResult] = await Promise.all([
+        supabase
+          .from("discussions")
+          .select(
+            "id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, discussion_status, resolved_at"
+          )
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("questions_of_the_week")
+          .select("discussion_id"),
+      ]);
 
+      const { data, error } = discussionResult;
       if (error || !data) {
         if (isMounted) {
           setLoading(false);
         }
         return;
       }
+
+      const questionDiscussionIds = new Set(
+        (questionResult.data ?? [])
+          .map((row) => String(row.discussion_id ?? ""))
+          .filter(Boolean)
+      );
 
       const { data: viewerData } = await supabase.auth.getUser();
       const viewerId = viewerData.user?.id ?? null;
@@ -430,7 +442,9 @@ export default function DiscussionsPage() {
       }
 
       const visibleDiscussions = ((data ?? []) as Discussion[]).filter(
-        (discussion) => !hiddenProfileIds.has(discussion.user_id)
+        (discussion) =>
+          !hiddenProfileIds.has(discussion.user_id) &&
+          !questionDiscussionIds.has(discussion.id)
       );
 
       const discussionIds = visibleDiscussions.map((discussion) => discussion.id);
