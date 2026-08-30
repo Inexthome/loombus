@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, PageShell, Panel } from "@/components/ui";
 
 const iosAppStoreUrl = "https://apps.apple.com/us/app/loombus/id6774788429";
 const googlePlayUrl =
@@ -44,68 +43,72 @@ export const metadata: Metadata = {
 
 export default function DownloadPage() {
   return (
-    <PageShell width="lg">
-      <Link
-        href="/"
-        className="mb-10 inline-block text-sm text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
-      >
-        ← Back to Loombus
-      </Link>
+    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-6 text-[var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl">
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center border-b border-[var(--loombus-border)] text-sm font-semibold text-[var(--loombus-text-muted)] transition-colors hover:border-[#cbab5b] hover:text-[#cbab5b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbab5b]"
+        >
+          ← Back to Loombus
+        </Link>
 
-      <PageHeader
-        eyebrow="Download"
-        title="Download Loombus"
-        description={
-          <>
+        <header className="border-b border-[var(--loombus-border)] pb-8 pt-10 sm:pb-10 sm:pt-14">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#cbab5b]">
+            Download
+          </p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+            Download Loombus
+          </h1>
+          <p className="mt-5 max-w-3xl text-base leading-7 text-[var(--loombus-text-muted)] sm:text-lg">
             Read and discuss publications in Library, research investments on The
             Floor, join structured discussions and Rooms, and discover meaningful
             connections and real-world opportunities in one signal-first platform.
-          </>
-        }
-      />
+          </p>
+        </header>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {downloadOptions.map((option) => (
-          <Panel key={option.platform}>
-            <div className="flex h-full flex-col gap-6">
-              <div>
-                <h2 className="mb-4 text-2xl font-semibold text-[var(--loombus-text)]">
+        <section aria-label="Download options" className="divide-y divide-[var(--loombus-border)]">
+          {downloadOptions.map((option) => (
+            <article
+              key={option.platform}
+              className="grid gap-8 py-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-14"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#cbab5b]">
+                  Platform
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
                   {option.platform}
                 </h2>
-
-                <p className="leading-relaxed text-[var(--loombus-text-muted)]">
+                <p className="mt-4 max-w-2xl leading-7 text-[var(--loombus-text-muted)]">
                   {option.description}
                 </p>
-
-                <p className="mt-4 text-sm leading-relaxed text-[var(--loombus-text-subtle)]">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--loombus-text-subtle)]">
                   {option.note}
                 </p>
+
+                <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
+                  <a
+                    href={option.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-11 items-center border-b-2 border-[#cbab5b] py-2 text-sm font-extrabold text-[var(--loombus-text)] transition-colors hover:text-[#cbab5b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbab5b]"
+                  >
+                    {option.label}
+                  </a>
+                  <Link
+                    href="/signup"
+                    className="inline-flex min-h-11 items-center border-b border-[var(--loombus-border)] py-2 text-sm font-semibold text-[var(--loombus-text-muted)] transition-colors hover:border-[#cbab5b] hover:text-[#cbab5b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbab5b]"
+                  >
+                    Create an account
+                  </Link>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <a
-                  href={option.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="loombus-store-primary-cta inline-flex justify-center rounded-full px-5 py-3 text-sm font-semibold transition hover:opacity-90"
-                >
-                  {option.label}
-                </a>
-
-                <Link
-                  href="/signup"
-                  className="loombus-store-secondary-cta inline-flex justify-center rounded-full border px-5 py-3 text-sm font-semibold transition hover:bg-[var(--loombus-surface-muted)]"
-                >
-                  Create an account
-                </Link>
-              </div>
-
-              <div className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-5">
-                <p className="mb-4 text-sm font-medium text-[var(--loombus-text-muted)]">
+              <div className="w-fit border-l-2 border-[#cbab5b] pl-5 sm:pl-6">
+                <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--loombus-text-muted)]">
                   Scan with your phone
                 </p>
-
-                <div className="inline-flex rounded-2xl bg-white p-4">
+                <div className="bg-white p-3">
                   <img
                     src={qrCodeUrl(option.href)}
                     alt={option.qrAlt}
@@ -115,10 +118,10 @@ export default function DownloadPage() {
                   />
                 </div>
               </div>
-            </div>
-          </Panel>
-        ))}
+            </article>
+          ))}
+        </section>
       </div>
-    </PageShell>
+    </main>
   );
 }
