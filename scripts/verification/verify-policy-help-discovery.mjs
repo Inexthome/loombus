@@ -7,7 +7,6 @@ const errors = [];
 const files = {
   registry: "src/lib/policy-content-registry.data.json",
   discovery: "src/lib/policy-content-public-discovery.ts",
-  helpCatalog: "src/lib/public-help-catalog.ts",
   supportPage: "src/app/support/page.tsx",
   discoveryClient: "src/app/support/policy-help-discovery-client.tsx",
   discoveryCss: "src/app/support/policy-help-discovery.css",
@@ -35,7 +34,6 @@ function reject(source, fragment, context) {
 }
 
 const discovery = read(files.discovery);
-const helpCatalog = read(files.helpCatalog);
 const supportPage = read(files.supportPage);
 const client = read(files.discoveryClient);
 const css = read(files.discoveryCss);
@@ -51,25 +49,22 @@ reject(discovery, "approvals:", "public discovery adapter");
 reject(discovery, "publicationBlockers:", "public discovery adapter");
 reject(discovery, "changeNote:", "public discovery adapter");
 
-expect(helpCatalog, "PUBLIC_HELP_AREAS", "Help catalog");
-expect(helpCatalog, "PUBLIC_HELP_ARTICLES", "Help catalog");
-const helpAreaCount = (helpCatalog.match(/id: "[^"]+",/g) ?? []).length;
-if (helpAreaCount < 30) {
-  errors.push(`Help catalog: expected at least 30 stable entries, found ${helpAreaCount}`);
-}
-
 expect(supportPage, "getPublicPolicyDiscoveryEntries()", "Support page");
 expect(supportPage, "<PolicyHelpDiscoveryClient policyEntries={policyEntries} />", "Support page");
 expect(supportPage, '<div className="support-policy-contact-only">', "Support page");
 expect(supportPage, "<SupportV2Client />", "Support page");
 
-expect(client, 'aria-label="Help and policy categories"', "discovery client");
+expect(client, 'aria-label="Common support needs"', "discovery client");
+expect(client, 'aria-label="Policy categories"', "discovery client");
+expect(client, "supportDestinations", "discovery client");
 expect(client, "aria-pressed={category === item}", "discovery client");
-expect(client, "PUBLIC_HELP_AREAS", "discovery client");
-expect(client, "PUBLIC_HELP_ARTICLES", "discovery client");
 expect(client, "filteredPolicyEntries", "discovery client");
 expect(client, "Current public documents", "discovery client");
 expect(client, 'type="search"', "discovery client");
+expect(client, 'href="/support?category=general#support-request-title"', "discovery client");
+expect(client, 'href="/support?category=bug#support-request-title"', "discovery client");
+reject(client, "PUBLIC_HELP_AREAS", "discovery client");
+reject(client, "PUBLIC_HELP_ARTICLES", "discovery client");
 reject(client, "fetch(", "discovery client");
 reject(client, "localStorage", "discovery client");
 reject(client, "sessionStorage", "discovery client");
@@ -119,9 +114,9 @@ if (errors.length) {
 }
 
 console.log("Policy and Help discovery verification PASSED");
-console.log("- one canonical Support search combines shared Help guidance with server-derived public policy documents");
+console.log("- Support discovery is intentionally policy-focused after legacy Help catalog retirement");
 console.log("- registry-managed discovery uses the current publication resolver");
 console.log("- legacy discovery is limited to existing public route metadata");
 console.log("- registry candidates and internal migration sources are not current public discovery inputs");
-console.log("- responsive category controls are semantic and keyboard-focusable");
+console.log("- common support destinations and policy category controls remain semantic and keyboard-focusable");
 console.log("- structured support request workflow remains present");
