@@ -71,23 +71,17 @@ export function EverythingSearchResultCard({
   return (
     <Link
       href={result.href}
-      className="group grid gap-4 rounded-[1.55rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-lg shadow-black/5 transition hover:-translate-y-0.5 hover:border-[color:var(--loombus-gold)] hover:shadow-xl sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start"
+      className="group grid min-h-24 gap-4 border-b border-[color:var(--loombus-border)] py-5 transition-colors hover:border-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-4 focus-visible:ring-offset-[color:var(--loombus-page-bg)] sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:items-start"
     >
-      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]">
+      <span className="flex h-11 w-11 items-center justify-center border-l-2 border-[color:var(--loombus-gold)] text-[color:var(--loombus-gold)]">
         <ResultIcon result={result} />
       </span>
       <span className="min-w-0">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-[color:var(--loombus-border)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-[color:var(--loombus-text-subtle)]">
-            {result.sourceLabel}
-          </span>
-          {accessLabel ? (
-            <span className="rounded-full bg-[color:var(--loombus-surface-muted)] px-2.5 py-1 text-[0.68rem] text-[color:var(--loombus-text-muted)]">
-              {accessLabel}
-            </span>
-          ) : null}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-[color:var(--loombus-text-subtle)]">
+          <span>{result.sourceLabel}</span>
+          {accessLabel ? <span>· {accessLabel}</span> : null}
         </span>
-        <strong className="mt-2 block text-lg leading-snug tracking-[-0.025em] group-hover:underline">
+        <strong className="mt-2 block text-lg leading-snug tracking-[-0.025em] decoration-[color:var(--loombus-gold)] underline-offset-4 group-hover:underline">
           {result.title}
         </strong>
         {result.snippet ? (
@@ -101,9 +95,7 @@ export function EverythingSearchResultCard({
           {date ? <span>{date}</span> : null}
         </span>
       </span>
-      <span className="hidden h-9 w-9 items-center justify-center rounded-full border border-[color:var(--loombus-border)] text-[color:var(--loombus-gold)] transition group-hover:border-[color:var(--loombus-gold)] sm:flex">
-        <Sparkles size={15} />
-      </span>
+      <Sparkles className="mt-1 hidden text-[color:var(--loombus-gold)] sm:block" size={15} aria-hidden="true" />
     </Link>
   );
 }
@@ -116,25 +108,21 @@ export function EverythingSearchBrief({
   loading: boolean;
 }) {
   return (
-    <section className="rounded-[1.6rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-lg shadow-black/5">
+    <section className="border-y border-[color:var(--loombus-border)] py-5">
       <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
         Search brief
       </p>
-      <p className="mt-2 leading-7 text-[color:var(--loombus-text-muted)]">
+      <p className="mt-2 max-w-4xl leading-7 text-[color:var(--loombus-text-muted)]">
         {loading ? "Organizing permitted Loombus sources…" : search.brief}
       </p>
-      <div className="mt-4 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full bg-[color:var(--loombus-cream)] px-3 py-1.5 font-semibold text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]">
-          {search.intentLabel}
-        </span>
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[color:var(--loombus-text-subtle)]">
+        <span className="font-semibold text-[color:var(--loombus-text)]">{search.intentLabel}</span>
         {search.locationQuery ? (
-          <span className="flex items-center gap-1.5 rounded-full bg-[color:var(--loombus-surface-muted)] px-3 py-1.5">
-            <MapPin size={13} /> {search.locationQuery}
+          <span className="flex items-center gap-1.5">
+            <MapPin size={13} aria-hidden="true" /> {search.locationQuery}
           </span>
         ) : null}
-        <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5 text-[color:var(--loombus-text-subtle)]">
-          {search.indexed ? "Unified index active" : "Compatibility search"}
-        </span>
+        <span>{search.indexed ? "Unified index active" : "Compatibility search"}</span>
       </div>
     </section>
   );
@@ -158,30 +146,30 @@ export function EverythingSearchAi({
   onAsk: () => void;
 }) {
   return (
-    <section className="rounded-[1.7rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-5 text-[color:var(--loombus-cream-contrast)] shadow-xl shadow-black/10 dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]">
-      <div className="flex gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/65 text-[color:var(--loombus-gold)] dark:bg-black/10">
-          <Bot size={20} />
+    <section className="border-b border-[color:var(--loombus-border)] py-6">
+      <div className="grid gap-4 sm:grid-cols-[2.75rem_minmax(0,1fr)]">
+        <span className="flex h-11 w-11 items-center justify-center border-l-2 border-[color:var(--loombus-gold)] text-[color:var(--loombus-gold)]">
+          <Bot size={20} aria-hidden="true" />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0">
           <h2 className="text-xl font-semibold tracking-[-0.025em]">Ask Loombus AI</h2>
-          <p className="mt-1 text-sm leading-6 opacity-80">
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
             Organize the current permitted results into a grounded answer, then return to the original Loombus sources. Private Room and saved-item content stays outside AI context.
           </p>
 
           {answer ? (
-            <div className="mt-4 whitespace-pre-wrap rounded-2xl border border-black/5 bg-white/65 p-5 text-sm leading-7 dark:border-white/5 dark:bg-black/10">
+            <div className="mt-5 border-l border-[color:var(--loombus-gold)] pl-4 text-sm leading-7 whitespace-pre-wrap">
               {answer}
             </div>
           ) : null}
 
           {sources.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {sources.map((source) => (
                 <Link
                   key={`${source.href}:${source.title}`}
                   href={source.href}
-                  className="rounded-full border border-black/10 bg-white/40 px-3 py-2 text-xs font-semibold transition hover:bg-white/70 dark:border-white/10 dark:bg-black/10 dark:hover:bg-black/20"
+                  className="min-h-11 border-b border-[color:var(--loombus-border)] py-2 text-xs font-semibold transition-colors hover:border-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)]"
                 >
                   Original result: {source.title}
                 </Link>
@@ -189,14 +177,14 @@ export function EverythingSearchAi({
             </div>
           ) : null}
 
-          {message ? <p className="mt-3 text-sm opacity-80">{message}</p> : null}
+          {message ? <p className="mt-3 text-sm text-[color:var(--loombus-text-muted)]">{message}</p> : null}
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-4">
             <button
               type="button"
               onClick={onAsk}
               disabled={working || loading}
-              className="flex items-center gap-2 rounded-xl bg-[color:var(--loombus-gold)] px-4 py-2.5 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-semibold text-[color:var(--loombus-text)] transition-colors hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] disabled:opacity-50"
             >
               {working || loading ? (
                 <Loader2 className="animate-spin" size={16} />
@@ -212,7 +200,7 @@ export function EverythingSearchAi({
                     : "Ask Loombus AI"}
             </button>
             {upgradeRequired ? (
-              <Link href="/premium" className="text-sm font-semibold underline">
+              <Link href="/premium" className="min-h-11 py-2 text-sm font-semibold underline decoration-[color:var(--loombus-gold)] underline-offset-4">
                 Review Premium
               </Link>
             ) : null}
