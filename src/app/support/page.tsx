@@ -8,7 +8,7 @@ import "./policy-help-discovery.css";
 export const metadata: Metadata = {
   title: "Help & Support | Loombus",
   description:
-    "Search Loombus Help and current public policy, safety, legal, and reference documents, then submit a structured support request when needed.",
+    "Contact Loombus Support for account, billing, safety, accessibility, or technical help and search current public policy documents.",
   alternates: {
     canonical: "https://loombus.com/support",
   },
