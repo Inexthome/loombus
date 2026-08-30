@@ -6,6 +6,7 @@ import { DiscussionViewModeControl } from "@/components/discussion-view-mode-con
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import { QuestionOfTheWeekBridge } from "@/components/question-of-the-week-bridge";
+import { QuestionOfTheWeekFeedDeduplicator } from "@/components/question-of-the-week-feed-deduplicator";
 import "../create/create-flat.css";
 import "../create/create-detail-refinement.css";
 import "../create/create-selector-polish.css";
@@ -47,6 +48,7 @@ export default function DiscussionsLayout({ children }: Readonly<{ children: Rea
       <DiscussionsCreateComposerBridge />
       <DiscussionViewModeControl />
       <QuestionOfTheWeekBridge />
+      <QuestionOfTheWeekFeedDeduplicator />
       {children}
     </div>
   );
