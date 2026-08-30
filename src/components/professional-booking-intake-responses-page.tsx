@@ -25,6 +25,9 @@ type IntakeResponseRecord = {
   intake: ProfessionalBookingIntakeSnapshotItem[];
 };
 
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+
 function requestTime(value: string, timezone: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "Appointment time unavailable";
@@ -90,28 +93,31 @@ export default function ProfessionalBookingIntakeResponsesPage() {
   }, [load]);
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+    <main
+      data-professional-booking-intake-responses-editorial="root"
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+    >
       <div className="mx-auto max-w-[72rem]">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Link
-              href="/appointments"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)] transition hover:text-[color:var(--loombus-text)]"
-            >
-              <ArrowLeft size={16} /> Back to Appointments
-            </Link>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+        <nav className="mb-7 border-b border-[color:var(--loombus-border)] pb-4" aria-label="Client intake responses">
+          <Link href="/appointments" className={actionClass}>
+            <ArrowLeft size={16} /> Back to Appointments
+          </Link>
+        </nav>
+
+        <header className="flex flex-col gap-5 border-b border-[color:var(--loombus-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
                 Professional Booking
               </p>
-              <span className="rounded-full border border-[color:var(--loombus-gold)]/40 bg-[color:var(--loombus-gold-soft)] px-2.5 py-1 text-[11px] font-bold text-[color:var(--loombus-gold)]">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--loombus-text-muted)]">
                 Client intake
               </span>
             </div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
               Client intake responses
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+            <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
               Review the exact client-intake questions and answers captured when
               each appointment request was submitted. Historical responses remain
               attached to the request even if you later edit the intake form or
@@ -119,101 +125,87 @@ export default function ProfessionalBookingIntakeResponsesPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
-          >
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+          <button type="button" onClick={() => void load()} disabled={loading} className={actionClass}>
+            <RefreshCw size={15} className={loading ? "animate-spin motion-reduce:animate-none" : ""} />
             Refresh
           </button>
         </header>
 
         {notice ? (
-          <div
-            className="mt-6 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm"
-            role="status"
-          >
+          <div className="border-b border-[color:var(--loombus-border)] py-4 text-sm" role="status">
             {notice}
           </div>
         ) : null}
 
         {loading && responses.length === 0 ? (
-          <div className="mt-6 rounded-[1.6rem] border border-dashed border-[color:var(--loombus-border)] p-8 text-center text-sm text-[color:var(--loombus-text-muted)]">
+          <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">
             Loading client intake responses…
           </div>
         ) : null}
 
         {!loading && responses.length === 0 && !notice ? (
-          <div className="mt-6 rounded-[1.6rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center">
-            <ClipboardList className="mx-auto h-7 w-7 text-[color:var(--loombus-gold)]" />
-            <h2 className="mt-3 font-semibold">No client intake responses yet</h2>
-            <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
+          <section className="grid gap-3 border-b border-[color:var(--loombus-border)] py-10 text-center">
+            <ClipboardList className="mx-auto h-7 w-7 text-[color:var(--loombus-gold)]" aria-hidden="true" />
+            <h2 className="font-semibold">No client intake responses yet</h2>
+            <p className="mx-auto max-w-2xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
               Responses will appear here after a member submits an appointment
               request while one of your active Professional Booking intake forms
               is enabled.
             </p>
-          </div>
+          </section>
         ) : null}
 
-        <div className="mt-6 space-y-5">
+        <div>
           {responses.map((record) => (
             <article
               key={record.requestId}
-              className="rounded-[1.6rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-sm sm:p-6"
+              className="grid gap-6 border-b border-[color:var(--loombus-border)] py-7 lg:grid-cols-[minmax(0,1fr)_16rem]"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[color:var(--loombus-surface-muted)] px-3 py-1 text-xs font-semibold capitalize text-[color:var(--loombus-text-muted)]">
-                      {record.status.replaceAll("_", " ")}
-                    </span>
-                  </div>
-                  <h2 className="mt-3 text-xl font-semibold">
-                    {record.serviceName}
-                  </h2>
-                  <p className="mt-1 text-sm text-[color:var(--loombus-text-muted)]">
-                    Requested by {record.requesterName}
-                  </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">
+                  <span className="text-[color:var(--loombus-gold)]">{record.status.replaceAll("_", " ")}</span>
+                  <span>Requested by {record.requesterName}</span>
                 </div>
-                <div className="flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
-                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" />
+                <h2 className="mt-3 text-xl font-semibold tracking-[-0.025em]">
+                  {record.serviceName}
+                </h2>
+
+                {record.note ? (
+                  <section className="mt-6 border-l-2 border-[color:var(--loombus-gold)] pl-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">
+                      Request note
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                      {record.note}
+                    </p>
+                  </section>
+                ) : null}
+
+                <div className="mt-6 divide-y divide-[color:var(--loombus-border)] border-t border-[color:var(--loombus-border)]">
+                  {record.intake.map((item) => (
+                    <section key={item.id} className="py-5">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <p className="text-sm font-semibold">{item.label}</p>
+                        {item.required ? (
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">
+                            Required
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                        {item.answer || "No answer provided."}
+                      </p>
+                    </section>
+                  ))}
+                </div>
+              </div>
+
+              <aside className="border-t border-[color:var(--loombus-border)] pt-5 text-sm text-[color:var(--loombus-text-muted)] lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <div className="flex items-start gap-2">
+                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
                   <span>{requestTime(record.requestedStart, record.timezone)}</span>
                 </div>
-              </div>
-
-              {record.note ? (
-                <div className="mt-5 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">
-                    Request note
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-                    {record.note}
-                  </p>
-                </div>
-              ) : null}
-
-              <div className="mt-5 space-y-3">
-                {record.intake.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold">{item.label}</p>
-                      {item.required ? (
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">
-                          Required
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                      {item.answer || "No answer provided."}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              </aside>
             </article>
           ))}
         </div>
