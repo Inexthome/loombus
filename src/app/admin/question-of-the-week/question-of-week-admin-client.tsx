@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, RefreshCw, Search, Sparkles } from "lucide-react";
+import { ExternalLink, RefreshCw, RotateCcw, Search, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -68,7 +68,7 @@ export default function QuestionOfWeekAdminClient() {
   const [data, setData] = useState<LoadPayload | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState<"generate" | "publish" | "manual" | null>(null);
+  const [working, setWorking] = useState<"generate" | "publish" | "manual" | "restore" | null>(null);
   const [message, setMessage] = useState("");
   const [manualDiscussionId, setManualDiscussionId] = useState("");
   const [manualWhyNow, setManualWhyNow] = useState("");
@@ -146,6 +146,24 @@ export default function QuestionOfWeekAdminClient() {
     }
   }
 
+  async function restoreCurrentDiscussion() {
+    if (!currentDiscussion?.deleted_at) return;
+    setWorking("restore");
+    setMessage("");
+    try {
+      await adminFetch("/api/admin/question-of-the-week/restore", {
+        method: "POST",
+        body: JSON.stringify({ discussionId: currentDiscussion.id }),
+      });
+      await load();
+      setMessage("Question of the Week discussion restored to Discussions with its original thread intact.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to restore this discussion.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
   if (loading && !data) {
     return <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text-muted)]">Loading editorial controls…</main>;
   }
@@ -182,8 +200,25 @@ export default function QuestionOfWeekAdminClient() {
               <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#CBAB5B]"><span>Current</span><span>·</span><span>{current.category}</span></div>
               <h3 className="mt-3 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.035em]">{currentDiscussion.title}</h3>
               {current.why_now ? <div className="mt-6"><h4 className="text-sm font-semibold">Why this question now</h4><p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">{current.why_now}</p></div> : null}
+
+              {currentDiscussion.deleted_at ? (
+                <div className="mt-6 border border-[#CBAB5B] p-4">
+                  <p className="text-sm font-semibold">This Question of the Week is currently removed from the public Discussions feed.</p>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">Restore it to bring back the same discussion UUID, content, replies, views, saves, and weekly designation. No new question is generated.</p>
+                  <button
+                    type="button"
+                    disabled={working !== null}
+                    onClick={() => void restoreCurrentDiscussion()}
+                    className="mt-4 inline-flex min-h-11 items-center gap-2 border border-[#CBAB5B] px-4 text-sm font-bold text-[#CBAB5B] disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CBAB5B]"
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    {working === "restore" ? "Restoring…" : "Restore to Discussions"}
+                  </button>
+                </div>
+              ) : null}
+
               <div className="mt-6 flex flex-wrap gap-4 text-sm">
-                <Link href={`/discussions/${current.discussion_id}`} className="inline-flex items-center gap-2 font-semibold text-[#CBAB5B] hover:underline">Open discussion <ExternalLink className="h-4 w-4" aria-hidden="true" /></Link>
+                {!currentDiscussion.deleted_at ? <Link href={`/discussions/${current.discussion_id}`} className="inline-flex items-center gap-2 font-semibold text-[#CBAB5B] hover:underline">Open discussion <ExternalLink className="h-4 w-4" aria-hidden="true" /></Link> : null}
                 <span className="text-[color:var(--loombus-text-subtle)]">Published {new Date(current.published_at).toLocaleString()}</span>
               </div>
               <div className="mt-7 border-t border-[color:var(--loombus-border-muted)] pt-5">
@@ -230,7 +265,7 @@ export default function QuestionOfWeekAdminClient() {
 
         <section className="py-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-[color:var(--loombus-text-subtle)]">Recent history</p>
-          <div className="mt-3 divide-y divide-[color:var(--loombus-border-muted)] border-t border-[color:var(--loombus-border-muted)]">{(data?.questions ?? []).map((question) => { const discussion = unwrapDiscussion(question); return <div key={question.id} className="grid gap-2 py-4 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center"><span className="text-xs text-[color:var(--loombus-text-subtle)]">{question.week_start}</span><span className="text-sm font-semibold">{discussion?.title ?? "Unavailable discussion"}</span><Link href={`/discussions/${question.discussion_id}`} className="text-xs font-semibold text-[#CBAB5B] hover:underline">Open</Link></div>; })}</div>
+          <div className="mt-3 divide-y divide-[color:var(--loombus-border-muted)] border-t border-[color:var(--loombus-border-muted)]">{(data?.questions ?? []).map((question) => { const discussion = unwrapDiscussion(question); return <div key={question.id} className="grid gap-2 py-4 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center"><span className="text-xs text-[color:var(--loombus-text-subtle)]">{question.week_start}</span><span className="text-sm font-semibold">{discussion?.title ?? "Unavailable discussion"}</span>{discussion && !discussion.deleted_at ? <Link href={`/discussions/${question.discussion_id}`} className="text-xs font-semibold text-[#CBAB5B] hover:underline">Open</Link> : <span className="text-xs font-semibold text-[color:var(--loombus-text-subtle)]">Removed</span>}</div>; })}</div>
         </section>
       </div>
     </main>
