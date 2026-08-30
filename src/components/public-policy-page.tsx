@@ -90,7 +90,7 @@ export function PublicPolicyPage({
             >
               <div className={styles.sectionHeading}>
                 <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                <h2 id={section.id}>{section.title}</h2>
+                <h2 id={section.id} className="scroll-mt-28">{section.title}</h2>
               </div>
 
               <div className={styles.sectionBody}>
