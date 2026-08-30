@@ -26,10 +26,10 @@ requireText(combined, "motion-reduce:transition-none", "Calendar surfaces must r
 requireText(calendar, 'scheduleAuthorizedFetch(\n        "/api/calendar"', "Calendar GET contract changed unexpectedly.");
 requireText(calendar, 'action: "respond_room_event"', "Room event response action changed unexpectedly.");
 requireText(calendar, "eventId: item.id", "Room event response identifier changed unexpectedly.");
-requireText(calendar, 'href="/events"', "Events destination changed unexpectedly.");
-requireText(calendar, 'href="/rooms"', "Rooms destination changed unexpectedly.");
-requireText(calendar, 'href="/appointments"', "Appointments destination changed unexpectedly.");
-requireText(calendar, '"/events/manage"', "Event Studio destination changed unexpectedly.");
+requireText(calendar, '["Browse Events", "/events"]', "Events destination changed unexpectedly.");
+requireText(calendar, '["Open Rooms", "/rooms"]', "Rooms destination changed unexpectedly.");
+requireText(calendar, '["Open Appointments", "/appointments"]', "Appointments destination changed unexpectedly.");
+requireText(calendar, '["Event Studio", "/events/manage"]', "Event Studio destination changed unexpectedly.");
 
 requireText(sync, '"/api/calendar/external-feed"', "External calendar feed API changed unexpectedly.");
 requireText(sync, 'method: "POST"', "External calendar link POST behavior changed unexpectedly.");
