@@ -11,16 +11,22 @@ export const metadata: Metadata = {
 
 export default function ProfessionalBookingPayoutPage() {
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+    <main
+      data-professional-booking-payout-editorial="route"
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+    >
       <div className="mx-auto max-w-[78rem]">
-        <div className="mb-5">
+        <nav
+          className="mb-7 border-b border-[color:var(--loombus-border)] pb-4"
+          aria-label="Professional Booking payout setup"
+        >
           <Link
             href="/appointments"
-            className="inline-flex rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]"
+            className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-border)] px-1 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)] motion-reduce:transition-none"
           >
             Back to Appointments
           </Link>
-        </div>
+        </nav>
         <ProfessionalBookingPayoutCard />
       </div>
     </main>
