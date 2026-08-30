@@ -22,6 +22,9 @@ type PublicPolicyPageProps = {
   backLabel?: string;
 };
 
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--loombus-bg)]";
+
 export function PublicPolicyPage({
   eyebrow,
   title,
@@ -44,7 +47,7 @@ export function PublicPolicyPage({
     <main className={styles.page}>
       <div data-policy-print-root className={`${styles.printRoot} ${styles.shell}`}>
         <div className={styles.utilityRow} data-policy-screen-only>
-          <Link href={backHref} className={styles.backLink}>
+          <Link href={backHref} className={`${styles.backLink} ${focusRing}`}>
             ← {backLabel}
           </Link>
           <PolicyPrintButton />
@@ -66,7 +69,7 @@ export function PublicPolicyPage({
             <ol>
               {jumpSections.map((section) => (
                 <li key={section.id}>
-                  <a href={`#${section.id}`}>
+                  <a href={`#${section.id}`} className={focusRing}>
                     <span>{String(section.number).padStart(2, "0")}</span>
                     {section.title}
                   </a>
