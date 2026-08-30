@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const GENERATED_ATTR = "data-loombus-phase-four-generated";
+const TOOLTIP_ATTR = "data-loombus-editorial-tooltip";
 
 type WorkspaceMode = "state" | "intelligence" | "points" | "evidence" | "reply";
 
@@ -13,6 +14,14 @@ const WORKSPACE_ITEMS: Array<{ mode: WorkspaceMode; label: string; controls: str
   { mode: "evidence", label: "Evidence", controls: "discussion-evidence" },
   { mode: "reply", label: "Reply", controls: "discussion-reply-composer" },
 ];
+
+const WORKSPACE_HELP: Record<WorkspaceMode, string> = {
+  state: "Loombus intelligence organizes the conversation while keeping the original post and replies visible.",
+  intelligence: "Use summaries, takeaways, maps, and related ideas to understand how the discussion is developing.",
+  points: "Responses that develop their own branches are surfaced here so important sub-conversations are easier to find.",
+  evidence: "Evidence signals surface contributions that deserve closer sourcing and verification.",
+  reply: "Add context, evidence, a counterpoint, or a precise question that moves the discussion forward.",
+};
 
 function text(element: Element | null) {
   return element?.textContent?.trim() ?? "";
@@ -100,6 +109,32 @@ export function DiscussionPhaseFourNavigation() {
         activateWorkspace(mainColumn, mainColumn.dataset.discussionWorkspaceMode as WorkspaceMode);
       }
       return nav;
+    }
+
+    function ensureHeadingTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: string) {
+      if (!target || target.querySelector(`:scope > [${TOOLTIP_ATTR}]`)) return;
+
+      const tooltipId = `discussion-${mode}-heading-help`;
+      const trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.className = "discussion-editorial-heading-help";
+      trigger.setAttribute(TOOLTIP_ATTR, mode);
+      trigger.setAttribute("aria-label", `About ${label}`);
+      trigger.setAttribute("aria-describedby", tooltipId);
+
+      const mark = document.createElement("span");
+      mark.className = "discussion-editorial-heading-help-mark";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "i";
+
+      const tooltip = document.createElement("span");
+      tooltip.id = tooltipId;
+      tooltip.className = "discussion-editorial-heading-tooltip";
+      tooltip.setAttribute("role", "tooltip");
+      tooltip.textContent = WORKSPACE_HELP[mode];
+
+      trigger.append(mark, tooltip);
+      target.append(trigger);
     }
 
     function ensureDiscoveryPanel(
@@ -255,6 +290,33 @@ export function DiscussionPhaseFourNavigation() {
         "Evidence signals surface the contributions that deserve closer sourcing and verification."
       );
 
+      ensureHeadingTooltip(
+        mainColumn.querySelector<HTMLElement>("#discussion-intelligence .discussion-v2-eyebrow"),
+        "state",
+        "State of the discussion"
+      );
+      ensureHeadingTooltip(
+        mainColumn.querySelector<HTMLElement>("[data-phase-five-intelligence-host='true'] .discussion-v2-eyebrow") ??
+          mainColumn.querySelector<HTMLElement>("[data-phase-five-intelligence-host='true'] h2"),
+        "intelligence",
+        "Conversation Intelligence"
+      );
+      ensureHeadingTooltip(
+        pointsPanel.querySelector<HTMLElement>(".discussion-phase-four-panel-heading > span"),
+        "points",
+        "Points"
+      );
+      ensureHeadingTooltip(
+        evidencePanel.querySelector<HTMLElement>(".discussion-phase-four-panel-heading > span"),
+        "evidence",
+        "Evidence"
+      );
+      ensureHeadingTooltip(
+        composer?.querySelector<HTMLElement>(".discussion-v2-eyebrow") ?? null,
+        "reply",
+        "Reply"
+      );
+
       const wrappers = replyList
         ? Array.from(replyList.querySelectorAll<HTMLElement>(":scope > [id^='reply-']"))
         : [];
@@ -293,7 +355,10 @@ export function DiscussionPhaseFourNavigation() {
     const observer = new MutationObserver((mutations) => {
       if (mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => {
         if (!(node instanceof Element)) return false;
-        return node.matches("[id^='reply-']") || Boolean(node.querySelector("[id^='reply-']"));
+        return (
+          node.matches("[id^='reply-'], [data-phase-five-intelligence-host='true']") ||
+          Boolean(node.querySelector("[id^='reply-'], [data-phase-five-intelligence-host='true']"))
+        );
       }))) {
         scheduleRefresh();
       }
@@ -312,7 +377,7 @@ export function DiscussionPhaseFourNavigation() {
       window.removeEventListener("loombus:discussion-metrics-changed", scheduleRefresh);
       window.removeEventListener("loombus:discussion-reply-window-state", scheduleRefresh);
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
-      document.querySelectorAll(`[${GENERATED_ATTR}]`).forEach((node) => node.remove());
+      document.querySelectorAll(`[${GENERATED_ATTR}], [${TOOLTIP_ATTR}]`).forEach((node) => node.remove());
       document.querySelector<HTMLElement>(".discussion-v2-main-column")?.removeAttribute("data-discussion-workspace-mode");
     };
   }, []);
