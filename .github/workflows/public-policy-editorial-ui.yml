@@ -1,0 +1,23 @@
+name: Public Policy Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/components/public-policy-page.tsx"
+      - "src/components/public-policy-page.module.css"
+      - "scripts/verification/verify-public-policy-editorial-ui.mjs"
+      - ".github/workflows/public-policy-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Public Policy Editorial UI
+        run: node scripts/verification/verify-public-policy-editorial-ui.mjs
