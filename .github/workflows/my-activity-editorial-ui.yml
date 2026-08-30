@@ -1,0 +1,62 @@
+name: My Activity Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/my-activity/**"
+      - ".github/workflows/my-activity-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify Editorial presentation and preserved contracts
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const css = fs.readFileSync('src/app/my-activity/my-activity-v2.css', 'utf8');
+          const client = fs.readFileSync('src/app/my-activity/my-activity-v2-client.tsx', 'utf8');
+          const requiredCss = [
+            'background: var(--loombus-page-bg)',
+            'border-bottom: 1px solid var(--loombus-border)',
+            'var(--loombus-gold',
+            'min-height: 44px',
+            ':focus-visible',
+            '@media (prefers-reduced-motion: reduce)',
+          ];
+          const forbiddenCss = [
+            'radial-gradient(',
+            'linear-gradient(',
+            'border-radius: 999px',
+            'border-radius: 2rem',
+            'background: var(--loombus-surface)',
+          ];
+          const requiredContracts = [
+            'getBlockedRelationshipUserIds',
+            'filterBlockedActorNotifications',
+            'supabase.auth.getUser()',
+            'fetch("/api/bookmarks"',
+            'method: "DELETE"',
+            '.from("notifications")',
+            '.update({ read_at: readAt })',
+            '.eq("user_id", userId)',
+            'normalizePublicText',
+          ];
+          for (const token of requiredCss) {
+            if (!css.includes(token)) throw new Error(`Missing Editorial contract: ${token}`);
+          }
+          for (const token of forbiddenCss) {
+            if (css.includes(token)) throw new Error(`Legacy presentation remains: ${token}`);
+          }
+          for (const token of requiredContracts) {
+            if (!client.includes(token)) throw new Error(`Behavior/privacy contract missing: ${token}`);
+          }
+          console.log('My Activity Editorial UI verification passed.');
+          NODE
