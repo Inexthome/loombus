@@ -5,6 +5,7 @@ import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
 import { DiscussionViewModeControl } from "@/components/discussion-view-mode-control";
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
+import { QuestionOfTheWeekBridge } from "@/components/question-of-the-week-bridge";
 import "../create/create-flat.css";
 import "../create/create-detail-refinement.css";
 import "../create/create-selector-polish.css";
@@ -45,6 +46,7 @@ export default function DiscussionsLayout({ children }: Readonly<{ children: Rea
       <DiscussionVideoAutoplay />
       <DiscussionsCreateComposerBridge />
       <DiscussionViewModeControl />
+      <QuestionOfTheWeekBridge />
       {children}
     </div>
   );
