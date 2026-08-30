@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AdminQuestionOfWeekLinkBridge } from "@/components/admin-question-of-week-link-bridge";
 import AdminOperationsClient from "./admin-operations-client";
 import "./admin-operations.css";
 
@@ -13,5 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function AdminDashboardPage() {
-  return <AdminOperationsClient />;
+  return (
+    <>
+      <AdminQuestionOfWeekLinkBridge />
+      <AdminOperationsClient />
+    </>
+  );
 }
