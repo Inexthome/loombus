@@ -57,44 +57,57 @@ export default function AccountAccessPage() {
     <main
       data-loombus-auth-shell
       data-loombus-account-access
-      className="flex min-h-screen items-center justify-center bg-black px-4 py-12 text-white sm:px-6"
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)] sm:px-6 sm:py-14"
     >
-      <section className="w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8">
-        <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-          Loombus account access
-        </p>
+      <div className="mx-auto w-full max-w-5xl">
+        <header className="border-b border-[color:var(--loombus-border)] pb-8 sm:pb-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
+            Loombus account access
+          </p>
+          <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+            {copy.title}
+          </h1>
+        </header>
 
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-          {copy.title}
-        </h1>
+        <div className="grid gap-10 py-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:gap-14 lg:py-12">
+          <section aria-labelledby="account-access-status-heading">
+            <h2 id="account-access-status-heading" className="text-lg font-semibold">
+              Current access status
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[color:var(--loombus-muted)]">
+              {copy.message}
+            </p>
+          </section>
 
-        <p className="mb-7 leading-relaxed text-zinc-400">{copy.message}</p>
+          <aside className="border-t border-[color:var(--loombus-border)] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <p className="text-sm font-semibold">Available next steps</p>
+            <div className="mt-5 flex flex-col border-t border-[color:var(--loombus-border)]">
+              {showDecisionHistory ? (
+                <Link
+                  href="/account/enforcement"
+                  className="account-access-primary inline-flex min-h-11 items-center border-b border-[color:var(--loombus-border)] py-3 text-sm font-semibold text-[color:var(--loombus-gold)] transition-colors hover:text-[color:var(--loombus-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)]"
+                >
+                  View decisions and appeals
+                </Link>
+              ) : null}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {showDecisionHistory ? (
-            <Link
-              href="/account/enforcement"
-              className="account-access-primary inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition"
-            >
-              View decisions and appeals
-            </Link>
-          ) : null}
+              <Link
+                href="/support"
+                className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-border)] py-3 text-sm font-medium text-[color:var(--loombus-text)] transition-colors hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)]"
+              >
+                Contact Support
+              </Link>
 
-          <Link
-            href="/support"
-            className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-          >
-            Contact Support
-          </Link>
-
-          <Link
-            href="/"
-            className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-          >
-            Return to Loombus
-          </Link>
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-border)] py-3 text-sm font-medium text-[color:var(--loombus-text)] transition-colors hover:text-[color:var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)]"
+              >
+                Return to Loombus
+              </Link>
+            </div>
+          </aside>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
