@@ -25,6 +25,7 @@ import {
   ProfileAvatar,
   getProfileDisplayName,
 } from "@/components/profile-avatar";
+import { QuestionOfTheWeekSidebar } from "@/components/question-of-the-week-sidebar";
 
 const MAX_SIDE_TOPICS = 7;
 const MAX_TRENDING_TOPICS = 5;
@@ -727,60 +728,7 @@ export default function DiscussionsPage() {
     <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-[88rem] gap-6 xl:grid-cols-[14.5rem_minmax(0,1fr)_20rem]">
         <aside className="hidden xl:block">
-          <section className="sticky top-28 rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-2xl shadow-black/10">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text)]">
-              Browse topics
-            </p>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setSelectedTopic("All")}
-                className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
-                  selectedTopic === "All"
-                    ? "bg-[color:var(--loombus-surface-muted)] text-[#b45309]"
-                    : "bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
-                }`}
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-surface)] text-[#b45309]">
-                    <Sparkles aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-                  </span>
-                  <span className="truncate">All topics</span>
-                </span>
-                <span className="text-xs text-[#b45309]">{discussions.length}</span>
-              </button>
-
-              {visibleTopics.map((item) => (
-                <button
-                  key={item.topic}
-                  type="button"
-                  onClick={() => setSelectedTopic(item.topic)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
-                    selectedTopic === item.topic
-                      ? "bg-[color:var(--loombus-surface-muted)] text-[#b45309]"
-                      : "bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
-                  }`}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text-muted)]">
-                      <Sparkles aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-                    </span>
-                    <span className="truncate">{item.topic}</span>
-                  </span>
-                  <span className="text-xs text-[#b45309]">{item.count}</span>
-                </button>
-              ))}
-            </div>
-
-            <Link
-              href="/topics"
-              className="mt-5 flex w-full items-center justify-between rounded-2xl px-1 py-2 text-sm font-semibold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
-            >
-              View all topics
-              <ChevronRight aria-hidden="true" className="h-4 w-4" />
-            </Link>
-          </section>
+          <QuestionOfTheWeekSidebar />
         </aside>
 
         <section className="min-w-0">
@@ -978,7 +926,47 @@ export default function DiscussionsPage() {
         <aside className="hidden xl:block">
           <div className="sticky top-28 space-y-5">
             <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text-muted)]">
+                  Browse topics
+                </p>
+                <Sparkles aria-hidden="true" className="h-5 w-5 text-[color:var(--loombus-text-muted)]" />
+              </div>
+
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTopic("All")}
+                  className={`flex w-full items-center justify-between gap-3 px-2 py-2.5 text-left text-sm font-semibold transition ${
+                    selectedTopic === "All"
+                      ? "text-[#b45309]"
+                      : "text-[color:var(--loombus-text)] hover:text-[#b45309]"
+                  }`}
+                >
+                  <span className="truncate">All topics</span>
+                  <span className="text-xs text-[color:var(--loombus-text-muted)]">{discussions.length}</span>
+                </button>
+
+                {visibleTopics.map((item) => (
+                  <button
+                    key={item.topic}
+                    type="button"
+                    onClick={() => setSelectedTopic(item.topic)}
+                    className={`flex w-full items-center justify-between gap-3 px-2 py-2.5 text-left text-sm font-semibold transition ${
+                      selectedTopic === item.topic
+                        ? "text-[#b45309]"
+                        : "text-[color:var(--loombus-text)] hover:text-[#b45309]"
+                    }`}
+                  >
+                    <span className="truncate">{item.topic}</span>
+                    <span className="text-xs text-[color:var(--loombus-text-muted)]">{item.count}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="my-5 border-t border-[color:var(--loombus-border-muted)]" />
+
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <p className="text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text-muted)]">
                   Trending topics
                 </p>
