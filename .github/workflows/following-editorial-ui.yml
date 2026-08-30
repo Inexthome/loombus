@@ -1,0 +1,24 @@
+name: Following Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/following/following-v2-client-page.js"
+      - "src/app/following/following-v2-shell.css"
+      - "src/app/following/page.tsx"
+      - "scripts/verification/verify-following-editorial-ui.mjs"
+      - ".github/workflows/following-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Following Editorial UI
+        run: node scripts/verification/verify-following-editorial-ui.mjs
