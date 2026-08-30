@@ -1,0 +1,25 @@
+name: Jobs Management Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/components/jobs-manager-page.tsx"
+      - "src/components/job-listing-editor.tsx"
+      - "src/components/job-listings-panel.tsx"
+      - "src/components/job-moderation-panel.tsx"
+      - "scripts/verification/verify-jobs-management-editorial-ui.mjs"
+      - ".github/workflows/jobs-management-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Jobs management Editorial UI
+        run: node scripts/verification/verify-jobs-management-editorial-ui.mjs
