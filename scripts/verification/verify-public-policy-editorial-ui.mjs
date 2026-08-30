@@ -4,6 +4,7 @@ const componentPath = "src/components/public-policy-page.tsx";
 const cssPath = "src/components/public-policy-page.module.css";
 const component = fs.readFileSync(componentPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+const cssWithoutPrintShadowReset = css.replace(/box-shadow:\s*none\s*!important;/g, "");
 
 function requireText(text, value, message) {
   if (!text.includes(value)) throw new Error(message);
@@ -30,6 +31,6 @@ requireText(component, "effectiveDate || reviewedDate", "Public policy document 
 
 forbid(component, /\bPanel\b/, "Public policy pages still depend on the legacy Panel composition.");
 forbid(css, /border-radius:\s*999px/, "Public policy navigation still contains legacy pill treatment.");
-forbid(css, /box-shadow:\s*(?!none\b)[^;]+;/, "Public policy pages still contain decorative card shadows.");
+forbid(cssWithoutPrintShadowReset, /box-shadow\s*:/, "Public policy pages still contain decorative card shadows.");
 
 console.log("Public Policy Editorial UI verification passed.");
