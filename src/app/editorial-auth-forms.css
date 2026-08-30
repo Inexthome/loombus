@@ -1,0 +1,116 @@
+/* Editorial authentication form completion.
+   Login and signup already use the Loombus editorial page shell. This layer
+   prevents the shared legacy auth treatment from turning their forms into
+   raised panels and restores the compact, rule-driven editorial field rhythm. */
+
+[data-loombus-login-editorial] form,
+[data-loombus-signup-editorial] form {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+[data-loombus-login-editorial] :where(input),
+[data-loombus-signup-editorial] :where(input) {
+  box-sizing: border-box;
+  width: 100%;
+  height: 3.25rem !important;
+  min-height: 3.25rem !important;
+  max-height: 3.25rem;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.75rem 0 !important;
+  color: var(--loombus-text) !important;
+  box-shadow: none !important;
+  font: inherit;
+  line-height: 1.5;
+  appearance: none;
+}
+
+[data-loombus-login-editorial] :where(input):focus,
+[data-loombus-signup-editorial] :where(input):focus {
+  border-bottom-color: var(--loombus-gold) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-login-editorial] :where(input):focus-visible,
+[data-loombus-signup-editorial] :where(input):focus-visible {
+  outline: 2px solid var(--loombus-gold) !important;
+  outline-offset: 4px;
+}
+
+[data-loombus-signup-editorial] :where(select) {
+  box-sizing: border-box;
+  width: 100%;
+  height: 3.25rem !important;
+  min-height: 3.25rem !important;
+  max-height: 3.25rem;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  padding: 0.75rem 1.75rem 0.75rem 0 !important;
+  color: var(--loombus-text) !important;
+  box-shadow: none !important;
+  font: inherit;
+  line-height: 1.5;
+}
+
+[data-loombus-signup-editorial] :where(select):focus,
+[data-loombus-signup-editorial] :where(select):focus-visible {
+  border-bottom-color: var(--loombus-gold) !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-signup-editorial] :where(select):focus-visible {
+  outline: 2px solid var(--loombus-gold) !important;
+  outline-offset: 4px;
+}
+
+[data-loombus-login-editorial] button[type="submit"],
+[data-loombus-signup-editorial] button[type="submit"] {
+  box-sizing: border-box;
+  min-height: 3.25rem !important;
+  border: 1px solid var(--loombus-gold) !important;
+  border-radius: 0 !important;
+  background: var(--loombus-gold) !important;
+  color: #17140b !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-login-editorial] button[type="submit"]:hover,
+[data-loombus-signup-editorial] button[type="submit"]:hover {
+  background: var(--loombus-gold) !important;
+  color: #17140b !important;
+  opacity: 0.9;
+}
+
+[data-loombus-login-editorial] button[type="submit"]:disabled,
+[data-loombus-signup-editorial] button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+[data-loombus-login-editorial] label,
+[data-loombus-signup-editorial] label {
+  line-height: 1.35;
+}
+
+[data-loombus-signup-editorial] select option {
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+}
+
+@media (max-width: 639px) {
+  [data-loombus-login-editorial] :where(input),
+  [data-loombus-signup-editorial] :where(input),
+  [data-loombus-signup-editorial] :where(select),
+  [data-loombus-login-editorial] button[type="submit"],
+  [data-loombus-signup-editorial] button[type="submit"] {
+    min-height: 3rem !important;
+    height: 3rem !important;
+  }
+}
