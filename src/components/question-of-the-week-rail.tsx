@@ -45,7 +45,6 @@ type QuestionCard = {
   weekStart: string;
   weekEnd: string;
   category: string;
-  whyNow: string | null;
   isCurrent: boolean;
 };
 
@@ -158,7 +157,6 @@ export function QuestionOfTheWeekRail() {
             weekStart: row.week_start,
             weekEnd: row.week_end,
             category: row.category,
-            whyNow: row.why_now,
             isCurrent: row.week_start <= today && row.week_end >= today,
           },
         ];
@@ -324,11 +322,6 @@ export function QuestionOfTheWeekRail() {
                 <h3 className="mt-3 text-[1.05rem] font-semibold leading-6 tracking-[-0.015em] text-[color:var(--loombus-text)]">
                   {question.title}
                 </h3>
-                {question.whyNow ? (
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    {question.whyNow}
-                  </p>
-                ) : null}
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--loombus-text)] group-hover:text-[#CBAB5B]">
                   Join the discussion
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
