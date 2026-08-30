@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import styles from "./question-of-the-week-rail.module.css";
 
 type QuestionOfWeekRow = {
   id: string;
@@ -95,6 +96,28 @@ function countByDiscussion(rows: Array<{ discussion_id: string }> | null) {
     counts[row.discussion_id] = (counts[row.discussion_id] ?? 0) + 1;
   }
   return counts;
+}
+
+function QuestionOfTheWeekTooltip() {
+  return (
+    <button
+      type="button"
+      className={styles.headingHelp}
+      aria-label="About Question of the Week"
+      aria-describedby="question-of-the-week-tooltip"
+    >
+      <span className={styles.headingHelpMark} aria-hidden="true">
+        i
+      </span>
+      <span
+        id="question-of-the-week-tooltip"
+        className={styles.headingTooltip}
+        role="tooltip"
+      >
+        real-world question worth thinking through together
+      </span>
+    </button>
+  );
 }
 
 export function QuestionOfTheWeekRail() {
@@ -216,18 +239,13 @@ export function QuestionOfTheWeekRail() {
     >
       <div className="mb-4 flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#CBAB5B]">
-            Loombus Editorial
-          </p>
           <h2
             id="question-of-the-week-heading"
-            className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[color:var(--loombus-text)]"
+            className="flex items-center text-lg font-semibold tracking-[-0.02em] text-[#CBAB5B]"
           >
             Question of the Week
+            <QuestionOfTheWeekTooltip />
           </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-            One real-world question worth thinking through together.
-          </p>
         </div>
 
         {questions.length > 1 ? (
