@@ -1,0 +1,66 @@
+name: Signal History Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/reading-history/**"
+      - ".github/workflows/reading-history-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify Editorial presentation and preserved contracts
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const page = fs.readFileSync('src/app/reading-history/page.tsx', 'utf8');
+          const requiredEditorial = [
+            'bg-[var(--loombus-page-bg)]',
+            'border-b border-[var(--loombus-border)]',
+            'text-[var(--loombus-gold)]',
+            'min-h-11',
+            'focus-visible:ring-2',
+            'aria-label="Signal History summary"',
+          ];
+          const forbiddenLegacy = [
+            'radial-gradient(',
+            'shadow-2xl',
+            'rounded-[2rem]',
+            'rounded-full',
+            'bg-[var(--loombus-surface)]',
+            'bg-[var(--loombus-surface-strong)]',
+          ];
+          const requiredContracts = [
+            'supabase.auth.getUser()',
+            '.from("user_ai_entitlements")',
+            'entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium"',
+            '.from("discussion_views")',
+            '.eq("viewer_id", user.id)',
+            '.limit(250)',
+            'fetch("/api/reading-history"',
+            'method: "DELETE"',
+            'Authorization: `Bearer ${token}`',
+            'JSON.stringify(payload)',
+            'deleteHistory({ discussionId })',
+            'deleteHistory({ clearAll: true })',
+            'normalizePublicText',
+          ];
+          for (const token of requiredEditorial) {
+            if (!page.includes(token)) throw new Error(`Missing Editorial contract: ${token}`);
+          }
+          for (const token of forbiddenLegacy) {
+            if (page.includes(token)) throw new Error(`Legacy presentation remains: ${token}`);
+          }
+          for (const token of requiredContracts) {
+            if (!page.includes(token)) throw new Error(`Behavior/privacy contract missing: ${token}`);
+          }
+          console.log('Signal History Editorial UI verification passed.');
+          NODE
