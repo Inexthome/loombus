@@ -53,6 +53,88 @@
   outline-offset: -2px;
 }
 
+.discussion-v2-eyebrow,
+.discussion-phase-four-panel-heading > span,
+[data-phase-five-intelligence-host="true"] h2 {
+  position: relative;
+}
+
+.discussion-editorial-heading-help {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  min-height: 1rem;
+  margin: 0 0 0 0.38rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--discussion-v2-accent-text, #CBAB5B);
+  vertical-align: middle;
+  cursor: help;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.discussion-editorial-heading-help-mark {
+  display: grid;
+  place-items: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--discussion-v2-gold, #CBAB5B) 72%, var(--loombus-border));
+  border-radius: 50%;
+  color: var(--discussion-v2-accent-text, #CBAB5B);
+  font-family: ui-serif, Georgia, serif;
+  font-size: 0.58rem;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+}
+
+.discussion-editorial-heading-help:focus-visible {
+  outline: 2px solid var(--discussion-v2-gold, #CBAB5B);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.discussion-editorial-heading-tooltip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 50;
+  width: min(21rem, calc(100vw - 2rem));
+  padding: 0.68rem 0.76rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 0.45rem;
+  background: var(--loombus-page-bg);
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 18%, transparent);
+  color: var(--loombus-text);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 550;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.15rem);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.discussion-editorial-heading-help:hover .discussion-editorial-heading-tooltip,
+.discussion-editorial-heading-help:focus-visible .discussion-editorial-heading-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 .discussion-phase-four-panel {
   scroll-margin-top: 8rem;
   display: grid;
@@ -205,11 +287,23 @@
     min-height: 2.75rem;
     padding-inline: 0;
   }
+
+  .discussion-editorial-heading-tooltip {
+    position: fixed;
+    top: auto;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
+    max-width: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .discussion-phase-four-nav,
-  .discussion-phase-four-discovery-card {
+  .discussion-phase-four-discovery-card,
+  .discussion-editorial-heading-tooltip {
     scroll-behavior: auto;
+    transition: none;
   }
 }
