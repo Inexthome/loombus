@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  Bookmark,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  MessageCircle,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -40,6 +48,13 @@ type QuestionCard = {
   isCurrent: boolean;
 };
 
+type CardMetrics = {
+  replies: number;
+  views: number;
+  saved: number;
+  signal: number;
+};
+
 function dateOnly(value: Date) {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -74,8 +89,17 @@ function unwrapDiscussion(row: QuestionOfWeekRow) {
   return row.discussions;
 }
 
+function countByDiscussion(rows: Array<{ discussion_id: string }> | null) {
+  const counts: Record<string, number> = {};
+  for (const row of rows ?? []) {
+    counts[row.discussion_id] = (counts[row.discussion_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export function QuestionOfTheWeekRail() {
   const [questions, setQuestions] = useState<QuestionCard[]>([]);
+  const [metrics, setMetrics] = useState<Record<string, CardMetrics>>({});
   const [loading, setLoading] = useState(true);
   const railRef = useRef<HTMLDivElement | null>(null);
 
@@ -118,7 +142,53 @@ export function QuestionOfTheWeekRail() {
       });
 
       setQuestions(cards);
-      setLoading(false);
+
+      const discussionIds = cards.map((card) => card.discussionId);
+      if (discussionIds.length > 0) {
+        const [replyResult, bookmarkResult, viewResult] = await Promise.all([
+          supabase
+            .from("replies")
+            .select("discussion_id")
+            .in("discussion_id", discussionIds)
+            .is("deleted_at", null),
+          supabase
+            .from("bookmarks")
+            .select("discussion_id")
+            .in("discussion_id", discussionIds),
+          supabase
+            .from("discussion_views")
+            .select("discussion_id")
+            .in("discussion_id", discussionIds),
+        ]);
+
+        if (mounted) {
+          const replyCounts = countByDiscussion(
+            (replyResult.data ?? []) as Array<{ discussion_id: string }>
+          );
+          const savedCounts = countByDiscussion(
+            (bookmarkResult.data ?? []) as Array<{ discussion_id: string }>
+          );
+          const viewCounts = countByDiscussion(
+            (viewResult.data ?? []) as Array<{ discussion_id: string }>
+          );
+          const nextMetrics: Record<string, CardMetrics> = {};
+
+          for (const discussionId of discussionIds) {
+            const replies = replyCounts[discussionId] ?? 0;
+            const saved = savedCounts[discussionId] ?? 0;
+            nextMetrics[discussionId] = {
+              replies,
+              views: viewCounts[discussionId] ?? 0,
+              saved,
+              signal: replies + saved,
+            };
+          }
+
+          setMetrics(nextMetrics);
+        }
+      }
+
+      if (mounted) setLoading(false);
     }
 
     void load();
@@ -204,6 +274,13 @@ export function QuestionOfTheWeekRail() {
         >
           {questions.map((question, index) => {
             const label = weekLabel(index - activeIndex, question.isCurrent);
+            const cardMetrics = metrics[question.discussionId] ?? {
+              replies: 0,
+              views: 0,
+              saved: 0,
+              signal: 0,
+            };
+
             return (
               <Link
                 key={question.id}
@@ -238,6 +315,28 @@ export function QuestionOfTheWeekRail() {
                   Join the discussion
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </span>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-[color:var(--loombus-text-muted)]">
+                    <span className="inline-flex items-center gap-1.5" aria-label={`${cardMetrics.replies} replies`}>
+                      <MessageCircle aria-hidden="true" className="h-4 w-4" />
+                      {cardMetrics.replies}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5" aria-label={`${cardMetrics.views} views`}>
+                      <Eye aria-hidden="true" className="h-4 w-4" />
+                      {cardMetrics.views}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5" aria-label={`${cardMetrics.saved} saves`}>
+                      <Bookmark aria-hidden="true" className="h-4 w-4" />
+                      {cardMetrics.saved}
+                    </span>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[color:var(--loombus-text)]">
+                    <Sparkles aria-hidden="true" className="h-4 w-4 text-[#CBAB5B]" />
+                    {cardMetrics.signal}
+                    <span className="text-[color:var(--loombus-text-muted)]">Signal</span>
+                  </span>
+                </div>
               </Link>
             );
           })}
