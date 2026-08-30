@@ -1,0 +1,23 @@
+name: Professional Booking Payments Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/appointments/professional-payment/page.tsx"
+      - "src/components/professional-booking-payment-center.tsx"
+      - "scripts/verification/verify-professional-booking-payments-editorial-ui.mjs"
+      - ".github/workflows/professional-booking-payments-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Professional Booking Payments Editorial UI
+        run: node scripts/verification/verify-professional-booking-payments-editorial-ui.mjs
