@@ -54,7 +54,7 @@ async function requireAdmin(request: NextRequest) {
   }
 }
 
-async function loadCurrentQuestion(adminClient: ReturnType<typeof createClient>) {
+async function loadCurrentQuestion(adminClient: any) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: question, error } = await adminClient
     .from("questions_of_the_week")
@@ -78,7 +78,7 @@ async function loadCurrentQuestion(adminClient: ReturnType<typeof createClient>)
   return { question, discussion };
 }
 
-async function loadExistingSend(adminClient: ReturnType<typeof createClient>, discussionId: string) {
+async function loadExistingSend(adminClient: any, discussionId: string) {
   const { data, error } = await adminClient
     .from("audit_logs")
     .select("id, created_at, metadata")
