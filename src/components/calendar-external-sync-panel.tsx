@@ -35,6 +35,9 @@ const EMPTY_STATUS: SyncStatus = {
   credential: null,
 };
 
+const focusClass =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--loombus-page-bg)]";
+
 function formatCredentialDate(value: string | null | undefined) {
   if (!value) return null;
   const parsed = new Date(value);
@@ -199,7 +202,7 @@ export default function CalendarExternalSyncPanel() {
       type="button"
       onClick={() => void revoke()}
       disabled={working !== null}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-red-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+      className={`inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-red-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${focusClass}`}
     >
       <Trash2 aria-hidden="true" className="h-4 w-4" />
       {working === "revoke" ? "Revoking…" : "Revoke old link"}
@@ -207,20 +210,22 @@ export default function CalendarExternalSyncPanel() {
   ) : null;
 
   return (
-    <section className="bg-[color:var(--loombus-page-bg)] px-4 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[88rem] rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#CBAB5B]/12 text-[#CBAB5B]">
-              <CalendarSync aria-hidden="true" className="h-6 w-6" />
-            </span>
+    <section
+      data-calendar-editorial="external-sync"
+      className="bg-[color:var(--loombus-page-bg)] px-4 pt-7 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+      aria-labelledby="external-calendar-heading"
+    >
+      <div className="mx-auto max-w-[78rem] border-y border-[color:var(--loombus-border)] py-6">
+        <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3">
+            <CalendarSync aria-hidden="true" className="mt-1 h-5 w-5 text-[color:var(--loombus-gold)]" />
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold tracking-[-0.03em]">External calendar subscription</h2>
-                <span className="rounded-full border border-[#CBAB5B]/35 bg-[#CBAB5B]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#CBAB5B]">
-                  Premium Pro
-                </span>
-              </div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[color:var(--loombus-gold)]">
+                Premium Pro
+              </p>
+              <h2 id="external-calendar-heading" className="mt-1 text-xl font-semibold tracking-[-0.03em]">
+                External calendar subscription
+              </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                 Subscribe a compatible calendar app to a read-only copy of your Loombus schedule. Changes continue to be made in Loombus and flow outward through the private subscription link.
               </p>
@@ -231,21 +236,24 @@ export default function CalendarExternalSyncPanel() {
             type="button"
             onClick={() => void loadStatus()}
             disabled={loading || working !== null}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-xs font-semibold transition hover:border-[#CBAB5B] disabled:cursor-not-allowed disabled:opacity-50"
+            className={`inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-xs font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${focusClass}`}
           >
-            <RefreshCw aria-hidden="true" className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              aria-hidden="true"
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`}
+            />
             Refresh status
           </button>
-        </div>
+        </header>
 
-        <div className="mt-5 border-t border-[color:var(--loombus-border-muted)] pt-5">
+        <div className="mt-6 border-t border-[color:var(--loombus-border-muted)] pt-5">
           {loading ? (
             <div className="flex items-center gap-3 text-sm text-[color:var(--loombus-text-muted)]">
-              <RefreshCw aria-hidden="true" className="h-4 w-4 animate-spin text-[#CBAB5B]" />
+              <RefreshCw aria-hidden="true" className="h-4 w-4 animate-spin text-[color:var(--loombus-gold)] motion-reduce:animate-none" />
               Checking calendar synchronization access…
             </div>
           ) : !status.entitlementAvailable ? (
-            <div className="flex flex-col gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <div>
                 <p className="text-sm font-semibold">Calendar synchronization status is temporarily unavailable.</p>
                 <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
@@ -260,9 +268,9 @@ export default function CalendarExternalSyncPanel() {
               {revokeButton}
             </div>
           ) : !status.canUseExternalCalendarSync ? (
-            <div className="flex flex-col gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <div className="flex gap-3">
-                <KeyRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#CBAB5B]" />
+                <KeyRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
                 <div>
                   <p className="text-sm font-semibold">Premium Pro unlocks external calendar synchronization.</p>
                   <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
@@ -275,21 +283,21 @@ export default function CalendarExternalSyncPanel() {
                   ) : null}
                 </div>
               </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
                 {revokeButton}
                 <Link
                   href="/premium"
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-[#CBAB5B] px-5 text-sm font-semibold text-black transition hover:opacity-90"
+                  className={`inline-flex min-h-11 items-center justify-center border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-semibold text-[color:var(--loombus-gold)] ${focusClass}`}
                 >
                   View Premium Pro
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <div className="flex gap-3">
-                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#CBAB5B]" />
+                  <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
                   <div>
                     <p className="text-sm font-semibold">
                       {status.configured ? "Private subscription link active" : "No private subscription link yet"}
@@ -309,13 +317,13 @@ export default function CalendarExternalSyncPanel() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap gap-2">
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
                   {!status.configured ? (
                     <button
                       type="button"
                       onClick={() => void createOrRotate("generate")}
                       disabled={working !== null}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#CBAB5B] px-5 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={`inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-semibold text-[color:var(--loombus-gold)] transition disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${focusClass}`}
                     >
                       <KeyRound aria-hidden="true" className="h-4 w-4" />
                       {working === "generate" ? "Generating…" : "Generate link"}
@@ -326,7 +334,7 @@ export default function CalendarExternalSyncPanel() {
                         type="button"
                         onClick={() => void createOrRotate("rotate")}
                         disabled={working !== null}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[#CBAB5B] disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${focusClass}`}
                       >
                         <RotateCw aria-hidden="true" className="h-4 w-4" />
                         {working === "rotate" ? "Rotating…" : "Rotate link"}
@@ -335,7 +343,7 @@ export default function CalendarExternalSyncPanel() {
                         type="button"
                         onClick={() => void revoke()}
                         disabled={working !== null}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-red-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-red-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${focusClass}`}
                       >
                         <Trash2 aria-hidden="true" className="h-4 w-4" />
                         {working === "revoke" ? "Revoking…" : "Revoke"}
@@ -346,27 +354,30 @@ export default function CalendarExternalSyncPanel() {
               </div>
 
               {feedUrl ? (
-                <div className="rounded-2xl border border-[#CBAB5B]/30 bg-[#CBAB5B]/8 p-4">
+                <div className="mt-5 border-t border-[color:var(--loombus-gold)]/35 pt-5">
                   <div className="flex items-start gap-3">
-                    <KeyRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#CBAB5B]" />
+                    <KeyRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">Copy this private link now</p>
                       <p className="mt-1 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
                         Treat it like a password. Anyone who has this link can read the limited calendar feed until you rotate or revoke it.
                       </p>
-                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <input
-                          type="text"
-                          readOnly
-                          value={feedUrl}
-                          onFocus={(event) => event.currentTarget.select()}
-                          aria-label="Private calendar subscription link"
-                          className="h-11 min-w-0 flex-1 rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-3 font-mono text-xs text-[color:var(--loombus-text)] outline-none focus:border-[#CBAB5B]"
-                        />
+                      <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                        <label className="block min-w-0">
+                          <span className="sr-only">Private calendar subscription link</span>
+                          <input
+                            type="text"
+                            readOnly
+                            value={feedUrl}
+                            onFocus={(event) => event.currentTarget.select()}
+                            aria-label="Private calendar subscription link"
+                            className={`min-h-11 w-full border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-2 font-mono text-xs text-[color:var(--loombus-text)] outline-none focus:border-[color:var(--loombus-gold)] ${focusClass}`}
+                          />
+                        </label>
                         <button
                           type="button"
                           onClick={() => void copyFeedUrl()}
-                          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#CBAB5B] px-4 text-sm font-semibold text-black transition hover:opacity-90"
+                          className={`inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-semibold text-[color:var(--loombus-gold)] transition motion-reduce:transition-none ${focusClass}`}
                         >
                           {copied ? <Check aria-hidden="true" className="h-4 w-4" /> : <Copy aria-hidden="true" className="h-4 w-4" />}
                           {copied ? "Copied" : "Copy link"}
@@ -380,7 +391,7 @@ export default function CalendarExternalSyncPanel() {
           )}
 
           {notice ? (
-            <p className="mt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]" role="status">
+            <p className="mt-4 border-t border-[color:var(--loombus-border-muted)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]" role="status">
               {notice}
             </p>
           ) : null}
