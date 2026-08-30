@@ -21,6 +21,10 @@
       "schedule": "37 13 * * *"
     },
     {
+      "path": "/api/discussions/question-of-the-week/publish",
+      "schedule": "10 13 * * 1"
+    },
+    {
       "path": "/api/floor/calls/resolve",
       "schedule": "0 14 * * 1-5"
     },
