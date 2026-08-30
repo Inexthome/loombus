@@ -20,6 +20,7 @@ requireText(css, "min-height: 44px;", "Public policy navigation must preserve ac
 requireText(css, ":focus-visible", "Public policy pages must preserve keyboard focus treatment.");
 requireText(css, "@media (prefers-reduced-motion: reduce)", "Public policy pages must preserve reduced-motion accessibility.");
 requireText(css, "@media print", "Public policy print behavior must remain available.");
+requireText(css, "box-shadow: none !important;", "Public policy print output must continue suppressing shadows.");
 requireText(component, "data-policy-print-root", "Public policy print root changed unexpectedly.");
 requireText(component, "data-policy-screen-only", "Public policy screen-only controls changed unexpectedly.");
 requireText(component, "data-policy-print-section", "Public policy print section boundaries changed unexpectedly.");
@@ -29,6 +30,6 @@ requireText(component, "effectiveDate || reviewedDate", "Public policy document 
 
 forbid(component, /\bPanel\b/, "Public policy pages still depend on the legacy Panel composition.");
 forbid(css, /border-radius:\s*999px/, "Public policy navigation still contains legacy pill treatment.");
-forbid(css, /box-shadow\s*:/, "Public policy pages still contain decorative card shadows.");
+forbid(css, /box-shadow:\s*(?!none\b)[^;]+;/, "Public policy pages still contain decorative card shadows.");
 
 console.log("Public Policy Editorial UI verification passed.");
