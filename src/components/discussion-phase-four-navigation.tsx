@@ -4,6 +4,16 @@ import { useEffect } from "react";
 
 const GENERATED_ATTR = "data-loombus-phase-four-generated";
 
+type WorkspaceMode = "state" | "intelligence" | "points" | "evidence" | "reply";
+
+const WORKSPACE_ITEMS: Array<{ mode: WorkspaceMode; label: string; controls: string }> = [
+  { mode: "state", label: "State of Discussion", controls: "discussion-intelligence" },
+  { mode: "intelligence", label: "Conversation Intelligence", controls: "discussion-conversation-intelligence" },
+  { mode: "points", label: "Points", controls: "discussion-major-points" },
+  { mode: "evidence", label: "Evidence", controls: "discussion-evidence" },
+  { mode: "reply", label: "Reply", controls: "discussion-reply-composer" },
+];
+
 function text(element: Element | null) {
   return element?.textContent?.trim() ?? "";
 }
@@ -24,42 +34,70 @@ export function DiscussionPhaseFourNavigation() {
     let cancelled = false;
     let refreshTimer: number | null = null;
 
-    function scrollToTarget(target: string) {
-      const element = document.querySelector<HTMLElement>(target);
-      element?.scrollIntoView({ behavior: "smooth", block: "start" });
+    function activateWorkspace(mainColumn: HTMLElement, mode: WorkspaceMode, shouldScroll = false) {
+      mainColumn.dataset.discussionWorkspaceMode = mode;
+      const nav = mainColumn.querySelector<HTMLElement>(`:scope > [${GENERATED_ATTR}='nav']`);
+      nav?.querySelectorAll<HTMLButtonElement>("button[data-discussion-workspace-mode]").forEach((button) => {
+        const selected = button.dataset.discussionWorkspaceMode === mode;
+        button.setAttribute("aria-selected", selected ? "true" : "false");
+        button.tabIndex = selected ? 0 : -1;
+      });
+
+      if (shouldScroll) {
+        window.requestAnimationFrame(() => {
+          nav?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
     }
 
     function ensureNavigation(mainColumn: HTMLElement) {
       let nav = mainColumn.querySelector<HTMLElement>(`:scope > [${GENERATED_ATTR}='nav']`);
       if (!nav) {
         nav = document.createElement("nav");
-        nav.className = "discussion-phase-four-nav";
+        nav.className = "discussion-phase-four-nav discussion-editorial-workspace-tabs";
         nav.setAttribute(GENERATED_ATTR, "nav");
-        nav.setAttribute("aria-label", "Discussion views");
+        nav.setAttribute("aria-label", "Discussion workspace");
+        nav.setAttribute("role", "tablist");
 
-        const items: Array<[string, string]> = [
-          ["Overview", "#discussion-opening"],
-          ["Responses", ".discussion-v2-replies-section"],
-          ["Points", "#discussion-major-points"],
-          ["Evidence", "#discussion-evidence"],
-        ];
-
-        for (const [label, target] of items) {
+        for (const item of WORKSPACE_ITEMS) {
           const button = document.createElement("button");
           button.type = "button";
-          button.textContent = label;
-          button.dataset.discussionPhaseFourTarget = target;
-          button.onclick = () => {
-            nav?.querySelectorAll("button").forEach((item) => item.removeAttribute("aria-current"));
-            button.setAttribute("aria-current", "page");
-            scrollToTarget(target);
+          button.textContent = item.label;
+          button.dataset.discussionWorkspaceMode = item.mode;
+          button.setAttribute("role", "tab");
+          button.setAttribute("aria-controls", item.controls);
+          button.setAttribute("aria-selected", item.mode === "state" ? "true" : "false");
+          button.tabIndex = item.mode === "state" ? 0 : -1;
+          button.onclick = () => activateWorkspace(mainColumn, item.mode, true);
+          button.onkeydown = (event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const buttons = Array.from(
+              nav?.querySelectorAll<HTMLButtonElement>("button[data-discussion-workspace-mode]") ?? []
+            );
+            const currentIndex = buttons.indexOf(button);
+            let nextIndex = currentIndex;
+            if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % buttons.length;
+            if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+            if (event.key === "Home") nextIndex = 0;
+            if (event.key === "End") nextIndex = buttons.length - 1;
+            const next = buttons[nextIndex];
+            const nextMode = next?.dataset.discussionWorkspaceMode as WorkspaceMode | undefined;
+            if (!next || !nextMode) return;
+            activateWorkspace(mainColumn, nextMode);
+            next.focus();
           };
-          if (label === "Overview") button.setAttribute("aria-current", "page");
           nav.append(button);
         }
 
         const opening = mainColumn.querySelector("#discussion-opening");
         opening?.insertAdjacentElement("afterend", nav);
+      }
+
+      if (!mainColumn.dataset.discussionWorkspaceMode) {
+        activateWorkspace(mainColumn, "state");
+      } else {
+        activateWorkspace(mainColumn, mainColumn.dataset.discussionWorkspaceMode as WorkspaceMode);
       }
       return nav;
     }
@@ -198,6 +236,9 @@ export function DiscussionPhaseFourNavigation() {
       const replyList = document.querySelector<HTMLElement>(".discussion-v2-reply-list");
       if (!mainColumn) return;
 
+      const composer = mainColumn.querySelector<HTMLElement>(".discussion-v2-composer-card");
+      if (composer && !composer.id) composer.id = "discussion-reply-composer";
+
       ensureNavigation(mainColumn);
       const pointsPanel = ensureDiscoveryPanel(
         mainColumn,
@@ -229,6 +270,26 @@ export function DiscussionPhaseFourNavigation() {
       }, 120);
     }
 
+    function handleExistingNavigation(event: MouseEvent) {
+      const target = event.target instanceof Element ? event.target : null;
+      const button = target?.closest<HTMLButtonElement>("button");
+      if (!button) return;
+      const label = button.textContent?.replace(/\s+/g, " ").trim().toLowerCase() ?? "";
+      const mainColumn = document.querySelector<HTMLElement>(".discussion-v2-main-column");
+      if (!mainColumn) return;
+
+      const opensReply =
+        label === "join the discussion" ||
+        label === "add your reply" ||
+        label === "write the first reply" ||
+        (label === "reply" && Boolean(button.closest(".discussion-v2-mobile-bar")));
+
+      if (opensReply) activateWorkspace(mainColumn, "reply");
+      if (label === "state of discussion" && button.closest(".discussion-v2-section-nav")) {
+        activateWorkspace(mainColumn, "state");
+      }
+    }
+
     const observer = new MutationObserver((mutations) => {
       if (mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => {
         if (!(node instanceof Element)) return false;
@@ -239,6 +300,7 @@ export function DiscussionPhaseFourNavigation() {
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener("click", handleExistingNavigation, true);
     window.addEventListener("loombus:discussion-metrics-changed", scheduleRefresh);
     window.addEventListener("loombus:discussion-reply-window-state", scheduleRefresh);
     refresh();
@@ -246,10 +308,12 @@ export function DiscussionPhaseFourNavigation() {
     return () => {
       cancelled = true;
       observer.disconnect();
+      document.removeEventListener("click", handleExistingNavigation, true);
       window.removeEventListener("loombus:discussion-metrics-changed", scheduleRefresh);
       window.removeEventListener("loombus:discussion-reply-window-state", scheduleRefresh);
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       document.querySelectorAll(`[${GENERATED_ATTR}]`).forEach((node) => node.remove());
+      document.querySelector<HTMLElement>(".discussion-v2-main-column")?.removeAttribute("data-discussion-workspace-mode");
     };
   }, []);
 

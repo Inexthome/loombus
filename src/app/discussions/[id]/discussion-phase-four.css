@@ -11,7 +11,7 @@
   gap: 1.2rem;
   overflow-x: auto;
   padding: 0;
-  margin-bottom: 1rem;
+  margin: 0;
   border: 0;
   border-bottom: 1px solid var(--loombus-border);
   background: color-mix(in srgb, var(--loombus-page-bg) 96%, transparent);
@@ -19,6 +19,7 @@
   border-radius: 0;
   scrollbar-width: none;
   box-shadow: none;
+  scroll-margin-top: 5.25rem;
 }
 
 .discussion-phase-four-nav::-webkit-scrollbar {
@@ -27,23 +28,29 @@
 
 .discussion-phase-four-nav button {
   flex: 0 0 auto;
-  min-height: 2.6rem;
+  min-height: 2.75rem;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--loombus-text-muted);
   border-radius: 0;
-  padding: 0.65rem 0;
+  padding: 0.7rem 0;
   font-size: 0.73rem;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .discussion-phase-four-nav button:hover,
-.discussion-phase-four-nav button[aria-current="page"] {
+.discussion-phase-four-nav button[aria-selected="true"] {
   border-bottom-color: var(--discussion-v2-gold, #CBAB5B);
   background: transparent;
   color: var(--loombus-text);
+}
+
+.discussion-phase-four-nav button:focus-visible {
+  outline: 2px solid var(--discussion-v2-gold, #CBAB5B);
+  outline-offset: -2px;
 }
 
 .discussion-phase-four-panel {
@@ -107,11 +114,17 @@
   transition: color 160ms ease;
 }
 
-.discussion-phase-four-discovery-card:hover {
+.discussion-phase-four-discovery-card:hover,
+.discussion-phase-four-discovery-card:focus-visible {
   border-color: var(--loombus-border-muted);
   background: transparent;
   color: var(--loombus-text);
   transform: none;
+}
+
+.discussion-phase-four-discovery-card:focus-visible {
+  outline: 2px solid var(--discussion-v2-gold, #CBAB5B);
+  outline-offset: -2px;
 }
 
 .discussion-phase-four-discovery-card span {
@@ -143,6 +156,44 @@
   line-height: 1.55;
 }
 
+/*
+ * Editorial workspace: the existing State, Conversation Intelligence,
+ * Points, Evidence, and Reply implementations remain authoritative.
+ * This layer only controls which one is visible at a time.
+ */
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-intelligence,
+.discussion-v2-main-column[data-discussion-workspace-mode] [data-phase-five-intelligence-host="true"],
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-major-points,
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-evidence,
+.discussion-v2-main-column[data-discussion-workspace-mode] .discussion-v2-composer-card {
+  display: none !important;
+}
+
+.discussion-v2-main-column[data-discussion-workspace-mode="state"] #discussion-intelligence {
+  display: block !important;
+}
+
+.discussion-v2-main-column[data-discussion-workspace-mode="intelligence"] [data-phase-five-intelligence-host="true"] {
+  display: block !important;
+}
+
+.discussion-v2-main-column[data-discussion-workspace-mode="points"] #discussion-major-points,
+.discussion-v2-main-column[data-discussion-workspace-mode="evidence"] #discussion-evidence {
+  display: grid !important;
+}
+
+.discussion-v2-main-column[data-discussion-workspace-mode="reply"] .discussion-v2-composer-card {
+  display: block !important;
+}
+
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-intelligence,
+.discussion-v2-main-column[data-discussion-workspace-mode] [data-phase-five-intelligence-host="true"],
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-major-points,
+.discussion-v2-main-column[data-discussion-workspace-mode] #discussion-evidence,
+.discussion-v2-main-column[data-discussion-workspace-mode] .discussion-v2-composer-card {
+  margin-top: 0 !important;
+}
+
 @media (max-width: 719px) {
   .discussion-phase-four-nav {
     top: 3.7rem;
@@ -151,7 +202,14 @@
   }
 
   .discussion-phase-four-nav button {
-    min-height: 2.6rem;
+    min-height: 2.75rem;
     padding-inline: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-phase-four-nav,
+  .discussion-phase-four-discovery-card {
+    scroll-behavior: auto;
   }
 }
