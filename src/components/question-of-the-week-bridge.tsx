@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QuestionOfTheWeekRail } from "@/components/question-of-the-week-rail";
 
+const DESKTOP_QUERY = "(min-width: 1280px)";
+
 function findDiscussionsFeedRoot() {
   return Array.from(
     document.querySelectorAll<HTMLElement>(".discussion-feed-route main")
@@ -24,8 +26,23 @@ export function QuestionOfTheWeekBridge() {
     let reactRoot: Root | null = null;
     let mount: HTMLDivElement | null = null;
     let observer: MutationObserver | null = null;
+    const desktopQuery = window.matchMedia(DESKTOP_QUERY);
+
+    function removeMount() {
+      observer?.disconnect();
+      observer = null;
+      reactRoot?.unmount();
+      reactRoot = null;
+      mount?.remove();
+      mount = null;
+    }
 
     function ensureMounted() {
+      if (desktopQuery.matches) {
+        removeMount();
+        return true;
+      }
+
       if (mount?.isConnected) return true;
 
       const feedRoot = findDiscussionsFeedRoot();
@@ -50,7 +67,9 @@ export function QuestionOfTheWeekBridge() {
       return true;
     }
 
-    if (!ensureMounted()) {
+    function watchForMountTarget() {
+      if (desktopQuery.matches || ensureMounted() || observer) return;
+
       observer = new MutationObserver(() => {
         if (ensureMounted()) {
           observer?.disconnect();
@@ -60,10 +79,21 @@ export function QuestionOfTheWeekBridge() {
       observer.observe(document.body, { childList: true, subtree: true });
     }
 
+    function syncForViewport() {
+      if (desktopQuery.matches) {
+        removeMount();
+        return;
+      }
+
+      watchForMountTarget();
+    }
+
+    syncForViewport();
+    desktopQuery.addEventListener("change", syncForViewport);
+
     return () => {
-      observer?.disconnect();
-      reactRoot?.unmount();
-      mount?.remove();
+      desktopQuery.removeEventListener("change", syncForViewport);
+      removeMount();
     };
   }, []);
 
