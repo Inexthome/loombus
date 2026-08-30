@@ -16,7 +16,13 @@ type ManagePayload = {
 };
 
 const fieldClass =
-  "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)] disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
+
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b border-[color:var(--loombus-border)] px-1 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+
+const primaryActionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 border-b-2 border-[color:var(--loombus-gold)] px-1 py-2 text-sm font-bold text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
 
 function noticeLabel(hours: number) {
   if (hours === 0) return "No notice preference";
@@ -214,21 +220,21 @@ export default function ProfessionalBookingPolicyCard() {
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
+    <section data-professional-booking-policy-editorial="root">
+      <header className="flex flex-col gap-5 border-b border-[color:var(--loombus-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
               Professional Booking
             </p>
-            <span className="rounded-full border border-[color:var(--loombus-gold)]/40 bg-[color:var(--loombus-gold-soft)] px-2.5 py-1 text-[11px] font-bold text-[color:var(--loombus-gold)]">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--loombus-text-muted)]">
               Premium Pro
             </span>
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em]">
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
             Booking policies
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
             Configure service-specific policy text and a preferred cancellation-notice window. This foundation stores policy settings only.
           </p>
         </div>
@@ -237,18 +243,23 @@ export default function ProfessionalBookingPolicyCard() {
           type="button"
           onClick={() => void loadServices()}
           disabled={loadingServices || loadingPolicy || saving}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
+          className={actionClass}
         >
           <RefreshCw
             size={15}
-            className={loadingServices || loadingPolicy ? "animate-spin" : ""}
+            className={loadingServices || loadingPolicy ? "animate-spin motion-reduce:animate-none" : ""}
           />
           Refresh
         </button>
-      </div>
+      </header>
 
-      <div className="mt-5 rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-        <div className="flex gap-3">
+      <section className="grid gap-6 border-b border-[color:var(--loombus-border)] py-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+            Policy boundary
+          </p>
+        </div>
+        <div className="flex max-w-3xl gap-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
           <FileText
             className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]"
             aria-hidden="true"
@@ -257,11 +268,11 @@ export default function ProfessionalBookingPolicyCard() {
             This slice does not show policy text to requesters, require acknowledgment, block cancellation, classify a cancellation as late, or charge a fee. Ordinary Appointments cancellation remains unchanged.
           </p>
         </div>
-      </div>
+      </section>
 
       {notice ? (
         <div
-          className="mt-4 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm"
+          className="border-b border-[color:var(--loombus-border)] py-4 text-sm text-[color:var(--loombus-text-muted)]"
           role="status"
         >
           {notice}
@@ -269,98 +280,126 @@ export default function ProfessionalBookingPolicyCard() {
       ) : null}
 
       {loadingServices ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
+        <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">
           Loading appointment services…
         </div>
       ) : usableServices.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
+        <div className="border-b border-[color:var(--loombus-border)] py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">
           Create an appointment service first, then return here to configure a Professional Booking policy.
         </div>
       ) : (
-        <div className="mt-5 space-y-5">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold">Appointment service</span>
-            <select
-              value={selectedServiceId}
-              onChange={(event) => setSelectedServiceId(event.target.value)}
-              className={fieldClass}
-              disabled={loadingPolicy || saving}
-            >
-              {usableServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.businessName} · {service.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="divide-y divide-[color:var(--loombus-border)]">
+          <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+                Service
+              </p>
+            </div>
+            <label className="block max-w-3xl">
+              <span className="block text-sm font-semibold">Appointment service</span>
+              <select
+                value={selectedServiceId}
+                onChange={(event) => setSelectedServiceId(event.target.value)}
+                className={fieldClass}
+                disabled={loadingPolicy || saving}
+              >
+                {usableServices.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.businessName} · {service.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </section>
 
           {loadingPolicy ? (
-            <div className="rounded-2xl border border-dashed border-[color:var(--loombus-border)] p-6 text-center text-sm text-[color:var(--loombus-text-muted)]">
+            <div className="py-10 text-center text-sm text-[color:var(--loombus-text-muted)]">
               Loading booking policy…
             </div>
           ) : data ? (
             <>
               {!canEdit ? (
-                <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
-                  <p className="text-sm font-semibold">
-                    {data.hasSavedPolicy
-                      ? "Saved booking policy is preserved read-only."
-                      : "Premium Pro is required to configure booking policies."}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    Downgrading does not delete saved configuration. It becomes editable again when Professional Booking access returns.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={requestAccess}
-                    className="mt-3 rounded-full border border-[color:var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[color:var(--loombus-gold)]"
-                  >
-                    View Premium Pro
-                  </button>
-                </div>
+                <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+                      Access
+                    </p>
+                  </div>
+                  <div className="max-w-3xl">
+                    <p className="text-sm font-semibold">
+                      {data.hasSavedPolicy
+                        ? "Saved booking policy is preserved read-only."
+                        : "Premium Pro is required to configure booking policies."}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                      Downgrading does not delete saved configuration. It becomes editable again when Professional Booking access returns.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={requestAccess}
+                      className={`${actionClass} mt-3 text-[color:var(--loombus-gold)]`}
+                    >
+                      View Premium Pro
+                    </button>
+                  </div>
+                </section>
               ) : null}
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold">Booking and cancellation policy</span>
-                <textarea
-                  value={policyText}
-                  onChange={(event) => setPolicyText(event.target.value)}
-                  maxLength={PROFESSIONAL_BOOKING_POLICY_TEXT_MAX}
-                  rows={7}
-                  disabled={!canEdit || saving}
-                  className={fieldClass}
-                  placeholder="Example: Please arrive five minutes early. If your plans change, cancel as soon as possible so the time can be offered to someone else."
-                />
-                <span className="mt-2 block text-xs text-[color:var(--loombus-text-muted)]">
-                  {policyText.length}/{PROFESSIONAL_BOOKING_POLICY_TEXT_MAX} characters
-                </span>
-              </label>
+              <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+                    Policy text
+                  </p>
+                </div>
+                <label className="block max-w-3xl">
+                  <span className="block text-sm font-semibold">Booking and cancellation policy</span>
+                  <textarea
+                    value={policyText}
+                    onChange={(event) => setPolicyText(event.target.value)}
+                    maxLength={PROFESSIONAL_BOOKING_POLICY_TEXT_MAX}
+                    rows={7}
+                    disabled={!canEdit || saving}
+                    className={fieldClass}
+                    placeholder="Example: Please arrive five minutes early. If your plans change, cancel as soon as possible so the time can be offered to someone else."
+                  />
+                  <span className="mt-2 block text-xs text-[color:var(--loombus-text-muted)]">
+                    {policyText.length}/{PROFESSIONAL_BOOKING_POLICY_TEXT_MAX} characters
+                  </span>
+                </label>
+              </section>
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold">Preferred cancellation notice</span>
-                <select
-                  value={cancellationNoticeHours}
-                  onChange={(event) => setCancellationNoticeHours(Number(event.target.value))}
-                  disabled={!canEdit || saving}
-                  className={fieldClass}
-                >
-                  {PROFESSIONAL_BOOKING_CANCELLATION_NOTICE_OPTIONS.map((hours) => (
-                    <option key={hours} value={hours}>
-                      {noticeLabel(hours)}
-                    </option>
-                  ))}
-                </select>
-                <span className="mt-2 block text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-                  This is a provider policy preference. It does not remove a requester&apos;s ability to cancel.
-                </span>
-              </label>
+              <section className="grid gap-6 py-7 lg:grid-cols-[14rem_minmax(0,1fr)]">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+                    Cancellation
+                  </p>
+                </div>
+                <label className="block max-w-3xl">
+                  <span className="block text-sm font-semibold">Preferred cancellation notice</span>
+                  <select
+                    value={cancellationNoticeHours}
+                    onChange={(event) => setCancellationNoticeHours(Number(event.target.value))}
+                    disabled={!canEdit || saving}
+                    className={fieldClass}
+                  >
+                    {PROFESSIONAL_BOOKING_CANCELLATION_NOTICE_OPTIONS.map((hours) => (
+                      <option key={hours} value={hours}>
+                        {noticeLabel(hours)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-2 block text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+                    This is a provider policy preference. It does not remove a requester&apos;s ability to cancel.
+                  </span>
+                </label>
+              </section>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <footer className="flex flex-wrap items-center gap-x-5 gap-y-3 py-7">
                 <button
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || !selectedServiceId}
-                  className="inline-flex items-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-5 py-2.5 text-sm font-bold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={primaryActionClass}
                 >
                   <Save size={16} />
                   {saving ? "Saving…" : "Save policy"}
@@ -368,7 +407,7 @@ export default function ProfessionalBookingPolicyCard() {
                 <span className="text-xs text-[color:var(--loombus-text-muted)]">
                   Clear the text and choose “No notice preference” to remove the saved policy.
                 </span>
-              </div>
+              </footer>
             </>
           ) : null}
         </div>
