@@ -6,12 +6,14 @@ import DiscussionDetailActionsLayer from "./discussion-detail-actions-layer";
 import DiscussionDetailV2Client from "./discussion-detail-v2-client";
 import DiscussionInlinePointReplies from "./discussion-inline-point-replies";
 import DiscussionMobileBackNavigation from "./discussion-mobile-back-navigation";
+import QuestionOfWeekBodyDisclosure from "./question-of-week-body-disclosure";
 
 export default function DiscussionPage() {
   return (
     <>
       <DiscussionMobileBackNavigation />
       <DiscussionDetailV2Client />
+      <QuestionOfWeekBodyDisclosure />
       <DiscussionInlinePointReplies />
       <DiscussionViewersPanel />
       <DiscussionAudienceDetailBadge />
