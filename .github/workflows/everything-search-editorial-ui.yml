@@ -1,0 +1,23 @@
+name: Everything Search Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/search/page.tsx"
+      - "src/app/search/everything-search-components.tsx"
+      - "scripts/verification/verify-everything-search-editorial-ui.mjs"
+      - ".github/workflows/everything-search-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Everything Search Editorial UI
+        run: node scripts/verification/verify-everything-search-editorial-ui.mjs
