@@ -97,13 +97,6 @@ function getNativePushTokenType(platform: string) {
   return "unknown";
 }
 
-function parseUnreadCount(value: unknown) {
-  if (typeof value !== "number" && typeof value !== "string") return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) return null;
-  return Math.floor(parsed);
-}
-
 async function applyNativeNotificationBadgeCount(count: number) {
   try {
     await setNativeNotificationBadgeCount(count);
@@ -261,13 +254,8 @@ export async function initializeNativePushListeners() {
       console.error("Loombus native push registration error.", error);
     });
 
-    await PushNotifications.addListener("pushNotificationReceived", (notification) => {
-      const unreadCount = parseUnreadCount(notification.data?.unreadCount);
-      if (unreadCount !== null) {
-        void applyNativeNotificationBadgeCount(unreadCount);
-      } else {
-        void syncNativeNotificationBadge();
-      }
+    await PushNotifications.addListener("pushNotificationReceived", () => {
+      void syncNativeNotificationBadge();
     });
 
     await PushNotifications.addListener(
