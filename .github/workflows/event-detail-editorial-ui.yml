@@ -1,0 +1,23 @@
+name: Event Detail Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/components/event-detail-page.tsx"
+      - "src/app/events/[slug]/page.tsx"
+      - "scripts/verification/verify-event-detail-editorial-ui.mjs"
+      - ".github/workflows/event-detail-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Event Detail Editorial UI
+        run: node scripts/verification/verify-event-detail-editorial-ui.mjs
