@@ -9,6 +9,12 @@ import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
 
+const fieldClassName =
+  "mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]";
+
+const dobSelectClassName =
+  "min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]";
+
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -118,194 +124,157 @@ export default function SignupPage() {
   return (
     <main
       data-loombus-auth-shell
-      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+      data-loombus-signup-editorial
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-8 text-[color:var(--loombus-text)] sm:px-6 sm:py-14"
     >
-      <div className="mx-auto max-w-xl">
-        <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white sm:mb-12">
+      <div className="mx-auto w-full max-w-5xl">
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center text-sm text-[color:var(--loombus-text-muted)] underline-offset-4 transition hover:text-[color:var(--loombus-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+        >
           ← Back to home
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Join Loombus</p>
-        <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">Create your account.</h1>
-        <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
-          Join a signal-first platform where ideas move through discussion,
-          evidence, understanding, and action.
-        </p>
-
-        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-          <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">Returning to Loombus?</p>
-          <h2 className="mb-3 text-xl font-medium">Sign in to your account.</h2>
-          <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-            Already have a Loombus account? Continue here.
+        <header className="mt-10 border-b border-[color:var(--loombus-border)] pb-8 sm:mt-14 sm:pb-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">Join Loombus</p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Create your account</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
+            Join a signal-first platform where ideas move through discussion, evidence, understanding, and action.
           </p>
-          <Link
-            href="/login"
-            className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
-          >
-            Sign in
-          </Link>
-        </div>
+        </header>
 
-        {!signupComplete ? (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">New to Loombus?</p>
-            <h2 className="mb-5 text-xl font-medium">Create a new account.</h2>
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <section className="border-b border-[color:var(--loombus-border)] py-8 lg:border-b-0 lg:border-r lg:pr-10 sm:py-10">
+            <div className="border-b border-[color:var(--loombus-border)] pb-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Returning to Loombus?</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">Sign in to your account</h2>
+              <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Already have a Loombus account? Continue with your existing access.</p>
+              <Link
+                href="/login"
+                className="mt-5 inline-flex min-h-11 items-center border-b border-[color:var(--loombus-gold)] text-sm font-semibold text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                Sign in →
+              </Link>
+            </div>
 
-            {nativeIosApp ? (
+            {!signupComplete ? (
+              <div className="pt-7">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Account options</p>
+                {nativeIosApp ? (
+                  <div className="mt-5 border-y border-[color:var(--loombus-border)] py-5">
+                    <a
+                      href="#email-signup"
+                      className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-gold)] text-sm font-semibold transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                    >
+                      Sign up with email →
+                    </a>
+                    <p className="mt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Use email and password to create an account inside the Loombus iOS app.</p>
+                    <p className="mt-2 text-xs leading-6 text-[color:var(--loombus-text-muted)]">Apple and Google signup remain available on the web.</p>
+                  </div>
+                ) : (
+                  <div className="mt-5 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
+                    <button
+                      type="button"
+                      onClick={() => void handleOAuthSignup("apple")}
+                      disabled={loading || Boolean(oauthLoading)}
+                      className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+                    >
+                      <span className="flex items-center gap-3"><AppleLogoMark className="h-5 w-5" />Sign up with Apple</span>
+                      <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "apple" ? "Opening…" : "→"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleOAuthSignup("google")}
+                      disabled={loading || Boolean(oauthLoading)}
+                      className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+                    >
+                      <span className="flex items-center gap-3"><GoogleLogoMark className="h-5 w-5" />Sign up with Google</span>
+                      <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "google" ? "Opening…" : "→"}</span>
+                    </button>
+                  </div>
+                )}
+                <p className="mt-5 text-xs leading-6 text-[color:var(--loombus-text-muted)]">Prefer email? Create your account with the form.</p>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="py-8 lg:pl-10 sm:py-10">
+            {signupComplete ? (
               <div>
-                <a
-                  href="#email-signup"
-                  className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Account created</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">Check your email to confirm your account</h2>
+                <p className="mt-4 text-sm leading-7 text-[color:var(--loombus-text-muted)]">Use the newest verification link within 60 minutes. After confirming your email, log in and complete your profile so other Loombus members know who they are reading and interacting with.</p>
+                <div className="mt-6 border-y border-[color:var(--loombus-border)] py-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">Verification lifecycle</p>
+                  <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">An expired link can be replaced from the Login page. Accounts that remain unverified for seven days are removed.</p>
+                </div>
+                <Link
+                  href="/login"
+                  className="mt-6 inline-flex min-h-12 items-center border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                 >
-                  Sign up with email
-                </a>
-                <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-                  Use email and password to create an account inside the Loombus iOS app.
-                </p>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                  Apple and Google signup remain available on the web.
-                </p>
+                  Go to Log In
+                </Link>
               </div>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void handleOAuthSignup("apple")}
-                  disabled={loading || Boolean(oauthLoading)}
-                  className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <AppleLogoMark className="h-5 w-5" />
-                  <span>{oauthLoading === "apple" ? "Opening Apple..." : "Sign up with Apple"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleOAuthSignup("google")}
-                  disabled={loading || Boolean(oauthLoading)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <GoogleLogoMark className="h-5 w-5" />
-                  <span>{oauthLoading === "google" ? "Opening Google..." : "Sign up with Google"}</span>
-                </button>
-                <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-                  <span className="h-px flex-1 bg-zinc-900" />
-                  Or create with email
-                  <span className="h-px flex-1 bg-zinc-900" />
+              <form id="email-signup" onSubmit={handleSignup} className="space-y-6">
+                <div className="border-b border-[color:var(--loombus-border)] pb-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Email signup</p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-tight">Create a new account</h2>
                 </div>
-              </>
+
+                <div>
+                  <label htmlFor="signup-full-name" className="block text-sm font-medium">Full name</label>
+                  <input id="signup-full-name" type="text" value={fullName} autoComplete="name" required onChange={(event) => setFullName(event.target.value)} className={fieldClassName} />
+                </div>
+
+                <div>
+                  <label htmlFor="signup-email" className="block text-sm font-medium">Email</label>
+                  <input id="signup-email" type="email" value={email} autoComplete="email" required onChange={(event) => setEmail(event.target.value)} className={fieldClassName} />
+                </div>
+
+                <div>
+                  <p className="block text-sm font-medium">Date of birth</p>
+                  <DateOfBirthSelect value={dateOfBirth} onChange={setDateOfBirth} idPrefix="signup-date-of-birth" selectClassName={dobSelectClassName} />
+                  <p className="mt-2 text-xs leading-6 text-[color:var(--loombus-text-muted)]">Enter your actual date of birth.</p>
+                </div>
+
+                <div>
+                  <label htmlFor="signup-password" className="block text-sm font-medium">Password</label>
+                  <input id="signup-password" type="password" value={password} autoComplete="new-password" required minLength={6} onChange={(event) => setPassword(event.target.value)} className={fieldClassName} />
+                </div>
+
+                <div>
+                  <label htmlFor="signup-confirm-password" className="block text-sm font-medium">Confirm Password</label>
+                  <input id="signup-confirm-password" type="password" value={confirmPassword} autoComplete="new-password" required minLength={6} onChange={(event) => setConfirmPassword(event.target.value)} className={fieldClassName} />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </button>
+
+                {message ? <p role="status" className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">{message}</p> : null}
+
+                <p className="border-t border-[color:var(--loombus-border)] pt-5 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+                  By creating an account or continuing with Apple, Google, or email, you confirm that you meet Loombus eligibility requirements and agree to the{" "}
+                  <Link href="/terms" className="font-semibold underline underline-offset-4 hover:text-[color:var(--loombus-gold)]">Terms</Link>,{" "}
+                  <Link href="/privacy" className="font-semibold underline underline-offset-4 hover:text-[color:var(--loombus-gold)]">Privacy Policy</Link>,{" "}
+                  <Link href="/cookies" className="font-semibold underline underline-offset-4 hover:text-[color:var(--loombus-gold)]">Cookie Policy</Link>,{" "}
+                  <Link href="/guidelines" className="font-semibold underline underline-offset-4 hover:text-[color:var(--loombus-gold)]">Community Guidelines</Link>, and{" "}
+                  <Link href="/safety" className="font-semibold underline underline-offset-4 hover:text-[color:var(--loombus-gold)]">Safety</Link>.
+                </p>
+
+                <p className="text-sm text-[color:var(--loombus-text-muted)]">
+                  Already have an account?{" "}
+                  <Link href="/login" className="font-semibold underline underline-offset-4 transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]">Sign in</Link>
+                </p>
+              </form>
             )}
-          </div>
-        ) : null}
-
-        {signupComplete ? (
-          <div className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">Account Created</p>
-              <h2 className="text-2xl font-medium">Check your email to confirm your account.</h2>
-              <p className="mt-4 leading-relaxed text-zinc-400">
-                Use the newest verification link within 60 minutes. After confirming your email, log in and complete your profile so other Loombus members know who they are reading and interacting with.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <p className="text-sm text-zinc-500">Verification lifecycle</p>
-              <p className="mt-2 text-zinc-300">
-                An expired link can be replaced from the Login page. Accounts that remain unverified for seven days are removed.
-              </p>
-            </div>
-            <Link href="/login" className="inline-flex rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200">
-              Go to Log In
-            </Link>
-          </div>
-        ) : (
-          <form
-            id="email-signup"
-            onSubmit={handleSignup}
-            className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-          >
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">Full name</label>
-              <input
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                required
-                onChange={(event) => setFullName(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">Email</label>
-              <input
-                type="email"
-                value={email}
-                autoComplete="email"
-                required
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">Date of birth</label>
-              <DateOfBirthSelect value={dateOfBirth} onChange={setDateOfBirth} idPrefix="signup-date-of-birth" />
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Enter your actual date of birth.
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">Password</label>
-              <input
-                type="password"
-                value={password}
-                autoComplete="new-password"
-                required
-                minLength={6}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                autoComplete="new-password"
-                required
-                minLength={6}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Creating account..." : "Create Account"}
-            </button>
-
-            {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
-
-            <p className="text-xs leading-relaxed text-zinc-500">
-              By creating an account or continuing with Apple, Google, or email, you confirm that you meet Loombus eligibility requirements and agree to the{" "}
-              <Link href="/terms" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Terms</Link>,{" "}
-              <Link href="/privacy" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Privacy Policy</Link>,{" "}
-              <Link href="/cookies" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Cookie Policy</Link>,{" "}
-              <Link href="/guidelines" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Community Guidelines</Link>, and{" "}
-              <Link href="/safety" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Safety</Link>.
-            </p>
-
-            <p className="pt-1 text-center text-sm text-zinc-400">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-white underline decoration-white/60 underline-offset-4 transition hover:decoration-white">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        )}
+          </section>
+        </div>
       </div>
     </main>
   );
