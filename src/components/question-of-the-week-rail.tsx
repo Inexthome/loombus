@@ -237,9 +237,12 @@ export function QuestionOfTheWeekRail() {
     >
       <div className="mb-4 flex items-end justify-between gap-4">
         <div className="min-w-0">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#CBAB5B]">
+            Loombus Editorial
+          </p>
           <h2
             id="question-of-the-week-heading"
-            className="flex items-center text-lg font-semibold tracking-[-0.02em] text-[#CBAB5B]"
+            className="mt-1 flex items-center text-lg font-semibold tracking-[-0.02em] text-[color:var(--loombus-text)]"
           >
             Question of the Week
             <QuestionOfTheWeekTooltip />
