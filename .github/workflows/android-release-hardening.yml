@@ -1,0 +1,28 @@
+name: Android release hardening
+
+on:
+  pull_request:
+    paths:
+      - "android/app/build.gradle"
+      - "android/variables.gradle"
+      - "android/app/src/**"
+      - "scripts/verification/verify-android-release-hardening.mjs"
+      - "package.json"
+      - ".github/workflows/android-release-hardening.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:android-release-hardening
+      - run: npx tsc --noEmit
