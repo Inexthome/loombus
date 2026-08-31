@@ -1,0 +1,9 @@
+/* Preserve The Floor's terminal workspace while restoring the canonical Loombus page background. */
+.floor-terminal-shell {
+  background: var(--loombus-page-bg) !important;
+}
+
+.floor-terminal-tape,
+.floor-terminal-context {
+  background: var(--loombus-page-bg) !important;
+}

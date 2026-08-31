@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import TheFloorShell from "@/components/the-floor-shell";
 import "./the-floor-shell.css";
 import "./the-floor-mobile-safe-area.css";
+import "./the-floor-original-background.css";
 
 export const metadata: Metadata = {
   title: "The Floor",

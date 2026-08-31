@@ -1,0 +1,15 @@
+/* Preserve the Messages Editorial UI while restoring the standard Loombus page background. */
+[data-loombus-messages-editorial] {
+  --messages-editorial-page-bg: var(--loombus-page-bg) !important;
+}
+
+html[data-loombus-theme="light"] [data-loombus-messages-editorial],
+html[data-loombus-theme="dark"] [data-loombus-messages-editorial] {
+  --messages-editorial-page-bg: var(--loombus-page-bg) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-messages-editorial] {
+    --messages-editorial-page-bg: var(--loombus-page-bg) !important;
+  }
+}
