@@ -86,6 +86,10 @@
   font-weight: 800;
 }
 
+.root-editorial-mobile-hero-cta {
+  display: none;
+}
+
 .root-editorial-hero {
   min-height: min(46rem, calc(100vh - 5.25rem));
   display: grid;
@@ -270,6 +274,14 @@
 @media (max-width: 800px) {
   .root-editorial-header-actions > a:not(.root-editorial-primary-link) {
     display: none;
+  }
+
+  .root-editorial-desktop-hero-cta {
+    display: none;
+  }
+
+  .root-editorial-mobile-hero-cta {
+    display: inline-flex;
   }
 
   .root-editorial-hero,
