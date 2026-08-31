@@ -3,7 +3,7 @@ import fs from "node:fs";
 const checks = [
   ["src/app/premium/page.tsx", ["PremiumV3Client", "premium-editorial.css", "data-premium-editorial"]],
   ["src/app/premium/premium-v3-client.tsx", ["/api/billing/subscription-status", "PremiumPlanCheckoutButton", "BillingPortalButton", "MASTER_SUBSCRIPTION_ENTITLEMENTS"]],
-  ["src/app/premium/premium-editorial.css", ["var(--loombus-page-bg)", ".premium-v2-hero", ".premium-v2-plan-grid", ".premium-v2-comparison-card", ":focus-visible", "prefers-reduced-motion"]],
+  ["src/app/premium/premium-editorial.css", ["--loombus-page-bg: #000000", "var(--loombus-page-bg)", ".premium-v2-hero", ".premium-v2-plan-grid", ".premium-v2-comparison-card", ":focus-visible", "prefers-reduced-motion"]],
 ];
 
 for (const [file, needles] of checks) {
@@ -20,7 +20,10 @@ if (/radial-gradient|linear-gradient/.test(editorial)) {
   throw new Error("Premium Editorial override must not introduce decorative gradients.");
 }
 if (editorial.includes("#FEFBEC") || editorial.includes("#fefbec")) {
-  throw new Error("Premium page background must remain on the standard Loombus page token, not Cream.");
+  throw new Error("Premium Editorial surface must not use Cream.");
+}
+if (!editorial.includes("--loombus-page-bg: #000000")) {
+  throw new Error("Premium Editorial surface must remain dark regardless of global appearance mode.");
 }
 
 const page = fs.readFileSync("src/app/premium/page.tsx", "utf8");
