@@ -1,0 +1,18 @@
+[data-loombus-topics-editorial] {
+  --topics-editorial-page-bg: var(--loombus-page-bg);
+}
+
+html[data-loombus-theme="light"] [data-loombus-topics-editorial] {
+  --topics-editorial-page-bg: #FEFBEC;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-topics-editorial] {
+    --topics-editorial-page-bg: #FEFBEC;
+  }
+}
+
+[data-loombus-topics-editorial] :where(a, button, input):focus-visible {
+  outline: 2px solid #CBAB5B;
+  outline-offset: 3px;
+}
