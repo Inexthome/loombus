@@ -162,6 +162,15 @@ if (hasCompleteStoreBaseline) {
   }
 }
 
+if (iosVersion !== "1.0.6" || iosBuild !== 1) {
+  throw new Error(`Expected iOS release 1.0.6 (1), found ${iosVersion} (${iosBuild}).`);
+}
+if (androidVersionName !== "1.0.6" || androidVersionCode !== 12) {
+  throw new Error(
+    `Expected Android release 1.0.6 (12), found ${androidVersionName} (${androidVersionCode}).`
+  );
+}
+
 console.log(
   `Mobile release metadata verification passed: iOS ${iosVersion} (${iosBuild}) with aligned Live Activities extension; Android ${androidVersionName} versionCode ${androidVersionCode}, SDK ${targetSdk}.`
 );
