@@ -1,0 +1,4 @@
+/* Keep /settings on the standard Loombus page background in every appearance mode. */
+.settings-v2-page {
+  background: var(--loombus-page-bg) !important;
+}

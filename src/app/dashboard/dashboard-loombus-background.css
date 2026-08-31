@@ -1,0 +1,4 @@
+/* Keep /dashboard on the standard Loombus page background in every appearance mode. */
+.dashboard-compact-route {
+  background: var(--loombus-page-bg) !important;
+}

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ProfileMessagePromptBridge } from "@/components/profile-message-prompt-bridge";
 import "./profile-editorial-ui.css";
 import "./profile-editorial-accessibility.css";
+import "./profile-loombus-background.css";
 
 type ProfileLayoutProps = {
   children: ReactNode;

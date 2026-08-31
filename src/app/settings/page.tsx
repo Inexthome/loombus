@@ -10,6 +10,7 @@ import "./member-privacy-settings.css";
 import "./settings-editorial-ui.css";
 import "./settings-editorial-mobile.css";
 import "./settings-mobile-section-select.css";
+import "./settings-loombus-background.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

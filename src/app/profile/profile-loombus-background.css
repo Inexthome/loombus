@@ -1,0 +1,6 @@
+/* Keep /profile on the standard Loombus page background in every appearance mode. */
+.profile-editorial-route,
+.profile-editorial-page,
+.profile-workspace-page {
+  background: var(--loombus-page-bg) !important;
+}
