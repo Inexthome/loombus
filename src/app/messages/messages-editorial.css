@@ -1,0 +1,496 @@
+[data-loombus-messages-editorial] {
+  --messages-editorial-page-bg: var(--loombus-page-bg);
+}
+
+html[data-loombus-theme="light"] [data-loombus-messages-editorial] {
+  --messages-editorial-page-bg: #FEFBEC;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-messages-editorial] {
+    --messages-editorial-page-bg: #FEFBEC;
+  }
+}
+
+[data-loombus-messages-editorial] .messages-v2-page {
+  min-height: 100vh;
+  padding: 1.5rem 1rem 5rem;
+  background: var(--messages-editorial-page-bg);
+}
+
+[data-loombus-messages-editorial] .messages-v2-page-header,
+[data-loombus-messages-editorial] .messages-v2-notice,
+[data-loombus-messages-editorial] .messages-v2-workspace,
+[data-loombus-messages-editorial] .messages-v2-loading-shell {
+  width: min(100%, 88rem);
+}
+
+[data-loombus-messages-editorial] .messages-v2-page-header {
+  margin-bottom: 1.1rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--loombus-border);
+  align-items: flex-end;
+}
+
+[data-loombus-messages-editorial] .messages-v2-page-header h1 {
+  margin-top: 0.3rem;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+}
+
+[data-loombus-messages-editorial] .messages-v2-page-header > div > p:last-child {
+  margin-top: 0.65rem;
+  max-width: 42rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+[data-loombus-messages-editorial] .messages-v2-new-button,
+[data-loombus-messages-editorial] .messages-v2-primary-button,
+[data-loombus-messages-editorial] .messages-v2-send-button {
+  min-height: 2.75rem;
+  border-color: #CBAB5B;
+  border-radius: 0.55rem;
+  background: #CBAB5B;
+  color: var(--loombus-gold-contrast);
+  box-shadow: none;
+  transform: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-new-button:hover:not(:disabled),
+[data-loombus-messages-editorial] .messages-v2-primary-button:hover:not(:disabled),
+[data-loombus-messages-editorial] .messages-v2-send-button:hover:not(:disabled) {
+  background: #CBAB5B;
+  opacity: 0.9;
+  transform: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-secondary-button,
+[data-loombus-messages-editorial] .messages-v2-icon-button {
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-secondary-button:hover:not(:disabled),
+[data-loombus-messages-editorial] .messages-v2-icon-button:hover:not(:disabled) {
+  border-color: #CBAB5B;
+  transform: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-page :where(button, a, input, textarea, label):focus-visible,
+[data-loombus-messages-editorial] .messages-v2-page label:focus-within {
+  outline: 2px solid #CBAB5B;
+  outline-offset: 3px;
+}
+
+[data-loombus-messages-editorial] .messages-v2-notice {
+  margin-bottom: 1rem;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  padding: 0.75rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-workspace {
+  gap: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-inbox-panel,
+[data-loombus-messages-editorial] .messages-v2-thread-panel,
+[data-loombus-messages-editorial] .messages-v2-details-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-inbox-panel {
+  min-height: 40rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-inbox-header {
+  padding: 1rem 1rem 0.8rem;
+  border-bottom: 1px solid var(--loombus-border-muted);
+}
+
+[data-loombus-messages-editorial] .messages-v2-inbox-header h2,
+[data-loombus-messages-editorial] .messages-v2-drawer-header h2 {
+  font-size: 1.05rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-search-field {
+  min-height: 2.8rem;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0 1rem;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-search-field.is-large {
+  margin-top: 1rem;
+  padding: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-filter-row {
+  padding: 0 1rem;
+  gap: 1rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-loombus-messages-editorial] .messages-v2-filter-row button {
+  min-height: 2.65rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0.15rem 0;
+  background: transparent;
+  color: var(--loombus-text-muted);
+}
+
+[data-loombus-messages-editorial] .messages-v2-filter-row button[aria-pressed="true"] {
+  border-color: #CBAB5B;
+  background: transparent;
+  color: var(--loombus-text);
+}
+
+[data-loombus-messages-editorial] .messages-v2-filter-row button span {
+  min-width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: var(--loombus-text-subtle);
+}
+
+[data-loombus-messages-editorial] .messages-v2-conversation-list {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-conversation-item {
+  padding: 0.9rem 1rem;
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+[data-loombus-messages-editorial] .messages-v2-conversation-item:hover {
+  background: color-mix(in srgb, var(--loombus-surface-muted) 55%, transparent);
+}
+
+[data-loombus-messages-editorial] .messages-v2-conversation-item.is-selected {
+  background: transparent;
+  box-shadow: inset 3px 0 0 #CBAB5B;
+}
+
+[data-loombus-messages-editorial] .messages-v2-unread-dot {
+  box-shadow: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-private-note {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0.9rem 1rem;
+  background: transparent;
+  color: #CBAB5B;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-panel {
+  height: min(54rem, calc(100dvh - 8.5rem));
+  min-height: 40rem;
+  border-left: 1px solid var(--loombus-border);
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-header {
+  min-height: 4.2rem;
+  padding: 0.75rem 1rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-back {
+  border-radius: 0.5rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-action-menu {
+  border-radius: 0.6rem;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+}
+
+[data-loombus-messages-editorial] .messages-v2-action-menu button {
+  border-radius: 0.35rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-context {
+  min-height: 2.25rem;
+  justify-content: flex-start;
+  padding: 0.5rem 1rem;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-panel > a[href^="/marketplace/"] {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0.85rem 1rem;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-panel > a[href^="/marketplace/"] > span:first-child > span:first-child {
+  border-radius: 0.45rem;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-thread-scroll {
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-message-list {
+  width: min(100%, 48rem);
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-message-bubble {
+  max-width: min(82%, 36rem);
+  border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
+  box-shadow: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-message-bubble.is-mine {
+  border-color: rgba(203, 171, 91, 0.7);
+  border-radius: 0.85rem 0.85rem 0.2rem 0.85rem;
+  background: color-mix(in srgb, #FEFBEC 88%, var(--loombus-surface));
+}
+
+html[data-loombus-theme="dark"] [data-loombus-messages-editorial] .messages-v2-message-bubble.is-mine {
+  background: var(--loombus-gold-soft);
+  color: var(--loombus-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-loombus-messages-editorial] .messages-v2-message-bubble.is-mine {
+    background: var(--loombus-gold-soft);
+    color: var(--loombus-text);
+  }
+}
+
+[data-loombus-messages-editorial] .messages-v2-message-attachment,
+[data-loombus-messages-editorial] .messages-v2-selected-attachments {
+  border-radius: 0.55rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-message-file-icon {
+  border-radius: 0.4rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-typing-bubble {
+  border-radius: 0.7rem 0.7rem 0.7rem 0.2rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer-shell {
+  padding: 0.75rem 1rem 0.85rem;
+  background: var(--messages-editorial-page-bg);
+  backdrop-filter: none;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer {
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0.3rem 0 0.45rem;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-attach-button {
+  border-radius: 0.5rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer textarea {
+  min-height: 2.7rem;
+  padding: 0.55rem 0.3rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-selected-attachments {
+  border-left: 0;
+  border-right: 0;
+  padding: 0.65rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-selected-attachments > div > span {
+  border-radius: 0;
+  border-top: 1px solid var(--loombus-border-muted);
+  padding: 0.5rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer-shell > div[aria-label="AI message assist"] {
+  margin-bottom: 0.35rem;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer-shell > div[aria-label="AI message assist"] button {
+  min-height: 2.25rem;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0.25rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer-shell > div[aria-label="AI message assist"] button:hover:not(:disabled) {
+  border-color: #CBAB5B;
+}
+
+[data-loombus-messages-editorial] .messages-v2-composer-shell > div[aria-label="AI message assist"] > span {
+  border: 0;
+  border-radius: 0;
+  padding: 0.25rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-rail {
+  border-left: 1px solid var(--loombus-border);
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-card {
+  padding: 1rem 1.05rem;
+}
+
+[data-loombus-messages-editorial] .messages-v2-private-badge {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-actions {
+  gap: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-actions button {
+  border-radius: 0;
+  border-top: 1px solid var(--loombus-border-muted);
+  padding: 0.75rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-actions button:last-child {
+  border-bottom: 1px solid var(--loombus-border-muted);
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-actions button:hover {
+  background: transparent;
+  color: var(--loombus-text);
+}
+
+[data-loombus-messages-editorial] .messages-v2-drawer-backdrop,
+[data-loombus-messages-editorial] .messages-v2-modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+[data-loombus-messages-editorial] .messages-v2-drawer-backdrop > div {
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.2);
+}
+
+[data-loombus-messages-editorial] .messages-v2-details-card.is-drawer {
+  padding: 1.25rem;
+  background: var(--loombus-surface);
+}
+
+[data-loombus-messages-editorial] .messages-v2-modal {
+  border-radius: 0.8rem;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+}
+
+[data-loombus-messages-editorial] .messages-v2-person-results {
+  gap: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-person-result {
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0.8rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-person-result:hover:not(:disabled) {
+  border-color: var(--loombus-border);
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-report-reasons {
+  gap: 0;
+}
+
+[data-loombus-messages-editorial] .messages-v2-report-reasons button {
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-report-reasons button[aria-pressed="true"] {
+  border-bottom-color: #CBAB5B;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-report-notes textarea {
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  padding: 0.75rem 0;
+  background: transparent;
+}
+
+[data-loombus-messages-editorial] .messages-v2-skeleton {
+  border-radius: 0;
+}
+
+@media (min-width: 64rem) {
+  [data-loombus-messages-editorial] .messages-v2-workspace {
+    grid-template-columns: 20rem minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 84rem) {
+  [data-loombus-messages-editorial] .messages-v2-workspace {
+    grid-template-columns: 20rem minmax(0, 1fr) 18rem;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  [data-loombus-messages-editorial] .messages-v2-thread-panel {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  [data-loombus-messages-editorial] .messages-v2-page {
+    padding: 1rem 0.75rem 4rem;
+  }
+
+  [data-loombus-messages-editorial] .messages-v2-page-header {
+    align-items: flex-start;
+  }
+
+  [data-loombus-messages-editorial] .messages-v2-thread-panel {
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-loombus-messages-editorial] *,
+  [data-loombus-messages-editorial] *::before,
+  [data-loombus-messages-editorial] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
