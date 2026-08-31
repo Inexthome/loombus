@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { LibraryImmersiveSubappShell } from "@/components/library/library-immersive-subapp-shell";
 import "./library-theme.css";
 import "./library-immersive-shell.css";
+import "./library-original-background.css";
 
 export const metadata: Metadata = {
   title: "Library",
