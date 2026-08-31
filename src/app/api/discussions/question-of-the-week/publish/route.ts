@@ -266,7 +266,7 @@ function buildDiscussionBody(candidate: WeeklyQuestionCandidate) {
 }
 
 async function ensureQuestionAnnouncement(
-  supabase: ReturnType<typeof createClient>,
+  supabase: NonNullable<ReturnType<typeof getServiceClient>>,
   actorId: string,
   question: WeeklyQuestionRecord
 ) {
