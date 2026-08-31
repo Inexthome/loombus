@@ -31,6 +31,10 @@ requireText(matchesCss, 'section[class*="lg:grid-cols-4"]', "/matches summary mu
 requireText(matchesCss, 'section[class*="space-y-4"] > article', "/matches result records must use restrained editorial containment.");
 requireText(matchesCss, "aside > section", "/matches preferences and rules must use a quiet contextual rail.");
 requireText(matchesCss, "border-bottom: 2px solid transparent", "/matches view controls must use text-led tabs.");
+requireText(matchesCss, 'section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"]', "/matches loading, paused, and empty states must be flattened into editorial sections.");
+requireText(matchesCss, 'aside label[class*="rounded-full"]', "/matches preference choices must not remain pill-heavy.");
+requireText(matchesCss, 'aside details[class*="rounded-2xl"]', "/matches category controls must use flat Editorial treatment.");
+requireText(matchesCss, "justify-content: flex-start !important", "/matches empty-state actions must align with the editorial reading flow.");
 requireText(matchesCss, "prefers-reduced-motion", "/matches must preserve reduced-motion behavior.");
 forbid(matchesCss, /radial-gradient|linear-gradient/, "/matches Editorial layer must not add decorative gradients.");
 
@@ -42,6 +46,8 @@ requireText(matchesSource, 'action: "feedback"', "/matches feedback behavior cha
 requireText(matchesSource, 'action: "create_rule"', "/matches rule creation behavior changed unexpectedly.");
 requireText(matchesSource, "setViewMode(tab.value)", "/matches Active/Saved/Dismissed switching changed unexpectedly.");
 requireText(matchesSource, "href={match.target.href}", "/matches destination behavior changed unexpectedly.");
+requireText(matchesSource, "No matches in this view", "/matches empty-state guidance changed unexpectedly.");
+requireText(matchesSource, "Matching preferences", "/matches preference workspace changed unexpectedly.");
 
 requireText(stickiesPage, 'import "./stickies-editorial.css"', "/stickies must load its Editorial stylesheet.");
 requireText(stickiesPage, "data-loombus-stickies-editorial", "/stickies must expose its Editorial route scope.");
