@@ -9,6 +9,8 @@ on:
       - "src/app/admin/deleted/**"
       - "src/app/admin/deleted-replies/**"
       - "src/app/admin/audit/**"
+      - "src/app/admin/admin-trust-safety-editorial-frame.tsx"
+      - "src/app/admin/admin-trust-safety-native.css"
       - "src/app/admin/trust-safety-editorial.css"
       - "scripts/verification/verify-admin-trust-safety-editorial-ui.mjs"
       - ".github/workflows/admin-trust-safety-editorial-ui.yml"
