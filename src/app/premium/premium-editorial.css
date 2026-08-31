@@ -2,6 +2,14 @@
 
 [data-premium-editorial] {
   --premium-editorial-gold: #CBAB5B;
+  --loombus-page-bg: #000000;
+  --loombus-surface: #09090b;
+  --loombus-surface-strong: #111113;
+  --loombus-surface-muted: #18181b;
+  --loombus-text: #f4f4f5;
+  --loombus-text-muted: #a1a1aa;
+  --loombus-text-subtle: #71717a;
+  --loombus-border: #27272a;
   color: var(--loombus-text);
 }
 
