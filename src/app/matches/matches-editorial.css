@@ -94,6 +94,13 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   box-shadow: none !important;
 }
 
+/* Explicitly neutralize the legacy surface color on the filter bar. */
+[data-loombus-matches-editorial] section.min-w-0 > div:first-child {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
 [data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.5rem]"] > div:first-child {
   gap: 1.25rem !important;
 }
