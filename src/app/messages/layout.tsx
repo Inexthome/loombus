@@ -1,9 +1,10 @@
 import "./messages-v2.css";
+import "./messages-editorial.css";
 
 export default function MessagesLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <>{children}</>;
+  return <div data-loombus-messages-editorial>{children}</div>;
 }
