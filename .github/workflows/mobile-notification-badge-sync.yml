@@ -1,0 +1,33 @@
+name: Mobile notification badge sync
+
+on:
+  pull_request:
+    paths:
+      - "src/lib/native-push.ts"
+      - "src/lib/native-live-updates.ts"
+      - "src/components/native-push-registration.tsx"
+      - "src/app/notifications/**"
+      - "ios/App/App/LoombusLiveUpdatesPlugin.swift"
+      - "ios/App/App/LoombusBridgeViewController.swift"
+      - "android/app/src/main/java/com/loombus/app/LoombusLiveUpdatesPlugin.java"
+      - "android/app/src/main/java/com/loombus/app/MainActivity.java"
+      - "scripts/verification/verify-mobile-notification-badge-sync.mjs"
+      - "package.json"
+      - ".github/workflows/mobile-notification-badge-sync.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:mobile-notification-badge-sync
+      - run: npx tsc --noEmit
