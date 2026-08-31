@@ -45,72 +45,88 @@ export default function ForgotPasswordPage() {
   return (
     <main
       data-loombus-auth-shell
-      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+      data-loombus-password-recovery-editorial
+      className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-8 text-[color:var(--loombus-text)] sm:px-6 sm:py-16"
     >
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-3xl">
         <Link
           href="/login"
-          className="mb-10 inline-block text-sm text-zinc-500 transition hover:text-white sm:mb-12"
+          className="inline-flex min-h-11 items-center text-sm text-[color:var(--loombus-text-muted)] underline decoration-[color:var(--loombus-border)] underline-offset-4 transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
         >
           ← Back to login
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Loombus account recovery
-        </p>
+        <header className="border-b border-[color:var(--loombus-border)] py-10 sm:py-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+            Loombus account recovery
+          </p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+            Reset your password.
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-[color:var(--loombus-text-muted)]">
+            Enter the email address connected to your Loombus account. We will send a secure reset link.
+          </p>
+        </header>
 
-        <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Reset your password.
-        </h1>
-
-        <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
-          Enter the email address connected to your Loombus account. We will send a secure reset link.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-        >
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">Email</label>
-            <input
-              type="email"
-              value={email}
-              autoComplete="email"
-              required
-              disabled={sent}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
-            />
+        <section className="py-8 sm:py-10">
+          <div className="border-b border-[color:var(--loombus-border)] pb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+              Recovery email
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight">Request a secure reset link</h2>
           </div>
 
-          <button
-            type="submit"
-            disabled={sending || sent}
-            className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {sending ? "Sending reset email..." : sent ? "Reset email sent" : "Send reset email"}
-          </button>
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="recovery-email" className="block text-sm font-medium text-[color:var(--loombus-text)]">
+                Email
+              </label>
+              <input
+                id="recovery-email"
+                name="email"
+                type="email"
+                value={email}
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                disabled={sent}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+              />
+            </div>
 
-          {message ? (
-            <p
-              role="status"
-              aria-live="polite"
-              className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400"
+            <button
+              type="submit"
+              disabled={sending || sent}
+              className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
             >
-              {message}
-            </p>
-          ) : null}
+              {sending ? "Sending reset email..." : sent ? "Reset email sent" : "Send reset email"}
+            </button>
 
-          {sent ? (
-            <Link
-              href="/login"
-              className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-            >
-              Return to login
-            </Link>
-          ) : null}
-        </form>
+            {message ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]"
+              >
+                {message}
+              </p>
+            ) : null}
+
+            {sent ? (
+              <div className="border-t border-[color:var(--loombus-border)] pt-5">
+                <Link
+                  href="/login"
+                  className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                >
+                  Return to login
+                </Link>
+              </div>
+            ) : null}
+          </form>
+        </section>
       </div>
     </main>
   );
