@@ -1,0 +1,22 @@
+name: Admin Platform Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/admin/platform/**"
+      - "scripts/verification/verify-admin-platform-editorial-ui.mjs"
+      - ".github/workflows/admin-platform-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Admin Platform Editorial UI
+        run: node scripts/verification/verify-admin-platform-editorial-ui.mjs
