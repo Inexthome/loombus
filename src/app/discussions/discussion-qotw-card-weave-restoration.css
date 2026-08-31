@@ -1,14 +1,24 @@
 /* Restore visual separation for Question of the Week and extend the weave cue to Card mode. */
 
+/* Keep the QOTW section itself on the normal page background. Only the actual
+   question cards receive the lighter surface treatment. */
 [data-question-of-the-week-mount="true"] > section {
   margin-inline: -0.5rem;
   padding: 1.15rem 1rem;
   border-color: var(--loombus-border) !important;
+  background: transparent !important;
+}
+
+[data-question-of-the-week-mount="true"] [role="list"] > a[role="listitem"] {
+  background: var(--loombus-surface) !important;
+}
+
+[data-question-of-the-week-mount="true"] [role="list"] > a[role="listitem"]:not(:focus-visible):hover {
   background: color-mix(
     in srgb,
-    var(--loombus-surface) 88%,
-    var(--loombus-page-bg) 12%
-  );
+    var(--loombus-surface) 96%,
+    var(--loombus-page-bg) 4%
+  ) !important;
 }
 
 .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
