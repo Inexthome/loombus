@@ -1,0 +1,24 @@
+name: Local Manage Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/local/manage/page.tsx"
+      - "src/app/local/local-manage-editorial.css"
+      - "src/components/local-manage-page.tsx"
+      - "scripts/verification/verify-local-manage-editorial-ui.mjs"
+      - ".github/workflows/local-manage-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Local Manage Editorial UI
+        run: node scripts/verification/verify-local-manage-editorial-ui.mjs
