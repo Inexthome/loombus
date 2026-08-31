@@ -1,0 +1,275 @@
+/*
+ * Canonical Editorial treatment for the /discussions index.
+ *
+ * This layer intentionally targets the index page's three-column grid rather than
+ * the /discussions/[id] detail workspace. Existing feed data, filters, bridge
+ * components, Question of the Week behavior, and discussion destinations remain
+ * authoritative; this file changes hierarchy and presentation only.
+ */
+
+.discussion-feed-route > main > div.mx-auto.grid {
+  width: min(100%, 88rem);
+  gap: 1.75rem;
+  align-items: start;
+}
+
+/* The contextual rails stay available on desktop, but no longer read as cards. */
+.discussion-feed-route > main > div.mx-auto.grid > aside > section,
+.discussion-feed-route > main > div.mx-auto.grid > aside > div > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 1rem 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside > section button,
+.discussion-feed-route > main > div.mx-auto.grid > aside > div > section button,
+.discussion-feed-route > main > div.mx-auto.grid > aside > section a,
+.discussion-feed-route > main > div.mx-auto.grid > aside > div > section a {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside > section button {
+  min-height: 2.6rem;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside > section button > span:first-child > span:first-child {
+  display: none !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside > div > section button:hover,
+.discussion-feed-route > main > div.mx-auto.grid > aside > section button:hover {
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+/* Masthead: content first, no hero/card treatment. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:first-child {
+  margin-bottom: 1.15rem !important;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:first-child h1 {
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.045em !important;
+}
+
+/* Search becomes a flat working field with a quiet reset action. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(2) {
+  gap: 0.75rem !important;
+  margin-bottom: 0.35rem !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(2) input {
+  height: 3rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 2rem !important;
+  box-shadow: none !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(2) label svg {
+  left: 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(2) > button {
+  width: 3rem !important;
+  height: 3rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+/* Feed modes use text-led navigation with a restrained Gold active rule. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) {
+  gap: 1.25rem !important;
+  margin-bottom: 1.35rem !important;
+  padding: 0.15rem 0 0.2rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) button {
+  position: relative;
+  min-height: 2.7rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.65rem 0 !important;
+  box-shadow: none !important;
+  color: var(--loombus-text-muted) !important;
+  font-weight: 680 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) button:hover {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) button[class*="bg-[color:var(--loombus-surface)]"] {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) button[class*="bg-[color:var(--loombus-surface)]"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2rem;
+  height: 2px;
+  background: #CBAB5B;
+}
+
+/* Loading and empty states become document sections rather than callout cards. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-inline: 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > section button,
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > section a {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+/* Discussion records form one continuous editorial queue. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 {
+  display: block !important;
+  border-top: 1px solid var(--loombus-border);
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article {
+  overflow: visible !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article:hover {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 24%, transparent) !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article > div:first-child {
+  padding: 1.35rem 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article h2 {
+  font-size: clamp(1.35rem, 2.3vw, 2rem) !important;
+  font-weight: 670 !important;
+  line-height: 1.15 !important;
+}
+
+/* Classification remains visible, but reads as metadata instead of filled pills. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article div.mb-4 > span,
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article div.mt-4.flex.flex-wrap > span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 680 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article div.mb-4 > span:first-child {
+  color: #CBAB5B !important;
+}
+
+/* Engagement summary is integrated into the record footer. */
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article > div:last-child {
+  min-height: 3rem;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  padding: 0.75rem 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article > div:last-child > span:last-child {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  color: #CBAB5B !important;
+}
+
+/* Attachments are legitimate discrete objects, but should not carry dashboard lift. */
+.discussion-feed-route > main > div.mx-auto.grid article [aria-label="Discussion attachments"] > * {
+  border-radius: 0.65rem !important;
+  box-shadow: none !important;
+}
+
+/* Right-rail records become divider-led lists. */
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child > div {
+  gap: 0 !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child section + section {
+  margin-top: 0.75rem;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child section button,
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child section > div > div,
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child section a {
+  box-shadow: none !important;
+}
+
+.discussion-feed-route > main > div.mx-auto.grid > aside:last-child section button[class*="rounded-2xl"] {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+/* Keyboard and reduced-motion guarantees for the final layer. */
+.discussion-feed-route > main a:focus-visible,
+.discussion-feed-route > main button:focus-visible,
+.discussion-feed-route > main input:focus-visible {
+  outline: 2px solid #CBAB5B !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-feed-route > main *,
+  .discussion-feed-route > main *::before,
+  .discussion-feed-route > main *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .discussion-feed-route > main > div.mx-auto.grid {
+    width: min(100%, 52rem);
+  }
+}
+
+@media (max-width: 639px) {
+  .discussion-feed-route > main {
+    padding-inline: 1rem !important;
+  }
+
+  .discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div:nth-child(3) {
+    gap: 1rem !important;
+  }
+
+  .discussion-feed-route > main > div.mx-auto.grid > section.min-w-0 > div.space-y-5 > article > div:first-child {
+    padding-block: 1.1rem !important;
+  }
+}
