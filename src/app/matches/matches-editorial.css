@@ -30,6 +30,28 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   max-width: 42rem;
 }
 
+/* Header actions: one clear primary action, quieter supporting links. */
+[data-loombus-matches-editorial] header > div:last-child {
+  align-items: center;
+  gap: 1rem !important;
+}
+
+[data-loombus-matches-editorial] header > div:last-child :where(a, button) {
+  min-height: 2.75rem !important;
+  border-radius: 0.35rem !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-matches-editorial] header > div:last-child button,
+[data-loombus-matches-editorial] header > div:last-child a:not([class*="loombus-gold"]) {
+  border-color: transparent !important;
+  background: transparent !important;
+  padding-inline: 0.25rem !important;
+  text-decoration: underline;
+  text-decoration-color: var(--loombus-border);
+  text-underline-offset: 0.35rem;
+}
+
 /* Summary counts become a continuous editorial index instead of dashboard cards. */
 [data-loombus-matches-editorial] section[class*="lg:grid-cols-4"] {
   display: grid !important;
@@ -92,6 +114,51 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   color: var(--loombus-text) !important;
 }
 
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.5rem]"] > div:first-child > button span {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.2rem !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.5rem]"] > select {
+  width: min(15rem, 100%);
+  min-height: 2.75rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Loading, paused, and empty states should read like sections, not giant cards. */
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"] {
+  min-height: 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2rem 0 !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"] > svg {
+  margin-inline: 0 !important;
+}
+
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"] > h2,
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"] > p {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.75rem]"] > div:last-child {
+  justify-content: flex-start !important;
+}
+
 /* Matching records stay discrete objects, but lose dashboard elevation. */
 [data-loombus-matches-editorial] section[class*="space-y-4"] > article {
   border-radius: 0.65rem !important;
@@ -117,14 +184,18 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   background: transparent !important;
 }
 
-/* Preferences and rule tools form a quiet contextual rail. */
+/* Preferences and rule tools form one quiet contextual rail. */
+[data-loombus-matches-editorial] aside {
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border);
+}
+
 [data-loombus-matches-editorial] aside > section {
   border: 0 !important;
-  border-top: 1px solid var(--loombus-border) !important;
   border-bottom: 1px solid var(--loombus-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 1.25rem 0 !important;
+  padding: 1.4rem 0 !important;
   box-shadow: none !important;
 }
 
@@ -134,7 +205,43 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   background: transparent !important;
 }
 
-[data-loombus-matches-editorial] input:not([type="checkbox"]):not([type="radio"]),
+[data-loombus-matches-editorial] aside label[class*="rounded-full"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  padding: 0.55rem 0 !important;
+}
+
+[data-loombus-matches-editorial] aside label[class*="rounded-2xl"][class*="bg-"] {
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  padding: 0.8rem 0 !important;
+}
+
+[data-loombus-matches-editorial] aside details[class*="rounded-2xl"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  padding: 0.9rem 0 !important;
+}
+
+[data-loombus-matches-editorial] aside section div[class*="space-y-2"] > div[class*="rounded-2xl"],
+[data-loombus-matches-editorial] aside section p[class*="rounded-2xl"] {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 0 !important;
+}
+
+[data-loombus-matches-editorial] aside section:last-child a[class*="rounded-2xl"] {
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted);
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+[data-loombus-matches-editorial] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 [data-loombus-matches-editorial] select,
 [data-loombus-matches-editorial] textarea {
   border: 0 !important;
@@ -144,7 +251,7 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   box-shadow: none !important;
 }
 
-[data-loombus-matches-editorial] input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-loombus-matches-editorial] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
 [data-loombus-matches-editorial] select:focus,
 [data-loombus-matches-editorial] textarea:focus {
   border-bottom-color: #CBAB5B !important;
@@ -156,7 +263,7 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
   box-shadow: none !important;
 }
 
-[data-loombus-matches-editorial] :where(a, button, input, select, textarea):focus-visible {
+[data-loombus-matches-editorial] :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 2px solid #CBAB5B !important;
   outline-offset: 3px;
 }
@@ -187,6 +294,14 @@ html[data-loombus-theme="light"] [data-loombus-matches-editorial] {
 
   [data-loombus-matches-editorial] section[class*="lg:grid-cols-4"] > button:last-child {
     border-bottom: 0 !important;
+  }
+
+  [data-loombus-matches-editorial] header > div:last-child {
+    align-items: flex-start;
+  }
+
+  [data-loombus-matches-editorial] section[class*="space-y-4"] > div[class*="rounded-[1.5rem]"] > select {
+    width: 100%;
   }
 }
 
