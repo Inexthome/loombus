@@ -1,0 +1,259 @@
+.admin-trust-safety-editorial-route {
+  min-height: 100vh;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+}
+
+.admin-trust-safety-editorial-masthead,
+.admin-trust-safety-editorial-nav,
+.admin-trust-safety-editorial-workspace {
+  width: min(100% - 2rem, 88rem);
+  margin-inline: auto;
+}
+
+.admin-trust-safety-editorial-masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  align-items: end;
+  padding: 2rem 0 1.75rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.admin-trust-safety-editorial-heading {
+  max-width: 54rem;
+}
+
+.admin-trust-safety-editorial-back,
+.admin-trust-safety-editorial-utility a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--loombus-border);
+  color: var(--loombus-text-muted);
+  font-size: 0.76rem;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.admin-trust-safety-editorial-back:hover,
+.admin-trust-safety-editorial-utility a:hover {
+  border-bottom-color: #CBAB5B;
+  color: var(--loombus-text);
+}
+
+.admin-trust-safety-editorial-heading > p {
+  margin: 1.1rem 0 0;
+  color: #CBAB5B;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.admin-trust-safety-editorial-heading h1 {
+  max-width: 18ch;
+  margin: 0.45rem 0 0;
+  font-size: clamp(2.45rem, 5vw, 4.5rem);
+  font-weight: 660;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.admin-trust-safety-editorial-deck {
+  max-width: 48rem;
+  margin-top: 0.9rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.93rem;
+  line-height: 1.7;
+}
+
+.admin-trust-safety-editorial-utility {
+  align-self: end;
+  padding-bottom: 0.1rem;
+}
+
+.admin-trust-safety-editorial-nav {
+  display: flex;
+  gap: 1.45rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--loombus-border);
+  scrollbar-width: none;
+}
+
+.admin-trust-safety-editorial-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-trust-safety-editorial-nav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 3.35rem;
+  padding: 0 0.05rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  font-weight: 730;
+  text-decoration: none;
+}
+
+.admin-trust-safety-editorial-nav a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: transparent;
+}
+
+.admin-trust-safety-editorial-nav a:hover,
+.admin-trust-safety-editorial-nav a.is-active {
+  color: var(--loombus-text);
+}
+
+.admin-trust-safety-editorial-nav a.is-active::after {
+  background: #CBAB5B;
+}
+
+.admin-trust-safety-editorial-workspace {
+  min-width: 0;
+}
+
+/* The route frame now owns title and suite navigation. Existing client heroes become compact utility rows. */
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-hero-copy,
+  .safety-v2-hero-copy,
+  .deleted-v2-hero > div:first-child,
+  .deleted-replies-v2-hero > div:first-child,
+  .audit-v2-hero > div:first-child,
+  .admin-enforcement-hero > div:first-child
+) {
+  display: none !important;
+}
+
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-hero,
+  .safety-v2-hero,
+  .deleted-v2-hero,
+  .deleted-replies-v2-hero,
+  .audit-v2-hero,
+  .admin-enforcement-hero
+) {
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+  padding: 0.85rem 0 !important;
+}
+
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-hero-actions,
+  .safety-v2-hero-actions,
+  .deleted-v2-hero-actions,
+  .deleted-replies-v2-hero-actions,
+  .audit-v2-hero-actions
+) {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem !important;
+}
+
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-hero-actions,
+  .safety-v2-hero-actions,
+  .deleted-v2-hero-actions,
+  .deleted-replies-v2-hero-actions,
+  .audit-v2-hero-actions
+) > span {
+  text-align: right !important;
+}
+
+/* Remove the extra width/padding shell from clients because the native frame owns page geometry. */
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) {
+  min-height: 0 !important;
+  padding: 0 0 6rem !important;
+}
+
+.admin-trust-safety-editorial-workspace :is(
+  .reports-v2-shell,
+  .safety-v2-shell,
+  .admin-enforcement-shell,
+  .deleted-v2-shell,
+  .deleted-replies-v2-shell,
+  .audit-v2-shell
+) {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.admin-trust-safety-editorial-route :where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #CBAB5B !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 48rem) {
+  .admin-trust-safety-editorial-masthead {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 1.25rem;
+  }
+
+  .admin-trust-safety-editorial-utility {
+    justify-self: start;
+  }
+
+  .admin-trust-safety-editorial-workspace :is(
+    .reports-v2-hero,
+    .safety-v2-hero,
+    .deleted-v2-hero,
+    .deleted-replies-v2-hero,
+    .audit-v2-hero,
+    .admin-enforcement-hero
+  ) {
+    justify-content: flex-start !important;
+  }
+
+  .admin-trust-safety-editorial-workspace :is(
+    .reports-v2-hero-actions,
+    .safety-v2-hero-actions,
+    .deleted-v2-hero-actions,
+    .deleted-replies-v2-hero-actions,
+    .audit-v2-hero-actions
+  ) {
+    justify-content: flex-start;
+  }
+
+  .admin-trust-safety-editorial-workspace :is(
+    .reports-v2-hero-actions,
+    .safety-v2-hero-actions,
+    .deleted-v2-hero-actions,
+    .deleted-replies-v2-hero-actions,
+    .audit-v2-hero-actions
+  ) > span {
+    text-align: left !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-trust-safety-editorial-route *,
+  .admin-trust-safety-editorial-route *::before,
+  .admin-trust-safety-editorial-route *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
