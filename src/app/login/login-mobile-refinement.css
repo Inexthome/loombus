@@ -1,0 +1,32 @@
+/* Mobile-only refinements for the Editorial login page. Desktop remains unchanged. */
+@media (max-width: 639px) {
+  [data-loombus-login-editorial] > div > header > p:last-child {
+    display: none;
+  }
+
+  [data-loombus-login-editorial] > div > div > section:first-child > p:last-child {
+    font-size: 0;
+    line-height: 0;
+    text-align: center;
+  }
+
+  [data-loombus-login-editorial] > div > div > section:first-child > p:last-child::after {
+    content: "OR";
+    font-size: 0.75rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--loombus-text-muted);
+  }
+
+  [data-loombus-login-editorial] form > .border-y {
+    display: none !important;
+  }
+
+  [data-loombus-login-editorial] > div > section:last-child a {
+    text-decoration-line: underline;
+    text-decoration-color: var(--loombus-gold);
+    text-underline-offset: 4px;
+    font-weight: 600;
+  }
+}
