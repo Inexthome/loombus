@@ -1,0 +1,24 @@
+name: Discussions Feed Editorial UI
+
+on:
+  pull_request:
+    paths:
+      - "src/app/discussions/**"
+      - "scripts/verification/verify-discussions-feed-editorial-ui.mjs"
+      - ".github/workflows/discussions-feed-editorial-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Discussions feed Editorial UI
+        run: node scripts/verification/verify-discussions-feed-editorial-ui.mjs
