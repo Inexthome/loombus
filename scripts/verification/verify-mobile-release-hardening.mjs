@@ -97,10 +97,28 @@ requireText(
   "android.permission.ACCESS_COARSE_LOCATION",
   "Android approximate location permission is missing."
 );
-forbidText(
+const fineLocationDeclarations =
+  androidManifest.match(
+    /<uses-permission\b[^>]*android:name=["']android\.permission\.ACCESS_FINE_LOCATION["'][^>]*\/?\s*>/g
+  ) ?? [];
+
+for (const declaration of fineLocationDeclarations) {
+  if (!/tools:node=["']remove["']/.test(declaration)) {
+    throw new Error(
+      "Android precise location is actively declared even though Loombus only requests approximate location."
+    );
+  }
+}
+
+requireText(
   androidManifest,
-  "android.permission.ACCESS_FINE_LOCATION",
-  "Android precise location is declared even though Loombus only requests approximate location."
+  'android:name="android.permission.ACCESS_FINE_LOCATION"',
+  "Android precise-location dependency removal rule is missing."
+);
+requireText(
+  androidManifest,
+  'tools:node="remove"',
+  "Android precise-location dependency removal must use tools:node=\"remove\"."
 );
 
 for (const source of [backupRules, extractionRules]) {
