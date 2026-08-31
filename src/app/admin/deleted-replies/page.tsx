@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AdminDeletedRepliesV2Client from "./deleted-replies-v2-client";
 import "./deleted-replies-v2.css";
+import "../trust-safety-editorial.css";
 
 export const metadata: Metadata = {
   title: "Deleted Replies | Loombus Admin",
