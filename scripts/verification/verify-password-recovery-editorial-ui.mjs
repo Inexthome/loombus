@@ -1,9 +1,13 @@
 import fs from "node:fs";
 
 const forgotPath = "src/app/forgot-password/page.tsx";
+const forgotLayoutPath = "src/app/forgot-password/layout.tsx";
+const forgotCssPath = "src/app/forgot-password/forgot-password-editorial.css";
 const resetPath = "src/app/reset-password/page.tsx";
 
 const forgot = fs.readFileSync(forgotPath, "utf8");
+const forgotLayout = fs.readFileSync(forgotLayoutPath, "utf8");
+const forgotCss = fs.readFileSync(forgotCssPath, "utf8");
 const reset = fs.readFileSync(resetPath, "utf8");
 
 function requireText(text, value, message) {
@@ -24,6 +28,17 @@ for (const [name, source] of [["forgot-password", forgot], ["reset-password", re
   forbid(source, /shadow-(?:sm|md|lg|xl|2xl)/, `${name} still contains decorative shadows.`);
   forbid(source, /\bbg-black\b|\bbg-zinc-950\b/, `${name} still contains legacy hard-coded black panel styling.`);
 }
+
+requireText(forgotLayout, 'import "./forgot-password-editorial.css"', "Forgot-password must load its route-scoped Editorial completion layer.");
+requireText(forgotCss, "[data-loombus-password-recovery-editorial]::before", "Forgot-password must suppress the legacy auth-shell decoration.");
+requireText(forgotCss, "display: none !important", "Forgot-password legacy decorative pseudo-elements must stay removed.");
+requireText(forgotCss, "background: #FEFBEC !important", "Forgot-password Light/System-light must use canonical Loombus Cream.");
+requireText(forgotCss, "border-bottom: 1px solid var(--loombus-border) !important", "Forgot-password email input must remain a flat Editorial field.");
+requireText(forgotCss, "background: transparent !important", "Forgot-password input/status surfaces must not be forced into legacy raised fields.");
+requireText(forgotCss, 'button[type="submit"]', "Forgot-password primary action must have an explicit Editorial override.");
+requireText(forgotCss, "background: #CBAB5B !important", "Forgot-password primary action must use canonical Loombus Gold.");
+requireText(forgotCss, "box-shadow: none !important", "Forgot-password must neutralize legacy decorative shadows.");
+requireText(forgotCss, "prefers-reduced-motion: reduce", "Forgot-password must preserve reduced-motion handling.");
 
 requireText(forgot, "supabase.auth.resetPasswordForEmail(email.trim()", "Password recovery email contract changed unexpectedly.");
 requireText(forgot, 'redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`', "Password recovery callback destination changed unexpectedly.");
