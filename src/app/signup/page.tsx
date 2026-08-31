@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { getAuthErrorMessage } from "@/lib/auth-error-message";
-import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
 
 const fieldClassName =
@@ -25,11 +24,6 @@ export default function SignupPage() {
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
-  const [nativeIosApp, setNativeIosApp] = useState(false);
-
-  useEffect(() => {
-    setNativeIosApp(isIosNativeApp());
-  }, []);
 
   async function handleSignup(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -88,13 +82,6 @@ export default function SignupPage() {
   }
 
   async function handleOAuthSignup(provider: "google" | "apple") {
-    if (nativeIosApp || isIosNativeApp()) {
-      setMessage(
-        "Use email and password to create an account inside the Loombus iOS app. Apple and Google signup remain available on the web."
-      );
-      return;
-    }
-
     if (loading || oauthLoading) {
       return;
     }
@@ -160,39 +147,26 @@ export default function SignupPage() {
             {!signupComplete ? (
               <div className="pt-7">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Account options</p>
-                {nativeIosApp ? (
-                  <div className="mt-5 border-y border-[color:var(--loombus-border)] py-5">
-                    <a
-                      href="#email-signup"
-                      className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-gold)] text-sm font-semibold transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                    >
-                      Sign up with email →
-                    </a>
-                    <p className="mt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Use email and password to create an account inside the Loombus iOS app.</p>
-                    <p className="mt-2 text-xs leading-6 text-[color:var(--loombus-text-muted)]">Apple and Google signup remain available on the web.</p>
-                  </div>
-                ) : (
-                  <div className="mt-5 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
-                    <button
-                      type="button"
-                      onClick={() => void handleOAuthSignup("apple")}
-                      disabled={loading || Boolean(oauthLoading)}
-                      className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
-                    >
-                      <span className="flex items-center gap-3"><AppleLogoMark className="h-5 w-5" />Sign up with Apple</span>
-                      <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "apple" ? "Opening…" : "→"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleOAuthSignup("google")}
-                      disabled={loading || Boolean(oauthLoading)}
-                      className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
-                    >
-                      <span className="flex items-center gap-3"><GoogleLogoMark className="h-5 w-5" />Sign up with Google</span>
-                      <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "google" ? "Opening…" : "→"}</span>
-                    </button>
-                  </div>
-                )}
+                <div className="mt-5 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
+                  <button
+                    type="button"
+                    onClick={() => void handleOAuthSignup("apple")}
+                    disabled={loading || Boolean(oauthLoading)}
+                    className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+                  >
+                    <span className="flex items-center gap-3"><AppleLogoMark className="h-5 w-5" />Sign up with Apple</span>
+                    <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "apple" ? "Opening…" : "→"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleOAuthSignup("google")}
+                    disabled={loading || Boolean(oauthLoading)}
+                    className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left text-sm font-medium transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+                  >
+                    <span className="flex items-center gap-3"><GoogleLogoMark className="h-5 w-5" />Sign up with Google</span>
+                    <span className="text-xs text-[color:var(--loombus-text-muted)]">{oauthLoading === "google" ? "Opening…" : "→"}</span>
+                  </button>
+                </div>
                 <p className="mt-5 text-xs leading-6 text-[color:var(--loombus-text-muted)]">Prefer email? Create your account with the form.</p>
               </div>
             ) : null}
