@@ -122,7 +122,7 @@ export default function SignupPage() {
           ← Back to home
         </Link>
 
-        <header className="mt-10 border-b border-[color:var(--loombus-border)] pb-8 sm:mt-14 sm:pb-10">
+        <header className="mt-10 hidden border-b border-[color:var(--loombus-border)] pb-8 sm:mt-14 sm:block sm:pb-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">Join Loombus</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Create your account</h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
@@ -132,7 +132,7 @@ export default function SignupPage() {
 
         <div className="grid gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <section className="border-b border-[color:var(--loombus-border)] py-8 lg:border-b-0 lg:border-r lg:pr-10 sm:py-10">
-            <div className="border-b border-[color:var(--loombus-border)] pb-7">
+            <div className="hidden border-b border-[color:var(--loombus-border)] pb-7 sm:block">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Returning to Loombus?</p>
               <h2 className="mt-2 text-xl font-semibold tracking-tight">Sign in to your account</h2>
               <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Already have a Loombus account? Continue with your existing access.</p>
@@ -145,7 +145,7 @@ export default function SignupPage() {
             </div>
 
             {!signupComplete ? (
-              <div className="pt-7">
+              <div className="pt-0 sm:pt-7">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Account options</p>
                 <div className="mt-5 divide-y divide-[color:var(--loombus-border)] border-y border-[color:var(--loombus-border)]">
                   <button
