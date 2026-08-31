@@ -5,6 +5,7 @@ const files = {
   plugin: "ios/App/CapApp-SPM/Sources/CapApp-SPM/LoombusGoogleAuthPlugin.swift",
   bridgeController: "ios/App/App/LoombusBridgeViewController.swift",
   appDelegate: "ios/App/App/AppDelegate.swift",
+  infoPlist: "ios/App/App/Info.plist",
   clientBridge: "src/lib/native-google-auth.ts",
   login: "src/app/login/page.tsx",
 };
@@ -19,8 +20,13 @@ const packageSwift = fs.readFileSync(files.packageSwift, "utf8");
 const plugin = fs.readFileSync(files.plugin, "utf8");
 const bridgeController = fs.readFileSync(files.bridgeController, "utf8");
 const appDelegate = fs.readFileSync(files.appDelegate, "utf8");
+const infoPlist = fs.readFileSync(files.infoPlist, "utf8");
 const clientBridge = fs.readFileSync(files.clientBridge, "utf8");
 const login = fs.readFileSync(files.login, "utf8");
+
+const iosClientID = "307099574717-6ff7qggt8us5nrabdjlu8auavof04rfr.apps.googleusercontent.com";
+const serverClientID = "307099574717-0c27u2j9rpgjvlonncq345f7bvf4m3pi.apps.googleusercontent.com";
+const reversedClientID = "com.googleusercontent.apps.307099574717-6ff7qggt8us5nrabdjlu8auavof04rfr";
 
 const requiredChecks = [
   [packageSwift.includes("GoogleSignIn-iOS"), "GoogleSignIn-iOS Swift package is missing."],
@@ -29,6 +35,9 @@ const requiredChecks = [
   [plugin.includes("GIDClientID"), "Native plugin does not require the iOS Google client ID."],
   [plugin.includes("GIDServerClientID"), "Native plugin does not support the server/web Google client ID."],
   [plugin.includes("handleLoombusGoogleSignInURL"), "Native plugin does not expose the Google callback handler."],
+  [infoPlist.includes(`<key>GIDClientID</key>\n\t<string>${iosClientID}</string>`), "Info.plist does not contain the expected iOS Google client ID."],
+  [infoPlist.includes(`<key>GIDServerClientID</key>\n\t<string>${serverClientID}</string>`), "Info.plist does not contain the expected Google server client ID."],
+  [infoPlist.includes(`<string>${reversedClientID}</string>`), "Info.plist does not contain the expected reversed Google client URL scheme."],
   [bridgeController.includes("import CapApp_SPM"), "Bridge controller does not import the native package module."],
   [bridgeController.includes("registerPluginInstance(LoombusGoogleAuthPlugin())"), "Bridge controller does not register native Google auth."],
   [appDelegate.includes("handleLoombusGoogleSignInURL(url)"), "App delegate does not route Google callback URLs."],
