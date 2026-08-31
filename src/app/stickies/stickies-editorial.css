@@ -1,0 +1,260 @@
+[data-loombus-stickies-editorial] {
+  --stickies-editorial-page-bg: var(--loombus-page-bg);
+}
+
+html[data-loombus-theme="light"] [data-loombus-stickies-editorial] {
+  --stickies-editorial-page-bg: #FEFBEC;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-stickies-editorial] {
+    --stickies-editorial-page-bg: #FEFBEC;
+  }
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-page {
+  background: var(--stickies-editorial-page-bg) !important;
+  padding-top: 1.25rem;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-shell {
+  width: min(72rem, 100%);
+}
+
+/* The board header becomes a flat editorial introduction rather than a hero card. */
+[data-loombus-stickies-editorial] .stickies-v2-hero {
+  overflow: visible;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 1.75rem !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-hero h1 {
+  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  line-height: 0.98;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-primary-action,
+[data-loombus-stickies-editorial] .stickies-v2-secondary-action,
+[data-loombus-stickies-editorial] .stickies-v2-danger-action {
+  border-radius: 0.35rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-secondary-action {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-gold) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.15rem !important;
+}
+
+/* Account, loading, and entitlement states retain clarity without raised chrome. */
+[data-loombus-stickies-editorial] .stickies-v2-state {
+  width: min(48rem, 100%);
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: clamp(1.4rem, 4vw, 2.4rem) 0 !important;
+  box-shadow: none !important;
+}
+
+/* Overview values read as a compact index instead of four dashboard cards. */
+[data-loombus-stickies-editorial] .stickies-v2-metrics {
+  gap: 0;
+  overflow: hidden;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-metrics article {
+  background: transparent !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-metrics .is-accent {
+  background: transparent !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-metrics .is-accent span,
+[data-loombus-stickies-editorial] .stickies-v2-metrics .is-accent strong {
+  color: inherit;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-layout {
+  grid-template-columns: minmax(0, 1fr) 16rem;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+/* Pinning, filtering, and board tools become one continuous working flow. */
+[data-loombus-stickies-editorial] .stickies-v2-add,
+[data-loombus-stickies-editorial] .stickies-v2-tools,
+[data-loombus-stickies-editorial] .stickies-v2-empty,
+[data-loombus-stickies-editorial] .stickies-v2-sidebar > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-add {
+  padding: 1.25rem 0 !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-tools {
+  padding: 0.85rem 0 !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-add-controls input,
+[data-loombus-stickies-editorial] .stickies-v2-search,
+[data-loombus-stickies-editorial] .stickies-v2-tools select {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-add-controls input:focus,
+[data-loombus-stickies-editorial] .stickies-v2-search:focus-within,
+[data-loombus-stickies-editorial] .stickies-v2-tools select:focus {
+  border-bottom-color: #CBAB5B !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-add-controls button {
+  border-radius: 0.35rem !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-notice,
+[data-loombus-stickies-editorial] .stickies-v2-order-note {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+/* Pinned discussions become a continuous editorial queue. */
+[data-loombus-stickies-editorial] .stickies-v2-grid {
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border);
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-grid > article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.15rem 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-grid > article:hover {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface-muted) 45%, transparent) !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-card-actions > span,
+[data-loombus-stickies-editorial] .stickies-v2-card-actions button {
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.1rem !important;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-card-actions > span.is-enabled:hover,
+[data-loombus-stickies-editorial] .stickies-v2-card-actions button:not(:disabled):hover {
+  border-bottom-color: #CBAB5B !important;
+}
+
+/* The sidebar remains a contextual rail, not a stack of cards. */
+[data-loombus-stickies-editorial] .stickies-v2-sidebar {
+  gap: 1.25rem;
+}
+
+[data-loombus-stickies-editorial] .stickies-v2-sidebar > section {
+  padding: 1rem 0 !important;
+}
+
+[data-loombus-stickies-editorial] :where(a, button, input, select):focus-visible {
+  outline: 2px solid #CBAB5B !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 63.99rem) {
+  [data-loombus-stickies-editorial] .stickies-v2-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-sidebar {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 47.99rem) {
+  [data-loombus-stickies-editorial] .stickies-v2-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-metrics article:nth-child(2) {
+    border-right: 0;
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-metrics article:nth-child(-n+2) {
+    border-bottom: 1px solid var(--loombus-border-muted);
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-tools {
+    grid-template-columns: 1fr;
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 35rem) {
+  [data-loombus-stickies-editorial] .stickies-v2-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-hero-actions,
+  [data-loombus-stickies-editorial] .stickies-v2-state-actions {
+    justify-content: flex-start;
+  }
+
+  [data-loombus-stickies-editorial] .stickies-v2-add-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-loombus-stickies-editorial] *,
+  [data-loombus-stickies-editorial] *::before,
+  [data-loombus-stickies-editorial] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
