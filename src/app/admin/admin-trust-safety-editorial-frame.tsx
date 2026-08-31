@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import "./admin-trust-safety-native.css";
 
 const SUITE_LINKS = [
   { href: "/admin/reports", label: "Reports", key: "reports" },
