@@ -1,6 +1,8 @@
 .root-editorial-page {
   --root-editorial-gold: #CBAB5B;
   min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
   background: var(--loombus-page-bg);
   color: var(--loombus-text);
 }
