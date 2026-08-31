@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import CapacitorBackgroundRunner
+import CapApp_SPM
 import SafariServices
 import WebKit
 import AuthenticationServices
@@ -215,6 +216,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if handleLoombusGoogleSignInURL(url) {
+            return true
+        }
+
         if handleLoombusAuthCallback(url) {
             return true
         }
