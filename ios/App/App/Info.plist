@@ -30,7 +30,19 @@
 				<string>loombus</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps.307099574717-6ff7qggt8us5nrabdjlu8auavof04rfr</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.307099574717-6ff7qggt8us5nrabdjlu8auavof04rfr</string>
+			</array>
+		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>307099574717-6ff7qggt8us5nrabdjlu8auavof04rfr.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>307099574717-0c27u2j9rpgjvlonncq345f7bvf4m3pi.apps.googleusercontent.com</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
