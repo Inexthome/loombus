@@ -52,4 +52,4 @@ if (googleCallbackIndex < 0 || loombusCallbackIndex < 0 || googleCallbackIndex >
   throw new Error("Google callback routing must run before the Loombus custom callback handler.");
 }
 
-console.log("iOS native Google Sign-In structural verification passed.");
+console.log("iOS native Google Sign-In structural verification passed for the 1.0.6 test release.");
