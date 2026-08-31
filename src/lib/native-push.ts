@@ -3,11 +3,14 @@ import { getNativePlatform } from "@/lib/native-app";
 import { setNativeNotificationBadgeCount } from "@/lib/native-live-updates";
 
 type PushNotificationsModule = typeof import("@capacitor/push-notifications");
+type NativeBadgeRealtimeChannel = ReturnType<typeof supabase.channel>;
 
 let pushRegistrationInFlight = false;
 let pushListenersRegistered = false;
 let nativeBadgeListenersRegistered = false;
 let nativeBadgeSyncSequence = 0;
+let nativeBadgeRealtimeChannel: NativeBadgeRealtimeChannel | null = null;
+let nativeBadgeRealtimeUserId: string | null = null;
 let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
 
@@ -105,6 +108,45 @@ async function applyNativeNotificationBadgeCount(count: number) {
   }
 }
 
+function clearNativeBadgeRealtimeSubscription() {
+  if (nativeBadgeRealtimeChannel) {
+    void supabase.removeChannel(nativeBadgeRealtimeChannel);
+  }
+  nativeBadgeRealtimeChannel = null;
+  nativeBadgeRealtimeUserId = null;
+}
+
+function ensureNativeBadgeRealtimeSubscription(userId: string) {
+  if (
+    nativeBadgeRealtimeChannel &&
+    nativeBadgeRealtimeUserId === userId
+  ) {
+    return;
+  }
+
+  clearNativeBadgeRealtimeSubscription();
+  nativeBadgeRealtimeUserId = userId;
+  nativeBadgeRealtimeChannel = supabase
+    .channel(`native-notification-badge:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => {
+        void syncNativeNotificationBadge();
+      }
+    )
+    .subscribe((status) => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.error("Loombus native notification badge realtime subscription failed.", status);
+      }
+    });
+}
+
 export async function syncNativeNotificationBadge() {
   if (typeof window === "undefined") return;
 
@@ -116,11 +158,14 @@ export async function syncNativeNotificationBadge() {
   const userId = data.session?.user?.id;
 
   if (!userId) {
+    clearNativeBadgeRealtimeSubscription();
     if (sequence === nativeBadgeSyncSequence) {
       await applyNativeNotificationBadgeCount(0);
     }
     return;
   }
+
+  ensureNativeBadgeRealtimeSubscription(userId);
 
   const { count, error } = await supabase
     .from("notifications")
