@@ -1,0 +1,639 @@
+/*
+ * Loombus Rooms — canonical Editorial UI completion layer.
+ *
+ * The Rooms product has unusually broad behavior: private membership, plan-aware
+ * modules, workspace navigation, realtime content, governance, billing, Studio,
+ * Operations, invitations, and Enterprise sales. This stylesheet deliberately
+ * preserves those behavior-owning clients and converts their shared visual
+ * language from dashboard chrome to a quieter editorial workspace.
+ */
+
+.loombus-rooms-scope {
+  --rooms-editorial-gold: #CBAB5B;
+  background: var(--loombus-page-bg) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared Rooms hub shell                                                      */
+/* -------------------------------------------------------------------------- */
+
+.loombus-rooms-scope .rooms-phase1-hub-header {
+  min-height: 68px;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-page-bg) !important;
+  backdrop-filter: none !important;
+  padding-block: 10px !important;
+}
+
+.loombus-rooms-scope .rooms-phase1-brand-mark {
+  width: 38px !important;
+  height: 38px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.loombus-rooms-scope .rooms-phase1-back-link,
+.loombus-rooms-scope .rooms-phase1-refresh {
+  min-height: 40px;
+  border-radius: 0.45rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.loombus-rooms-scope .rooms-phase1-appearance {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.loombus-rooms-scope .rooms-phase1-appearance button {
+  border-radius: 0.35rem !important;
+}
+
+.loombus-rooms-scope .rooms-phase1-appearance button[aria-pressed="true"] {
+  background: transparent !important;
+  color: var(--rooms-editorial-gold) !important;
+  box-shadow: inset 0 -2px 0 var(--rooms-editorial-gold);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Active Room shell                                                           */
+/* -------------------------------------------------------------------------- */
+
+[data-rooms-shell="room"] .rooms-phase1-shell {
+  grid-template-columns: minmax(228px, 260px) minmax(0, 1fr) !important;
+  background: var(--loombus-page-bg) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-sidebar {
+  border-right: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-sidebar-head,
+[data-rooms-shell="room"] .rooms-phase1-sidebar-footer {
+  border-color: var(--loombus-border) !important;
+  padding: 14px !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-sidebar .rooms-phase1-brand strong {
+  color: var(--loombus-text) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-all-rooms {
+  margin-top: 10px !important;
+  border-radius: 0 !important;
+  padding-inline: 0 !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-identity {
+  padding: 16px 14px !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-identity p {
+  color: var(--rooms-editorial-gold) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-identity h1 {
+  color: var(--loombus-text) !important;
+  font-size: 1.15rem !important;
+  font-weight: 690 !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-identity > span {
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  margin-top: 13px !important;
+  border-top: 1px solid var(--loombus-border-muted);
+  border-bottom: 1px solid var(--loombus-border-muted);
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-metrics span {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 8px 6px !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-metrics span:nth-child(odd) {
+  border-right: 1px solid var(--loombus-border-muted) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-metrics span:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-metrics strong {
+  color: var(--loombus-text) !important;
+  font-size: 0.9rem !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-scroll {
+  padding-inline: 14px !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-section > p {
+  margin-inline: 0 !important;
+  color: var(--loombus-text-subtle) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-section nav {
+  gap: 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-link {
+  position: relative;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  padding: 8px 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-link:hover,
+[data-rooms-shell="room"] .rooms-phase1-nav-link[aria-current="page"],
+[data-rooms-shell="room"] .rooms-phase1-nav-link[data-feature-active="true"] {
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-link[aria-current="page"]::before,
+[data-rooms-shell="room"] .rooms-phase1-nav-link[data-feature-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--rooms-editorial-gold);
+}
+
+[data-rooms-shell="room"] .rooms-phase1-nav-link strong {
+  min-width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--rooms-editorial-gold) !important;
+  font-weight: 760 !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-room-header {
+  min-height: 64px;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-page-bg) !important;
+  backdrop-filter: none !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-main-column {
+  min-width: 0;
+  background: var(--loombus-page-bg) !important;
+}
+
+[data-rooms-shell="room"] .rooms-phase1-content {
+  width: min(100%, 88rem);
+  margin-inline: auto;
+}
+
+/* Secondary navigation is a second editorial index, not another card rail. */
+[data-rooms-shell="room"] .rooms-secondary-rail-heading,
+[data-rooms-shell="room"] .rooms-secondary-rail-nav {
+  border-color: var(--loombus-border) !important;
+}
+
+[data-rooms-shell="room"] .rooms-secondary-rail-heading h2,
+[data-rooms-shell="room"] .rooms-secondary-rail-heading p,
+[data-rooms-shell="room"] .rooms-secondary-rail-heading span {
+  color: inherit;
+}
+
+[data-rooms-shell="room"] .rooms-secondary-rail-back {
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared Room content surfaces                                                */
+/* -------------------------------------------------------------------------- */
+
+[data-rooms-shell="room"] .rooms-live-page {
+  min-height: auto !important;
+  background: var(--loombus-page-bg) !important;
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 3vw, 38px) 72px !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-hero,
+[data-rooms-shell="room"] .room-workspace-hero {
+  align-items: flex-start !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 0 1.35rem !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-hero h1,
+[data-rooms-shell="room"] .room-workspace-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.02 !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-primary-action,
+[data-rooms-shell="room"] .rooms-live-secondary-action,
+[data-rooms-shell="room"] .rooms-live-back-link {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-primary-action:hover,
+[data-rooms-shell="room"] .rooms-live-secondary-action:hover,
+[data-rooms-shell="room"] .rooms-live-back-link:hover {
+  transform: none !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-status-row > span,
+[data-rooms-shell="room"] .room-workspace-hero-actions > span,
+[data-rooms-shell="room"] .room-workspace-footer span {
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-notice {
+  border: 0 !important;
+  border-left: 3px solid var(--rooms-editorial-gold) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.7rem 0 0.7rem 1rem !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-metrics,
+[data-rooms-shell="room"] .room-workspace-metrics {
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-rooms-shell="room"] .rooms-live-metrics article,
+[data-rooms-shell="room"] .room-workspace-metrics article {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.9rem 1rem !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-metrics article:last-child,
+[data-rooms-shell="room"] .room-workspace-metrics article:last-child {
+  border-right: 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-directory,
+[data-rooms-shell="room"] .rooms-live-models,
+[data-rooms-shell="room"] .room-workspace-panel,
+[data-rooms-shell="room"] [class*="room-"][class*="-panel"],
+[data-rooms-shell="room"] [class*="room-"][class*="-card"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-directory,
+[data-rooms-shell="room"] .rooms-live-models,
+[data-rooms-shell="room"] .room-workspace-panel {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-toolbar {
+  border-bottom: 1px solid var(--loombus-border);
+  padding-bottom: 0.5rem;
+}
+
+[data-rooms-shell="room"] .rooms-live-search {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+[data-rooms-shell="room"] .rooms-live-search input,
+[data-rooms-shell="room"] input:not([type="checkbox"]):not([type="radio"]),
+[data-rooms-shell="room"] textarea,
+[data-rooms-shell="room"] select {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-rooms-shell="room"] button[class*="filter"],
+[data-rooms-shell="room"] button[class*="tab"],
+[data-rooms-shell="room"] [role="tab"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Keep actual records/attachments distinguishable, but remove ornamental lift. */
+[data-rooms-shell="room"] article,
+[data-rooms-shell="room"] li,
+[data-rooms-shell="room"] [class*="record"],
+[data-rooms-shell="room"] [class*="item"] {
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Room create / plan / review flow                                            */
+/* -------------------------------------------------------------------------- */
+
+.rooms-phase1-hub-stage > .rooms-v2-builder-page,
+.rooms-phase1-hub-stage > .rooms-enterprise-page {
+  background: var(--loombus-page-bg) !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-shell,
+.rooms-enterprise-page .rooms-v2-shell {
+  width: min(100%, 76rem) !important;
+  gap: 0 !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-builder-topbar,
+.rooms-enterprise-page .rooms-v2-builder-topbar {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.rooms-v2-builder-page .rooms-v2-back-button,
+.rooms-v2-builder-page .rooms-v2-clear-button,
+.rooms-enterprise-page .rooms-v2-back-button {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-builder-hero,
+.rooms-enterprise-page .rooms-v2-builder-hero {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: clamp(1.5rem, 4vw, 2.75rem) 0 !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-builder-hero::before,
+.rooms-enterprise-page .rooms-v2-builder-hero::before {
+  display: none !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-builder-hero h1,
+.rooms-enterprise-page .rooms-v2-builder-hero h1 {
+  max-width: 18ch !important;
+  font-size: clamp(2.1rem, 5vw, 3.9rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.02 !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-draft-badge,
+.rooms-enterprise-page .rooms-v2-draft-badge,
+.rooms-enterprise-page .rooms-enterprise-private-badge {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-builder-step,
+.rooms-v2-builder-page .rooms-v2-builder-summary,
+.rooms-v2-builder-page .rooms-v2-builder-boundary,
+.rooms-v2-builder-page .rooms-v2-review-identity,
+.rooms-v2-builder-page .rooms-v2-review-card,
+.rooms-v2-builder-page .rooms-v2-boundary-review {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-inline: 0 !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-model-card,
+.rooms-v2-builder-page .rooms-v2-plan-card {
+  border-radius: 0.65rem !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-model-card[aria-pressed="true"],
+.rooms-v2-builder-page .rooms-v2-plan-card[aria-pressed="true"],
+.rooms-v2-builder-page .rooms-v2-plan-card.is-selected {
+  border-color: var(--rooms-editorial-gold) !important;
+  box-shadow: inset 0 2px 0 var(--rooms-editorial-gold) !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-selected-mark,
+.rooms-v2-builder-page .rooms-v2-review-tags span {
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--rooms-editorial-gold) !important;
+}
+
+.rooms-v2-builder-page input,
+.rooms-v2-builder-page textarea,
+.rooms-v2-builder-page select {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-button,
+.rooms-enterprise-page .rooms-v2-button {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.rooms-v2-builder-page .rooms-v2-button-primary,
+.rooms-enterprise-page .rooms-v2-button-primary {
+  border-color: var(--rooms-editorial-gold) !important;
+  background: var(--rooms-editorial-gold) !important;
+  color: #17140B !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Enterprise Room inquiry                                                     */
+/* -------------------------------------------------------------------------- */
+
+.rooms-enterprise-page .rooms-enterprise-value-grid {
+  gap: 0 !important;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.rooms-enterprise-page .rooms-enterprise-value-grid article {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-value-grid article:last-child {
+  border-right: 0 !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-grid {
+  align-items: start;
+  gap: clamp(1.75rem, 4vw, 3rem) !important;
+  padding-top: 1.75rem;
+}
+
+.rooms-enterprise-page .rooms-enterprise-form,
+.rooms-enterprise-page .rooms-enterprise-summary {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-summary {
+  border-left: 1px solid var(--loombus-border) !important;
+  padding-left: 1.5rem !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-fields input,
+.rooms-enterprise-page .rooms-enterprise-fields textarea,
+.rooms-enterprise-page .rooms-enterprise-fields select {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-checks {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.rooms-enterprise-page .rooms-enterprise-message {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Room invitation / transitional states                                       */
+/* -------------------------------------------------------------------------- */
+
+.rooms-phase1-hub-stage > .rooms-live-page .rooms-live-access-card,
+.rooms-phase1-state-card {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.rooms-phase1-hub-stage > .rooms-live-page .rooms-live-access-icon,
+.rooms-phase1-state-mark {
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--rooms-editorial-gold) !important;
+}
+
+.rooms-phase1-hub-stage > .rooms-live-page .rooms-live-primary-action,
+.rooms-phase1-hub-stage > .rooms-live-page .rooms-live-secondary-action,
+.rooms-phase1-state-actions a,
+.rooms-phase1-state-actions button {
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Accessibility and responsive behavior                                       */
+/* -------------------------------------------------------------------------- */
+
+.loombus-rooms-scope a:focus-visible,
+.loombus-rooms-scope button:focus-visible,
+.loombus-rooms-scope input:focus-visible,
+.loombus-rooms-scope textarea:focus-visible,
+.loombus-rooms-scope select:focus-visible {
+  outline: 2px solid var(--rooms-editorial-gold) !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 980px) {
+  [data-rooms-shell="room"] .rooms-phase1-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-rooms-shell="room"] .rooms-phase1-sidebar {
+    background: var(--loombus-page-bg) !important;
+  }
+
+  .rooms-enterprise-page .rooms-enterprise-summary {
+    border-left: 0 !important;
+    border-top: 1px solid var(--loombus-border) !important;
+    padding: 1.25rem 0 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  [data-rooms-shell="room"] .rooms-live-metrics,
+  [data-rooms-shell="room"] .room-workspace-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [data-rooms-shell="room"] .rooms-live-metrics article:nth-child(2),
+  [data-rooms-shell="room"] .room-workspace-metrics article:nth-child(2) {
+    border-right: 0 !important;
+  }
+
+  [data-rooms-shell="room"] .rooms-live-metrics article:nth-child(-n + 2),
+  [data-rooms-shell="room"] .room-workspace-metrics article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--loombus-border-muted) !important;
+  }
+
+  .rooms-enterprise-page .rooms-enterprise-value-grid {
+    display: block !important;
+  }
+
+  .rooms-enterprise-page .rooms-enterprise-value-grid article {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border-muted) !important;
+  }
+
+  .rooms-enterprise-page .rooms-enterprise-value-grid article:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loombus-rooms-scope *,
+  .loombus-rooms-scope *::before,
+  .loombus-rooms-scope *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
