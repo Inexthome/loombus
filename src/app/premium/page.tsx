@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import PremiumV3Client from "./premium-v3-client";
 import "./premium-v2.css";
 import "./premium-v3.css";
+import "./premium-editorial.css";
 
 export const metadata: Metadata = {
   title: "Loombus Premium & Plans | Loombus",
@@ -19,17 +20,19 @@ export const metadata: Metadata = {
 
 export default function PremiumPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="premium-v2-page">
-          <section className="premium-v2-state">
-            <p>Loombus plans</p>
-            <h1>Loading Premium & Plan Center…</h1>
-          </section>
-        </main>
-      }
-    >
-      <PremiumV3Client />
-    </Suspense>
+    <div data-premium-editorial>
+      <Suspense
+        fallback={
+          <main className="premium-v2-page">
+            <section className="premium-v2-state">
+              <p>Loombus plans</p>
+              <h1>Loading Premium & Plan Center…</h1>
+            </section>
+          </main>
+        }
+      >
+        <PremiumV3Client />
+      </Suspense>
+    </div>
   );
 }
