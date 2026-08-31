@@ -4,6 +4,7 @@ import { PublicProfilePrivacyBridge } from "@/components/public-profile-privacy-
 import PublicRequestsSection from "@/components/public-requests-section";
 import PublicServicesSection from "@/components/public-services-section";
 import "./public-profile-privacy.css";
+import "./public-profile-original-background.css";
 import "@/components/creator-supporter-paid-public.css";
 
 export const dynamic = "force-dynamic";
