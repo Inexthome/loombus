@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   CheckCircle2,
-  ChevronRight,
   Crosshair,
   Loader2,
   MapPin,
@@ -24,7 +23,7 @@ import { getCurrentApproximateLocation } from "@/lib/native-location";
 type CurrentArea = { latitude: number; longitude: number };
 
 const inputClass =
-  "h-12 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 text-sm text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
+  "local-manage-field h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 text-sm text-[color:var(--loombus-text)] outline-none transition motion-reduce:transition-none placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus-visible:ring-0";
 
 export default function LocalManagePage() {
   const [items, setItems] = useState<LocalManageItem[]>([]);
@@ -119,11 +118,11 @@ export default function LocalManagePage() {
     try {
       setCurrentArea(await getCurrentApproximateLocation());
       setNotice(
-        "Current area captured. Loombus will store a rounded approximate point, not the device's exact coordinate."
+        "Current area captured. Loombus will store a rounded approximate point, not the device's exact coordinate.",
       );
     } catch {
       setNotice(
-        "Current location was not shared. Location permission is required to create a distance-search anchor."
+        "Current location was not shared. Location permission is required to create a distance-search anchor.",
       );
     } finally {
       setLocating(false);
@@ -156,9 +155,7 @@ export default function LocalManagePage() {
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(
-          payload.error ?? "Unable to save the Local Discovery area.",
-        );
+        throw new Error(payload.error ?? "Unable to save the Local Discovery area.");
       }
       setCurrentArea(null);
       setNotice(
@@ -196,9 +193,7 @@ export default function LocalManagePage() {
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(
-          payload.error ?? "Unable to clear the Local Discovery area.",
-        );
+        throw new Error(payload.error ?? "Unable to clear the Local Discovery area.");
       }
       setNotice("Direct Local Discovery area cleared.");
       await load();
@@ -214,89 +209,111 @@ export default function LocalManagePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[88rem]">
-        <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl font-semibold tracking-[-0.055em] sm:text-5xl">
-              Manage Local Areas
-            </h1>
-            <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
-              Attach a privacy-safe approximate area to attributable public sources you control. Connected records can inherit a Business area unless they support a direct location.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              disabled={loading || working}
-              className="inline-flex h-12 items-center gap-2 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold shadow-sm transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
-            </button>
-            <Link
-              href="/local"
-              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90"
-            >
-              Open Local <ArrowUpRight size={16} />
-            </Link>
+    <main
+      data-loombus-local-manage-editorial
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-6 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"
+    >
+      <div className="mx-auto w-full max-w-6xl">
+        <header className="border-b border-[color:var(--loombus-border)] pb-6">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
+            Local Discovery
+          </p>
+          <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+                Manage Local Areas
+              </h1>
+              <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
+                Attach a privacy-safe approximate area to attributable public sources you control. Connected records can inherit a Business area unless they support a direct location.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void load()}
+                disabled={loading || working}
+                className="inline-flex min-h-11 items-center gap-2 border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition motion-reduce:transition-none hover:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)] disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={loading ? "animate-spin motion-reduce:animate-none" : ""} />
+                Refresh
+              </button>
+              <Link
+                href="/local"
+                className="inline-flex min-h-11 items-center gap-2 bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition motion-reduce:transition-none hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                Open Local <ArrowUpRight size={16} />
+              </Link>
+            </div>
           </div>
         </header>
 
-        <section className="mb-6 grid gap-3 sm:grid-cols-4">
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-4 text-[color:var(--loombus-cream-contrast)] shadow-sm dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Public sources</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{items.length}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Direct areas</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{directCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Inherited areas</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{inheritedCount}</strong>
-          </article>
-          <article className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">Direct-capable</span>
-            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{configurableCount}</strong>
-          </article>
+        <section
+          aria-label="Local source summary"
+          className="grid border-b border-[color:var(--loombus-border)] sm:grid-cols-4"
+        >
+          {[
+            ["Public sources", items.length],
+            ["Direct areas", directCount],
+            ["Inherited areas", inheritedCount],
+            ["Direct-capable", configurableCount],
+          ].map(([label, value], index) => (
+            <div
+              key={String(label)}
+              className={`py-4 sm:px-4 ${index === 0 ? "sm:pl-0" : "border-t border-[color:var(--loombus-border-muted)] sm:border-l sm:border-t-0"}`}
+            >
+              <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                {label}
+              </span>
+              <strong className="mt-1 block text-2xl font-semibold">{value}</strong>
+            </div>
+          ))}
         </section>
 
         {notice ? (
-          <div className="mb-6 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-sm shadow-sm" role="status">
+          <div
+            className="border-b border-[color:var(--loombus-border)] py-4 text-sm leading-6"
+            role="status"
+          >
             {notice}
           </div>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <section className="min-w-0 rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Attributable sources</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">Choose a source</h2>
-                <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                  Select a source to review its current discovery area or capture a new approximate anchor.
-                </p>
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <section className="min-w-0 py-7">
+            <div className="border-b border-[color:var(--loombus-border)] pb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">
+                Attributable sources
+              </p>
+              <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-[-0.03em]">Choose a source</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                    Select a source to review its current discovery area or capture a new approximate anchor.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                  {items.length} source{items.length === 1 ? "" : "s"}
+                </span>
               </div>
-              <span className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
-                {items.length} source{items.length === 1 ? "" : "s"}
-              </span>
             </div>
 
             {loading ? (
-              <div className="grid min-h-64 place-items-center text-[color:var(--loombus-text-muted)]">
-                <span className="inline-flex items-center gap-2 text-sm font-semibold"><Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={20} /> Loading sources</span>
+              <div className="grid min-h-56 place-items-center border-b border-[color:var(--loombus-border)] text-[color:var(--loombus-text-muted)]">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                  <Loader2 className="animate-spin motion-reduce:animate-none text-[color:var(--loombus-gold)]" size={20} />
+                  Loading sources
+                </span>
               </div>
             ) : items.length === 0 ? (
-              <div className="mt-6 rounded-[1.5rem] border border-dashed border-[color:var(--loombus-border)] p-10 text-center">
-                <MapPin className="mx-auto text-[color:var(--loombus-gold)]" size={40} />
+              <div className="border-b border-[color:var(--loombus-border)] py-12 text-center">
+                <MapPin className="mx-auto text-[color:var(--loombus-gold)]" size={36} />
                 <h3 className="mt-4 text-xl font-semibold">No public real-world sources yet</h3>
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                   Publish a Business, Service, Event, Job, Marketplace listing, or Request first.
                 </p>
               </div>
             ) : (
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="divide-y divide-[color:var(--loombus-border)]">
                 {items.map((item) => {
                   const key = `${item.sourceTable}:${item.id}`;
                   const active = key === selectedId;
@@ -306,29 +323,38 @@ export default function LocalManagePage() {
                       type="button"
                       disabled={!item.canSetDirect}
                       onClick={() => setSelectedId(key)}
-                      className={`group min-h-[190px] rounded-[1.4rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        active
-                          ? "border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] shadow-lg dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]"
-                          : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] hover:border-[color:var(--loombus-gold)]"
-                      }`}
+                      aria-pressed={active}
+                      className={`group flex w-full items-start gap-4 py-5 text-left transition motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-55 ${active ? "text-[color:var(--loombus-text)]" : "hover:text-[color:var(--loombus-text)]"}`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-                          <span className="rounded-full border border-current/20 px-2.5 py-1">{localDiscoveryTypeLabel(item.entityType)}</span>
-                          {item.directLocation ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-current/20 px-2.5 py-1"><CheckCircle2 size={12} /> Direct area</span>
-                          ) : item.inheritedLocation ? (
-                            <span className="rounded-full border border-current/20 px-2.5 py-1">Inherited</span>
-                          ) : (
-                            <span className="rounded-full border border-current/20 px-2.5 py-1">Area needed</span>
-                          )}
-                        </div>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--loombus-gold)] transition group-hover:translate-x-0.5" />
-                      </div>
-                      <strong className="mt-4 block text-lg tracking-[-0.02em]">{item.title}</strong>
-                      <span className="mt-2 block text-sm leading-6 opacity-75">{item.locationLabel}</span>
-                      {!item.canSetDirect ? (
-                        <span className="mt-3 block text-xs opacity-65">This source follows its Business location.</span>
+                      <span
+                        aria-hidden="true"
+                        className={`mt-1 h-2.5 w-2.5 shrink-0 border ${active ? "border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)]" : "border-[color:var(--loombus-border)]"}`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                          <span>{localDiscoveryTypeLabel(item.entityType)}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="inline-flex items-center gap-1">
+                            {item.directLocation ? <CheckCircle2 size={12} /> : null}
+                            {item.directLocation ? "Direct area" : item.inheritedLocation ? "Inherited" : "Area needed"}
+                          </span>
+                        </span>
+                        <strong className="mt-1 block text-lg font-semibold tracking-[-0.02em]">
+                          {item.title}
+                        </strong>
+                        <span className="mt-1 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                          {item.locationLabel}
+                        </span>
+                        {!item.canSetDirect ? (
+                          <span className="mt-1 block text-xs text-[color:var(--loombus-text-subtle)]">
+                            This source follows its Business location.
+                          </span>
+                        ) : null}
+                      </span>
+                      {active ? (
+                        <span className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--loombus-gold)]">
+                          Editing
+                        </span>
                       ) : null}
                     </button>
                   );
@@ -337,42 +363,95 @@ export default function LocalManagePage() {
             )}
           </section>
 
-          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]">Approximate area</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em]">{selected?.title ?? "Select a source"}</h2>
+          <aside className="border-t border-[color:var(--loombus-border)] py-7 xl:border-l xl:border-t-0 xl:pl-7">
+            <section className="border-b border-[color:var(--loombus-border)] pb-7">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">
+                Approximate area
+              </p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em]">
+                {selected?.title ?? "Select a source"}
+              </h2>
+
               {selected ? (
                 <>
-                  <div className="mt-4 grid gap-3">
-                    <label><span className="mb-2 block text-sm font-semibold">City</span><input value={city} onChange={(event) => setCity(event.target.value)} className={inputClass} /></label>
-                    <label><span className="mb-2 block text-sm font-semibold">State or region</span><input value={region} onChange={(event) => setRegion(event.target.value)} className={inputClass} /></label>
-                    <label><span className="mb-2 block text-sm font-semibold">ZIP or postal code</span><input value={postalCode} onChange={(event) => setPostalCode(event.target.value)} className={inputClass} /></label>
-                    <label><span className="mb-2 block text-sm font-semibold">Country code</span><input maxLength={2} value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase())} className={inputClass} /></label>
+                  <div className="mt-5 grid gap-4">
+                    <label>
+                      <span className="block text-xs font-semibold text-[color:var(--loombus-text-muted)]">City</span>
+                      <input value={city} onChange={(event) => setCity(event.target.value)} className={inputClass} />
+                    </label>
+                    <label>
+                      <span className="block text-xs font-semibold text-[color:var(--loombus-text-muted)]">State or region</span>
+                      <input value={region} onChange={(event) => setRegion(event.target.value)} className={inputClass} />
+                    </label>
+                    <label>
+                      <span className="block text-xs font-semibold text-[color:var(--loombus-text-muted)]">ZIP or postal code</span>
+                      <input value={postalCode} onChange={(event) => setPostalCode(event.target.value)} className={inputClass} />
+                    </label>
+                    <label>
+                      <span className="block text-xs font-semibold text-[color:var(--loombus-text-muted)]">Country code</span>
+                      <input maxLength={2} value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase())} className={inputClass} />
+                    </label>
                   </div>
-                  <button type="button" onClick={acquireCurrentArea} disabled={locating || working} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[color:var(--loombus-border)] px-4 py-3 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)] disabled:opacity-50">
-                    {locating ? <Loader2 className="animate-spin" size={16} /> : <Crosshair size={16} />}
+
+                  <button
+                    type="button"
+                    onClick={acquireCurrentArea}
+                    disabled={locating || working}
+                    className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 border border-[color:var(--loombus-border)] px-4 py-2.5 text-sm font-semibold transition motion-reduce:transition-none hover:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)] disabled:opacity-50"
+                  >
+                    {locating ? <Loader2 className="animate-spin motion-reduce:animate-none" size={16} /> : <Crosshair size={16} />}
                     {locating ? "Capturing current area" : currentArea ? "Refresh current area" : "Use current area"}
                   </button>
-                  {currentArea ? <p className="mt-3 text-xs leading-5 text-[color:var(--loombus-text-subtle)]">The server will round this captured point before storage.</p> : null}
-                  <button type="button" onClick={() => void save()} disabled={!currentArea || working} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--loombus-gold)] px-4 py-3 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50">
-                    {working ? <Loader2 className="animate-spin" size={16} /> : <MapPin size={16} />} Save approximate area
-                  </button>
-                  {selected.directLocation ? (
-                    <button type="button" onClick={() => void clear()} disabled={working} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/30 px-4 py-3 text-sm font-semibold text-red-600 disabled:opacity-50 dark:text-red-300"><Trash2 size={16} /> Clear direct area</button>
+
+                  {currentArea ? (
+                    <p className="mt-3 text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
+                      The server will round this captured point before storage.
+                    </p>
                   ) : null}
-                  <Link href={selected.href} className="mt-3 flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">Open original source <ArrowUpRight size={14} className="text-[color:var(--loombus-gold)]" /></Link>
+
+                  <button
+                    type="button"
+                    onClick={() => void save()}
+                    disabled={!currentArea || working}
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-[color:var(--loombus-gold)] px-4 py-2.5 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition motion-reduce:transition-none hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)] disabled:opacity-50"
+                  >
+                    {working ? <Loader2 className="animate-spin motion-reduce:animate-none" size={16} /> : <MapPin size={16} />}
+                    Save approximate area
+                  </button>
+
+                  {selected.directLocation ? (
+                    <button
+                      type="button"
+                      onClick={() => void clear()}
+                      disabled={working}
+                      className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-600 transition motion-reduce:transition-none hover:bg-red-500/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:opacity-50 dark:text-red-300"
+                    >
+                      <Trash2 size={16} /> Clear direct area
+                    </button>
+                  ) : null}
+
+                  <Link
+                    href={selected.href}
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-gold)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--loombus-gold)]"
+                  >
+                    Open original source <ArrowUpRight size={14} />
+                  </Link>
                 </>
               ) : (
-                <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Select an attributable source that supports a direct location.</p>
+                <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Select an attributable source that supports a direct location.
+                </p>
               )}
             </section>
 
-            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+            <section className="pt-7">
               <div className="flex gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]"><ShieldCheck size={18} /></span>
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--loombus-gold)]" />
                 <div>
                   <h3 className="font-semibold">Privacy boundary</h3>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">Local Discovery stores a rounded approximate point. Public search returns distance and area labels, never latitude or longitude. Personal Marketplace and Request locations cannot be promoted to an exact public point.</p>
+                  <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                    Local Discovery stores a rounded approximate point. Public search returns distance and area labels, never latitude or longitude. Personal Marketplace and Request locations cannot be promoted to an exact public point.
+                  </p>
                 </div>
               </div>
             </section>
