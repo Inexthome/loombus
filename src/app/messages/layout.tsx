@@ -1,5 +1,6 @@
 import "./messages-v2.css";
 import "./messages-editorial.css";
+import "./messages-original-background.css";
 
 export default function MessagesLayout({
   children,
