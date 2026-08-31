@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import SignalDirectoryClient from "./signal-directory-client";
+import "./topics-editorial.css";
 
 export const metadata: Metadata = {
   title: "Topics",
