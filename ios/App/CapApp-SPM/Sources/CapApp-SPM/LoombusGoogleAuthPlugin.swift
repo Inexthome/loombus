@@ -64,3 +64,7 @@ public class LoombusGoogleAuthPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 }
+
+public func handleLoombusGoogleSignInURL(_ url: URL) -> Bool {
+    GIDSignIn.sharedInstance.handle(url)
+}
