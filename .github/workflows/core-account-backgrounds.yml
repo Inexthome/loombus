@@ -1,0 +1,27 @@
+name: Core Account Backgrounds
+
+on:
+  pull_request:
+    paths:
+      - "src/app/profile/layout.tsx"
+      - "src/app/profile/profile-loombus-background.css"
+      - "src/app/dashboard/layout.tsx"
+      - "src/app/dashboard/dashboard-loombus-background.css"
+      - "src/app/settings/page.tsx"
+      - "src/app/settings/settings-loombus-background.css"
+      - "scripts/verification/verify-core-account-backgrounds.mjs"
+      - ".github/workflows/core-account-backgrounds.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify core account backgrounds
+        run: node scripts/verification/verify-core-account-backgrounds.mjs
