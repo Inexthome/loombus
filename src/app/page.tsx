@@ -120,8 +120,17 @@ export default function RootPage() {
             knowledge — so time online can leave you with something worth keeping.
           </p>
           <div className="root-editorial-hero-actions">
-            <Link href="/signup" className="root-editorial-primary-link">
+            <Link
+              href="/signup"
+              className="root-editorial-primary-link !hidden min-[801px]:!inline-flex"
+            >
               Get started
+            </Link>
+            <Link
+              href="/login"
+              className="root-editorial-primary-link min-[801px]:!hidden"
+            >
+              Sign in
             </Link>
             <Link href="/create" className="root-editorial-text-link">
               See what people are discussing <span aria-hidden="true">→</span>
