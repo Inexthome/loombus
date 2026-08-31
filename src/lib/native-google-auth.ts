@@ -12,6 +12,16 @@ type LoombusGoogleAuthPlugin = {
 
 const LoombusGoogleAuth = registerPlugin<LoombusGoogleAuthPlugin>("LoombusGoogleAuth");
 
+function isUnavailablePluginError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("not implemented") ||
+    normalized.includes("not available") ||
+    normalized.includes("does not have an implementation") ||
+    normalized.includes("plugin is not implemented")
+  );
+}
+
 export async function signInWithNativeGoogle() {
   if (!isIosNativeApp()) {
     return {
@@ -38,10 +48,12 @@ export async function signInWithNativeGoogle() {
       accessToken: result.accessToken,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Native Google Sign-In failed.";
+
     return {
       ok: false as const,
-      unavailable: false as const,
-      error: error instanceof Error ? error.message : "Native Google Sign-In failed.",
+      unavailable: isUnavailablePluginError(message),
+      error: message,
     };
   }
 }
