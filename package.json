@@ -11,6 +11,7 @@
     "verify:android-page-size": "node scripts/verification/verify-android-page-size.mjs",
     "verify:mobile-background": "node scripts/verification/verify-mobile-background-refresh.mjs",
     "verify:mobile-live-updates": "node scripts/verification/verify-mobile-live-updates.mjs",
+    "verify:mobile-notification-badge-sync": "node scripts/verification/verify-mobile-notification-badge-sync.mjs",
     "verify:mobile-permissions": "node scripts/verification/verify-mobile-permissions.mjs",
     "verify:mobile-release-hardening": "node scripts/verification/verify-mobile-release-hardening.mjs",
     "verify:mobile-release-metadata": "node scripts/verification/verify-mobile-release-metadata.mjs",
