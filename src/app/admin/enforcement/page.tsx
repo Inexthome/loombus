@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AdminEnforcementClient from "./admin-enforcement-client";
 import "./admin-enforcement.css";
+import "../trust-safety-editorial.css";
 
 export const metadata: Metadata = {
   title: "Enforcement and Appeals Operations | Loombus",
