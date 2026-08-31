@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AdminAuditV2Client from "./audit-v2-client";
 import "./audit-v2.css";
+import "../trust-safety-editorial.css";
 
 export const metadata: Metadata = {
   title: "Audit Operations | Loombus Admin",
