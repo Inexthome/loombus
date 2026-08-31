@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ServicesDirectoryPage from "@/components/services-directory-page";
+import "./services-editorial.css";
 
 export const metadata: Metadata = {
   title: "Services",

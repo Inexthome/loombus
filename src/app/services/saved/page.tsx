@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ServicesSavedPage from "@/components/services-saved-page";
+import "../services-editorial.css";
 
 export const metadata: Metadata = {
   title: "Saved Services",

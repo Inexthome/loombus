@@ -1,0 +1,24 @@
+/* Route-scoped Loombus Editorial UI treatment for Services directory surfaces. */
+
+html[data-loombus-theme="light"] [data-services-editorial],
+html[data-loombus-theme="light"] [data-services-saved-editorial] {
+  background-color: #fefbec !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-services-editorial],
+  html[data-loombus-theme="system"] [data-services-saved-editorial] {
+    background-color: #fefbec !important;
+  }
+}
+
+[data-services-editorial] :where(button, a, input, select),
+[data-services-saved-editorial] :where(button, a, input, select) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-services-editorial] :where(input, select),
+[data-services-saved-editorial] :where(input, select) {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
