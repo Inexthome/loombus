@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import "./root-editorial-preview.css";
 
 export const metadata: Metadata = {
   title: { absolute: "Loombus | Signal over noise" },
@@ -35,125 +36,168 @@ const structuredData = {
   ],
 };
 
-const signalCards = [
+const pillars = [
+  {
+    index: "01",
+    title: "Ideas",
+    description:
+      "Start with a question, claim, problem, possibility, passage, or observation worth examining.",
+  },
+  {
+    index: "02",
+    title: "Discussion",
+    description:
+      "Move beyond reaction with structured conversations designed to make disagreement and context easier to follow.",
+  },
+  {
+    index: "03",
+    title: "Evidence",
+    description:
+      "Bring sources, attachments, research, and lived context into the conversation instead of separating them from it.",
+  },
+  {
+    index: "04",
+    title: "Knowledge",
+    description:
+      "Turn useful conversations into something people can return to, understand, and build on later.",
+  },
+];
+
+const destinations = [
   {
     title: "Structured discussions",
     description:
-      "Explore questions, debates, research, and problems with clearer context, thoughtful replies, and evidence that moves the conversation forward.",
-    icon: "◌",
+      "Open discussions, debates, research questions, and problem solving with clearer context and durable replies.",
+    href: "/create",
+    label: "Explore discussions",
   },
   {
-    title: "Communities and connections",
+    title: "Library",
     description:
-      "Join Rooms, follow people and topics, and build around shared interests, organizations, neighborhoods, or real-world needs.",
-    icon: "⌘",
+      "Read publications, keep your place, save notes and highlights, and move from a passage into a larger conversation.",
+    href: "/create",
+    label: "Open Library",
   },
   {
-    title: "Explore, learn, and take action",
+    title: "Rooms",
     description:
-      "Read and discuss publications in Library, research investments on The Floor, and discover businesses, jobs, services, events, Marketplace listings, and local opportunities across Loombus.",
-    icon: "⌕",
+      "Private spaces for communities, organizations, classrooms, neighborhoods, teams, and shared work.",
+    href: "/create",
+    label: "Explore Rooms",
   },
 ];
 
 export default function RootPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)]">
+    <main className="root-editorial-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
-      <section className="relative min-h-screen px-6 py-7 sm:px-10 lg:px-16">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_52%,rgba(214,166,94,0.14),transparent_30%),radial-gradient(circle_at_96%_72%,rgba(148,163,184,0.22),transparent_38%)]"
-        />
 
-        <div className="relative mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-7xl flex-col">
-          <header className="flex items-center justify-between gap-6">
-            <Link href="/" className="flex items-center gap-4 font-semibold tracking-tight">
-              <img
-                src="/assets/brand/loombus-mark-transparent.png"
-                alt=""
-                className="h-9 w-9 object-contain"
-              />
-              <span className="text-xl">Loombus</span>
+      <header className="root-editorial-header">
+        <Link href="/" className="root-editorial-brand" aria-label="Loombus home">
+          <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
+          <span>Loombus</span>
+        </Link>
+        <nav className="root-editorial-header-actions" aria-label="Primary">
+          <Link href="/about">About</Link>
+          <Link href="/login">Sign in</Link>
+          <Link href="/signup" className="root-editorial-primary-link">
+            Join Loombus
+          </Link>
+        </nav>
+      </header>
+
+      <section className="root-editorial-hero" aria-labelledby="root-editorial-title">
+        <div className="root-editorial-hero-copy">
+          <p className="root-editorial-eyebrow">Signal over noise</p>
+          <h1 id="root-editorial-title">You deserve better than the scroll.</h1>
+          <p className="root-editorial-deck">
+            Loombus is social media rebuilt around ideas, discussion, evidence, and
+            knowledge — so time online can leave you with something worth keeping.
+          </p>
+          <div className="root-editorial-hero-actions">
+            <Link href="/signup" className="root-editorial-primary-link">
+              Get started
             </Link>
-
-            <Link
-              href="/login"
-              className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)]"
-            >
-              Join Loombus
+            <Link href="/create" className="root-editorial-text-link">
+              See what people are discussing <span aria-hidden="true">→</span>
             </Link>
-          </header>
-
-          <div className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.58fr)] lg:py-20">
-            <section className="max-w-4xl">
-              <h1 className="max-w-3xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-[color:var(--loombus-text)] sm:text-6xl md:text-7xl lg:text-8xl">
-                You deserve better than the scroll.
-              </h1>
-
-              <p className="mt-8 max-w-3xl text-lg leading-8 text-[color:var(--loombus-text-muted)] sm:text-2xl sm:leading-10">
-                Loombus turns ideas into structured conversations, stronger
-                understanding, meaningful connections, and real opportunities, all
-                in one signal-first platform.
-              </p>
-
-              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center gap-3 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-7 py-4 text-base font-semibold text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)]"
-                >
-                  Get started
-                  <span aria-hidden="true" className="text-2xl leading-none">
-                    →
-                  </span>
-                </Link>
-              </div>
-            </section>
-
-            <aside className="rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10 sm:rounded-[2.25rem] sm:p-6">
-              <div className="rounded-[1.7rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-6 sm:p-7">
-                <p className="text-xs font-bold uppercase tracking-[0.34em] text-[#b45309]">
-                  Signal over noise
-                </p>
-                <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-[-0.03em] text-[color:var(--loombus-text)] sm:text-3xl">
-                  Where ideas move forward.
-                </h2>
-                <p className="mt-5 text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
-                  Start with a question, claim, problem, or possibility. Explore it
-                  through structured discussion, strengthen it with evidence, and
-                  turn better understanding into meaningful action.
-                </p>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {signalCards.map((card) => (
-                  <div
-                    key={card.title}
-                    className="flex gap-4 rounded-[1.55rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-5"
-                  >
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/70 bg-amber-50/70 text-xl text-[#b45309] dark:bg-amber-300/10">
-                      {card.icon}
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-semibold tracking-tight text-[color:var(--loombus-text)]">
-                        {card.title}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                        {card.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </aside>
           </div>
         </div>
+
+        <aside className="root-editorial-manifesto" aria-label="Why Loombus">
+          <p className="root-editorial-eyebrow">A different premise</p>
+          <p>
+            Most platforms optimize for another swipe. Loombus is organized around
+            what happens after an idea catches your attention: understanding it,
+            challenging it, supporting it, and turning it into something useful.
+          </p>
+        </aside>
       </section>
+
+      <section className="root-editorial-sequence" aria-labelledby="root-editorial-sequence-title">
+        <header className="root-editorial-section-heading">
+          <p className="root-editorial-eyebrow">How Loombus works</p>
+          <h2 id="root-editorial-sequence-title">From signal to something durable.</h2>
+        </header>
+        <div className="root-editorial-pillar-list">
+          {pillars.map((pillar) => (
+            <article key={pillar.title} className="root-editorial-pillar">
+              <span>{pillar.index}</span>
+              <div>
+                <h3>{pillar.title}</h3>
+                <p>{pillar.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="root-editorial-destinations" aria-labelledby="root-editorial-destinations-title">
+        <header className="root-editorial-section-heading">
+          <p className="root-editorial-eyebrow">One platform, different ways in</p>
+          <h2 id="root-editorial-destinations-title">Follow the idea wherever it needs to go.</h2>
+        </header>
+        <div className="root-editorial-destination-list">
+          {destinations.map((destination) => (
+            <article key={destination.title} className="root-editorial-destination">
+              <div>
+                <h3>{destination.title}</h3>
+                <p>{destination.description}</p>
+              </div>
+              <Link href={destination.href}>
+                {destination.label} <span aria-hidden="true">→</span>
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="root-editorial-closing" aria-labelledby="root-editorial-closing-title">
+        <p className="root-editorial-eyebrow">Loombus</p>
+        <h2 id="root-editorial-closing-title">Make the time online give something back.</h2>
+        <p>
+          Join the conversation, follow ideas worth returning to, and build a signal-first
+          space around what you actually care about.
+        </p>
+        <Link href="/signup" className="root-editorial-primary-link">
+          Join Loombus
+        </Link>
+      </section>
+
+      <footer className="root-editorial-footer">
+        <span>Loombus · Signal over noise</span>
+        <nav aria-label="Footer">
+          <Link href="/about">About</Link>
+          <Link href="/guidelines">Guidelines</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </nav>
+      </footer>
     </main>
   );
 }
