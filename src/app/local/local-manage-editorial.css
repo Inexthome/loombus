@@ -1,0 +1,24 @@
+[data-loombus-local-manage-editorial] {
+  background: var(--loombus-page-bg);
+}
+
+html:not(.dark) [data-loombus-local-manage-editorial] {
+  background: #fefbec;
+}
+
+@media (prefers-color-scheme: light) {
+  html:not(.dark) [data-loombus-local-manage-editorial] {
+    background: #fefbec;
+  }
+}
+
+[data-loombus-local-manage-editorial] .local-manage-field {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+[data-loombus-local-manage-editorial] .local-manage-field:focus-visible {
+  outline: 2px solid var(--loombus-gold);
+  outline-offset: 3px;
+}

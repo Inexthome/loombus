@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LocalManagePage from "@/components/local-manage-page";
+import "../local-manage-editorial.css";
 
 export const metadata: Metadata = {
   title: "Manage Local Locations",
