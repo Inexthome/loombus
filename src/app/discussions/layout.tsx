@@ -22,6 +22,7 @@ import "./discussion-weave-density.css";
 import "./discussion-view-relocation.css";
 import "./discussion-compact-weave.css";
 import "./discussion-compact-media-square.css";
+import "./discussion-qotw-card-weave-restoration.css";
 
 export const metadata: Metadata = {
   title: "Structured Discussions",

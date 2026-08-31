@@ -1,0 +1,96 @@
+/* Restore visual separation for Question of the Week and extend the weave cue to Card mode. */
+
+/* Keep the QOTW section itself on the normal page background. Only the actual
+   question cards receive the lighter surface treatment. */
+[data-question-of-the-week-mount="true"] > section {
+  margin-inline: -0.5rem;
+  padding: 1.15rem 1rem;
+  border-color: var(--loombus-border) !important;
+  background: transparent !important;
+}
+
+[data-question-of-the-week-mount="true"] [role="list"] > a[role="listitem"] {
+  background: var(--loombus-surface) !important;
+}
+
+[data-question-of-the-week-mount="true"] [role="list"] > a[role="listitem"]:not(:focus-visible):hover {
+  background: color-mix(
+    in srgb,
+    var(--loombus-surface) 96%,
+    var(--loombus-page-bg) 4%
+  ) !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  z-index: 0;
+  left: 0.33rem;
+  top: 0.8rem;
+  bottom: 0.8rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--loombus-border) 82%, transparent);
+  pointer-events: none;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article {
+  z-index: 1;
+  overflow: visible !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article::before {
+  display: none !important;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  z-index: 3;
+  left: -1.08rem;
+  top: 1.35rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 62%, var(--loombus-border));
+  border-radius: 999px;
+  background: var(--loombus-page-bg);
+  box-shadow: 0 0 0 3px var(--loombus-page-bg);
+  pointer-events: none;
+}
+
+.discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article:hover::after {
+  border-color: var(--loombus-gold);
+  background: var(--loombus-gold);
+}
+
+@media (max-width: 639px) {
+  [data-question-of-the-week-mount="true"] > section {
+    margin-inline: -0.25rem;
+    padding-inline: 0.75rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 {
+    padding-left: 0.85rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5::before {
+    left: 0.22rem;
+  }
+
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article::after {
+    left: -0.86rem;
+    top: 1.05rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-feed-route[data-discussion-view="card"] main section.min-w-0 > .space-y-5 > article::after {
+    transition: none;
+  }
+}
