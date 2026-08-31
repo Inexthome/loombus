@@ -94,76 +94,98 @@ export default function ResetPasswordPage() {
   return (
     <main
       data-loombus-auth-shell
-      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+      data-loombus-password-recovery-editorial
+      className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-8 text-[color:var(--loombus-text)] sm:px-6 sm:py-16"
     >
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-3xl">
         <Link
           href="/login"
-          className="mb-10 inline-block text-sm text-zinc-500 transition hover:text-white sm:mb-12"
+          className="inline-flex min-h-11 items-center text-sm text-[color:var(--loombus-text-muted)] underline decoration-[color:var(--loombus-border)] underline-offset-4 transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
         >
           ← Back to login
         </Link>
 
-        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-7">
-          <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+        <header className="border-b border-[color:var(--loombus-border)] py-10 sm:py-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
             Loombus password reset
           </p>
-
-          <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
             Set a new password.
           </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-[color:var(--loombus-text-muted)]">
+            Use the secure recovery session from your newest reset email to update your Loombus password.
+          </p>
+        </header>
+
+        <section className="py-8 sm:py-10">
+          <div className="border-b border-[color:var(--loombus-border)] pb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+              Secure recovery
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight">
+              {hasSession ? "Choose your new password" : "Reset link unavailable"}
+            </h2>
+          </div>
 
           {!hasSession ? (
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <p role="status" aria-live="polite" className="text-sm leading-relaxed text-zinc-400">
+            <div className="pt-6">
+              <p role="status" aria-live="polite" className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                 {message || "This reset link is missing or expired. Request a new password reset email and use the newest link."}
               </p>
 
-              <Link
-                href="/forgot-password"
-                className="mt-5 inline-flex rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
-              >
-                Request a new reset link
-              </Link>
+              <div className="mt-6 border-t border-[color:var(--loombus-border)] pt-5">
+                <Link
+                  href="/forgot-password"
+                  className="inline-flex min-h-12 items-center border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-5 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                >
+                  Request a new reset link
+                </Link>
+              </div>
             </div>
           ) : (
-            <form onSubmit={handleResetPassword} className="space-y-5">
-              <p className="leading-relaxed text-zinc-400">
+            <form onSubmit={handleResetPassword} className="mt-6 space-y-6">
+              <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                 Enter a new password for your Loombus account.
               </p>
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-400">New password</label>
+                <label htmlFor="new-password" className="block text-sm font-medium text-[color:var(--loombus-text)]">
+                  New password
+                </label>
                 <input
+                  id="new-password"
+                  name="new-password"
                   type="password"
                   value={password}
                   autoComplete="new-password"
                   required
                   minLength={6}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-400">
+                <label htmlFor="confirm-new-password" className="block text-sm font-medium text-[color:var(--loombus-text)]">
                   Confirm new password
                 </label>
                 <input
+                  id="confirm-new-password"
+                  name="confirm-new-password"
                   type="password"
                   value={confirmPassword}
                   autoComplete="new-password"
                   required
                   minLength={6}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={saving || success}
-                className="w-full rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
               >
                 {saving ? "Updating password..." : success ? "Password updated" : "Update password"}
               </button>
@@ -172,19 +194,21 @@ export default function ResetPasswordPage() {
                 <p
                   role="status"
                   aria-live="polite"
-                  className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400"
+                  className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]"
                 >
                   {message}
                 </p>
               ) : null}
 
               {success ? (
-                <Link
-                  href="/login"
-                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                >
-                  Return to login
-                </Link>
+                <div className="border-t border-[color:var(--loombus-border)] pt-5">
+                  <Link
+                    href="/login"
+                    className="inline-flex min-h-11 items-center border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                  >
+                    Return to login
+                  </Link>
+                </div>
               ) : null}
             </form>
           )}
