@@ -1,0 +1,260 @@
+/* Loombus Editorial UI — /premium. Loaded after the existing Premium styles. */
+
+[data-premium-editorial] {
+  --premium-editorial-gold: #CBAB5B;
+  color: var(--loombus-text);
+}
+
+[data-premium-editorial] .premium-v2-page {
+  min-height: 100vh;
+  padding: 5.75rem 1rem 7rem;
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text);
+}
+
+[data-premium-editorial] .premium-v2-shell {
+  width: min(100%, 78rem);
+}
+
+[data-premium-editorial] .premium-v2-hero {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  padding: 0 0 1.65rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+[data-premium-editorial] .premium-v2-hero h1 {
+  max-width: 17ch;
+  font-size: clamp(2.35rem, 5vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+[data-premium-editorial] .premium-v2-hero p:not(.premium-v2-eyebrow) {
+  max-width: 48rem;
+  margin-top: 0.9rem;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+[data-premium-editorial] .premium-v2-primary-action,
+[data-premium-editorial] .premium-v2-secondary-action,
+[data-premium-editorial] .premium-v2-actions button,
+[data-premium-editorial] .premium-v2-addon-card button,
+[data-premium-editorial] .premium-v2-billing-grid button {
+  min-height: 2.55rem;
+  border-radius: 0.45rem !important;
+  padding: 0.62rem 0.85rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+[data-premium-editorial] .premium-v2-secondary-action,
+[data-premium-editorial] .premium-v2-actions button:not(.bg-white),
+[data-premium-editorial] .premium-v2-addon-card button:not(.bg-white),
+[data-premium-editorial] .premium-v2-billing-grid button:not(.bg-white) {
+  background: transparent !important;
+}
+
+[data-premium-editorial] .premium-v3-promo,
+[data-premium-editorial] .premium-v3-trust-card,
+[data-premium-editorial] .premium-v2-notice {
+  margin-top: 1rem;
+  border: 0;
+  border-left: 2px solid var(--premium-editorial-gold);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.8rem 0 0.8rem 1rem;
+}
+
+[data-premium-editorial] .premium-v2-notice.is-success {
+  border-left-color: #22c55e;
+  background: transparent;
+}
+
+[data-premium-editorial] .premium-v2-account-card {
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.9fr) auto;
+  margin-top: 1.25rem;
+  padding: 1.15rem 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-premium-editorial] .premium-v2-account-icon {
+  display: none;
+}
+
+[data-premium-editorial] .premium-v2-account-facts {
+  gap: 0;
+  border-left: 1px solid var(--loombus-border);
+}
+
+[data-premium-editorial] .premium-v2-account-facts > div {
+  padding: 0.55rem 0.8rem;
+  border-right: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-premium-editorial] .premium-v2-current-badge {
+  min-height: auto;
+  border: 0;
+  border-radius: 0 !important;
+  background: transparent;
+  padding: 0 !important;
+  color: var(--premium-editorial-gold);
+}
+
+[data-premium-editorial] .premium-v2-section-heading {
+  margin-top: 2.4rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-premium-editorial] .premium-v2-plan-grid {
+  gap: 0;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-premium-editorial] .premium-v2-plan-card {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-premium-editorial] .premium-v2-plan-card:last-child {
+  border-right: 0 !important;
+}
+
+[data-premium-editorial] .premium-v2-plan-card.is-featured {
+  box-shadow: inset 0 2px 0 var(--premium-editorial-gold) !important;
+}
+
+[data-premium-editorial] .premium-v2-plan-card.is-current {
+  background: color-mix(in srgb, var(--premium-editorial-gold) 4%, transparent) !important;
+}
+
+[data-premium-editorial] .premium-v2-plan-topline strong {
+  border-radius: 0.35rem;
+}
+
+[data-premium-editorial] .premium-v2-comparison-card,
+[data-premium-editorial] .premium-v2-addon-card {
+  margin-top: 2.35rem;
+  padding: 1.25rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-premium-editorial] .premium-v2-table-wrap {
+  border: 0;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+}
+
+[data-premium-editorial] .premium-v3-master-table thead th,
+[data-premium-editorial] .premium-v3-group-row th {
+  background: var(--loombus-page-bg) !important;
+}
+
+[data-premium-editorial] .premium-v2-benefit-grid,
+[data-premium-editorial] .premium-v2-billing-grid {
+  gap: 0;
+  margin-top: 2rem;
+  border-top: 1px solid var(--loombus-border);
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-premium-editorial] .premium-v2-benefit-grid article,
+[data-premium-editorial] .premium-v2-billing-grid article {
+  border: 0;
+  border-right: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-premium-editorial] .premium-v2-benefit-grid article:last-child,
+[data-premium-editorial] .premium-v2-billing-grid article:last-child {
+  border-right: 0;
+}
+
+[data-premium-editorial] .premium-v2-footer-note {
+  margin-top: 2rem;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-premium-editorial] :where(a, button, input, select):focus-visible {
+  outline: 2px solid var(--premium-editorial-gold) !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  [data-premium-editorial] .premium-v2-hero,
+  [data-premium-editorial] .premium-v2-account-card {
+    grid-template-columns: 1fr;
+  }
+
+  [data-premium-editorial] .premium-v2-hero-actions {
+    justify-content: flex-start;
+  }
+
+  [data-premium-editorial] .premium-v2-account-facts {
+    border-left: 0;
+    border-top: 1px solid var(--loombus-border);
+  }
+}
+
+@media (max-width: 720px) {
+  [data-premium-editorial] .premium-v2-page {
+    padding-inline: 0.9rem;
+  }
+
+  [data-premium-editorial] .premium-v2-plan-grid,
+  [data-premium-editorial] .premium-v2-benefit-grid,
+  [data-premium-editorial] .premium-v2-billing-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  [data-premium-editorial] .premium-v2-plan-card,
+  [data-premium-editorial] .premium-v2-benefit-grid article,
+  [data-premium-editorial] .premium-v2-billing-grid article {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+
+  [data-premium-editorial] .premium-v2-plan-card:last-child,
+  [data-premium-editorial] .premium-v2-benefit-grid article:last-child,
+  [data-premium-editorial] .premium-v2-billing-grid article:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-premium-editorial] *,
+  [data-premium-editorial] *::before,
+  [data-premium-editorial] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
