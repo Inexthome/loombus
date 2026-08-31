@@ -10,6 +10,7 @@ import {
 } from "@/lib/supabase/client";
 import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
 import { clearLegacyNativeBiometricLoginCredentials } from "@/lib/native-biometric";
+import { signInWithNativeGoogle } from "@/lib/native-google-auth";
 import { saveLoginToSystemPasswordManager } from "@/lib/native-password-manager";
 
 function getSafeNext(value: string | null) {
@@ -182,6 +183,37 @@ export default function LoginPage() {
     setOauthLoading(provider);
 
     try {
+      if (provider === "google" && isIosNativeApp()) {
+        const nativeGoogle = await signInWithNativeGoogle();
+
+        if (nativeGoogle.ok) {
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: "google",
+            token: nativeGoogle.idToken,
+            ...(nativeGoogle.accessToken
+              ? { access_token: nativeGoogle.accessToken }
+              : {}),
+          });
+
+          if (error) {
+            setMessage(`Google login error: ${error.message}`);
+            setOauthLoading(null);
+            return;
+          }
+
+          window.location.replace(
+            `/auth/callback?next=${encodeURIComponent(getNextPath())}`
+          );
+          return;
+        }
+
+        if (!nativeGoogle.unavailable) {
+          setMessage(`Google login error: ${nativeGoogle.error}`);
+          setOauthLoading(null);
+          return;
+        }
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
