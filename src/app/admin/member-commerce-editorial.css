@@ -1,0 +1,293 @@
+/* Native Editorial structure for Admin members, support, AI access, billing, and booking payments. */
+.admin-member-commerce-editorial-route {
+  min-height: 100vh;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+  padding: 1.25rem 1rem 6rem;
+}
+
+.admin-member-commerce-editorial-masthead,
+.admin-member-commerce-editorial-nav,
+.admin-member-commerce-editorial-workspace {
+  width: min(100%, 88rem);
+  margin-inline: auto;
+}
+
+.admin-member-commerce-editorial-masthead {
+  padding: 1.25rem 0 1.5rem;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.admin-member-commerce-editorial-back {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  color: var(--loombus-text-muted);
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-member-commerce-editorial-back:hover { color: var(--loombus-text); }
+.admin-member-commerce-editorial-eyebrow {
+  margin: .45rem 0 0;
+  color: #CBAB5B;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.admin-member-commerce-editorial-masthead h1 {
+  margin: .45rem 0 0;
+  max-width: 18ch;
+  font-size: clamp(2.2rem, 5vw, 4.25rem);
+  line-height: .98;
+  letter-spacing: -.055em;
+}
+
+.admin-member-commerce-editorial-deck {
+  max-width: 52rem;
+  margin: .9rem 0 0;
+  color: var(--loombus-text-muted);
+  font-size: .95rem;
+  line-height: 1.65;
+}
+
+.admin-member-commerce-editorial-nav {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--loombus-border);
+  scrollbar-width: thin;
+}
+
+.admin-member-commerce-editorial-nav a {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  color: var(--loombus-text-muted);
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-member-commerce-editorial-nav a:hover,
+.admin-member-commerce-editorial-nav a.is-active { color: var(--loombus-text); }
+.admin-member-commerce-editorial-nav a.is-active::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 2px;
+  background: #CBAB5B;
+}
+
+.admin-member-commerce-editorial-workspace { min-width: 0; }
+
+/* Existing clients remain authoritative for data/actions; their duplicate mastheads are demoted. */
+:is(.admin-users-v2-page,.support-v2-page,.ai-access-v2-page,.billing-v2-page) {
+  min-height: 0 !important;
+  padding: 0 0 5rem !important;
+  background: transparent !important;
+  color: var(--loombus-text) !important;
+}
+
+:is(.admin-users-v2-shell,.support-v2-shell,.ai-access-v2-shell,.billing-v2-shell) {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+:is(.admin-users-v2-hero,.support-v2-hero,.ai-access-v2-hero,.billing-v2-hero) {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: .8rem 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.admin-users-v2-hero,.support-v2-hero,.ai-access-v2-hero,.billing-v2-hero)::before { display: none !important; }
+:is(.admin-users-v2-hero-copy,.support-v2-hero > div:first-child,.ai-access-v2-hero > div:first-child,.billing-v2-hero > div:first-child) { display: none !important; }
+
+:is(.admin-users-v2-hero-actions,.support-v2-hero-actions,.ai-access-v2-hero-actions,.billing-v2-hero-actions) {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-start !important;
+  gap: .75rem !important;
+}
+
+:is(.admin-users-v2-hero-actions,.support-v2-hero-actions,.ai-access-v2-hero-actions,.billing-v2-hero-actions) :where(button,a) {
+  min-height: 2.55rem !important;
+  border-radius: .4rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Counts become one divider-led index instead of a card grid. */
+:is(.admin-users-v2-metrics,.support-v2-metrics,.ai-access-v2-metrics,.billing-v2-metrics) {
+  gap: 0 !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+:is(.admin-users-v2-metric,.support-v2-metric,.ai-access-v2-metric,.billing-v2-metric) {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem !important;
+  box-shadow: none !important;
+}
+
+:is(.admin-users-v2-metric,.support-v2-metric,.ai-access-v2-metric,.billing-v2-metric):last-child { border-right: 0 !important; }
+:is(.admin-users-v2-metric,.support-v2-metric,.ai-access-v2-metric,.billing-v2-metric).is-priority {
+  background: transparent !important;
+  box-shadow: inset 0 2px 0 #CBAB5B !important;
+}
+
+/* Search, filters, grants, templates, diagnostics, and workspaces read as sections. */
+:is(
+  .admin-users-v2-toolbar,.support-v2-toolbar,.ai-access-v2-toolbar,.billing-v2-toolbar,
+  .support-v2-templates,.ai-access-v2-grant,.ai-access-v2-diagnostics,.ai-access-v2-footer-links
+) {
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 1rem 0 !important;
+}
+
+:is(.admin-users-v2-search,.support-v2-search,.ai-access-v2-search,.billing-v2-search) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .admin-users-v2-queue,.admin-users-v2-detail,
+  .support-v2-queue,.support-v2-detail,
+  .ai-access-v2-queue,.ai-access-v2-detail,.ai-access-v2-diagnostics,
+  .billing-v2-queue,.billing-v2-detail
+) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.support-v2-template-grid article {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+}
+
+:is(.admin-users-v2-notice,.support-v2-notice,.ai-access-v2-notice,.billing-v2-notice) {
+  border: 0 !important;
+  border-left: 2px solid #CBAB5B !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.admin-users-v2-page,.support-v2-page,.ai-access-v2-page,.billing-v2-page) :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Professional Booking payments uses utility classes rather than a route stylesheet. */
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  padding: 0 0 5rem !important;
+  margin: 0 !important;
+}
+
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > div[class*="items-start"][class*="justify-between"] {
+  display: none !important;
+}
+
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section {
+  margin-top: 0 !important;
+  padding: 1rem 0 !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type {
+  display: grid !important;
+  grid-template-columns: repeat(7,minmax(0,1fr));
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type > div {
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type > div:last-child { border-right: 0 !important; }
+[data-admin-editorial-route="booking-payments"] article {
+  border-radius: .5rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: none !important;
+}
+[data-admin-editorial-route="booking-payments"] input,
+[data-admin-editorial-route="booking-payments"] select {
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+[data-admin-editorial-route="booking-payments"] table { background: transparent !important; }
+
+.admin-member-commerce-editorial-route :where(a,button,input,select,textarea,summary):focus-visible {
+  outline: 2px solid #CBAB5B !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 64rem) {
+  [data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .admin-member-commerce-editorial-route { padding-inline: .75rem; }
+  :is(.admin-users-v2-metrics,.support-v2-metrics,.ai-access-v2-metrics,.billing-v2-metrics) { grid-template-columns: 1fr !important; }
+  :is(.admin-users-v2-metric,.support-v2-metric,.ai-access-v2-metric,.billing-v2-metric) {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+  [data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type { grid-template-columns: 1fr; }
+  [data-admin-editorial-route="booking-payments"] .admin-member-commerce-editorial-workspace > main > section:first-of-type > div {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-member-commerce-editorial-route *,
+  .admin-member-commerce-editorial-route *::before,
+  .admin-member-commerce-editorial-route *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
