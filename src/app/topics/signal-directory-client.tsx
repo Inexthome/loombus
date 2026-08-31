@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Compass,
-  Layers3,
-  Search,
-  Sparkles,
-  Target,
-  X,
-} from "lucide-react";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import SignalDirectoryCard from "./signal-directory-card";
@@ -26,19 +19,16 @@ const DIRECTORY_TABS = [
     value: "topic",
     label: "Topics",
     description: "What the discussion is about",
-    Icon: Compass,
   },
   {
     value: "reality",
     label: "Reality Lenses",
     description: "What lived reality it examines",
-    Icon: Layers3,
   },
   {
     value: "purpose",
     label: "Purpose Lanes",
     description: "What the discussion aims to advance",
-    Icon: Target,
   },
 ] as const;
 
@@ -68,13 +58,7 @@ export default function SignalDirectoryClient() {
         viewCounts: data.viewCounts,
         saveCounts: data.saveCounts,
       }),
-    [
-      data.discussions,
-      data.replyCounts,
-      data.saveCounts,
-      data.viewCounts,
-      dimension,
-    ]
+    [data.discussions, data.replyCounts, data.saveCounts, data.viewCounts, dimension]
   );
 
   const filteredItems = useMemo(() => {
@@ -99,17 +83,13 @@ export default function SignalDirectoryClient() {
     if (!selectedItem) return [];
 
     return data.discussions.filter(
-      (discussion) =>
-        getDimensionValue(discussion, dimension) === selectedItem.value
+      (discussion) => getDimensionValue(discussion, dimension) === selectedItem.value
     );
   }, [data.discussions, dimension, selectedItem]);
 
   const activeCount = items.filter((item) => item.active).length;
   const usedCount = items.filter((item) => item.discussionCount > 0).length;
-  const totalActivity = items.reduce(
-    (total, item) => total + item.activityScore,
-    0
-  );
+  const totalActivity = items.reduce((total, item) => total + item.activityScore, 0);
 
   function replaceDirectoryUrl(nextDimension: DirectoryDimension, value = "") {
     const params = new URLSearchParams();
@@ -137,131 +117,120 @@ export default function SignalDirectoryClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="overflow-hidden rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-sm">
-          <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
+    <main
+      data-loombus-topics-editorial
+      className="min-h-screen bg-[color:var(--topics-editorial-page-bg,var(--loombus-page-bg))] px-4 pb-24 pt-6 text-[color:var(--loombus-text)] sm:px-6 sm:pt-10 lg:px-8"
+    >
+      <div className="mx-auto w-full max-w-5xl">
+        <header className="border-b border-[color:var(--loombus-border)] pb-8 sm:pb-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#A9822F]">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-gold)]">
                 Signal Directory
               </p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                Topics, Reality Lenses, and Purpose Lanes
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                Explore the ideas shaping Loombus
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--loombus-text-muted)] sm:text-base">
-                Explore what a discussion is about, the lived reality it examines,
-                and the outcome it is intended to advance. These three dimensions
-                form the complete Loombus framing system.
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
+                Browse topics, Reality Lenses, and Purpose Lanes to see where discussion is active, what people are examining, and what those conversations aim to advance.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
               <Link
                 href="/discussions"
-                className="rounded-full border border-[color:var(--loombus-border)] px-4 py-2.5 text-sm font-bold transition hover:bg-[color:var(--loombus-surface-muted)]"
+                className="min-h-11 content-center font-medium text-[color:var(--loombus-text-muted)] underline decoration-[color:var(--loombus-border)] underline-offset-4 transition hover:text-[color:var(--loombus-text)] motion-reduce:transition-none"
               >
                 Browse discussions
               </Link>
               <Link
                 href="/create"
-                className="rounded-full bg-[#CBAB5B] px-4 py-2.5 text-sm font-black text-black transition hover:brightness-105"
+                className="inline-flex min-h-11 items-center border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-4 py-2.5 text-sm font-semibold text-[#17140B] transition hover:opacity-90 motion-reduce:transition-none"
               >
                 Create discussion
               </Link>
             </div>
           </div>
-
-          <div className="grid border-t border-[color:var(--loombus-border-muted)] sm:grid-cols-4">
-            <article className="border-b border-[color:var(--loombus-border-muted)] p-4 sm:border-b-0 sm:border-r">
-              <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">
-                {getDimensionLabel(dimension)}
-              </span>
-              <strong className="mt-1 block text-2xl">{items.length}</strong>
-            </article>
-            <article className="border-b border-[color:var(--loombus-border-muted)] p-4 sm:border-b-0 sm:border-r">
-              <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">
-                Used by discussions
-              </span>
-              <strong className="mt-1 block text-2xl">{usedCount}</strong>
-            </article>
-            <article className="border-b border-[color:var(--loombus-border-muted)] p-4 sm:border-b-0 sm:border-r">
-              <span className="text-xs font-semibold text-[color:var(--loombus-text-muted)]">
-                Active in 30 days
-              </span>
-              <strong className="mt-1 block text-2xl">{activeCount}</strong>
-            </article>
-            <article className="bg-[#CBAB5B]/10 p-4">
-              <span className="text-xs font-semibold text-[#8B6B24]">
-                Total activity
-              </span>
-              <strong className="mt-1 block text-2xl text-[#8B6B24]">
-                {totalActivity.toLocaleString()}
-              </strong>
-            </article>
-          </div>
         </header>
 
-        <section className="rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-3 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-3">
-            {DIRECTORY_TABS.map(({ value, label, description, Icon }) => (
+        <section aria-label="Directory summary" className="border-b border-[color:var(--loombus-border)] py-5">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            <div>
+              <dt className="text-xs text-[color:var(--loombus-text-muted)]">{getDimensionLabel(dimension)}</dt>
+              <dd className="mt-1 text-lg font-semibold">{items.length}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-[color:var(--loombus-text-muted)]">Used by discussions</dt>
+              <dd className="mt-1 text-lg font-semibold">{usedCount}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-[color:var(--loombus-text-muted)]">Active in 30 days</dt>
+              <dd className="mt-1 text-lg font-semibold">{activeCount}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-[color:var(--loombus-text-muted)]">Total activity</dt>
+              <dd className="mt-1 text-lg font-semibold text-[color:var(--loombus-gold)]">{totalActivity.toLocaleString()}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <nav aria-label="Signal directory dimensions" className="border-b border-[color:var(--loombus-border)]">
+          <div className="flex min-w-0 gap-6 overflow-x-auto">
+            {DIRECTORY_TABS.map(({ value, label, description }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => changeDimension(value)}
-                className={`rounded-2xl border p-4 text-left transition ${
+                aria-pressed={dimension === value}
+                className={`min-h-16 shrink-0 border-b-2 px-0 py-3 text-left transition motion-reduce:transition-none ${
                   dimension === value
-                    ? "border-[#CBAB5B] bg-[#CBAB5B]/10"
-                    : "border-transparent hover:border-[color:var(--loombus-border)] hover:bg-[color:var(--loombus-surface-muted)]"
+                    ? "border-[color:var(--loombus-gold)] text-[color:var(--loombus-text)]"
+                    : "border-transparent text-[color:var(--loombus-text-muted)] hover:text-[color:var(--loombus-text)]"
                 }`}
               >
-                <span className="flex items-center gap-2 text-sm font-black">
-                  <Icon aria-hidden="true" className="h-4 w-4 text-[#A9822F]" />
-                  {label}
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-                  {description}
-                </span>
+                <span className="block text-sm font-semibold">{label}</span>
+                <span className="mt-1 block text-xs">{description}</span>
               </button>
             ))}
           </div>
-        </section>
+        </nav>
 
-        <section className="grid gap-3 rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
-          <label className="flex min-w-0 items-center gap-3 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3">
-            <Search
-              aria-hidden="true"
-              className="h-5 w-5 shrink-0 text-[color:var(--loombus-text-muted)]"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${getDimensionLabel(dimension).toLowerCase()}`}
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[color:var(--loombus-text-muted)]"
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-              >
-                <X aria-hidden="true" className="h-4 w-4" />
-              </button>
-            ) : null}
-          </label>
-          <span className="text-sm font-semibold text-[color:var(--loombus-text-muted)]">
-            {filteredItems.length} {getDimensionLabel(dimension).toLowerCase()}
-          </span>
+        <section className="border-b border-[color:var(--loombus-border)] py-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="block min-w-0 flex-1">
+              <span className="text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--loombus-text-muted)]">
+                Search {getDimensionLabel(dimension)}
+              </span>
+              <span className="mt-2 flex min-h-11 items-center gap-3 border-b border-[color:var(--loombus-border)] focus-within:border-[color:var(--loombus-gold)]">
+                <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[color:var(--loombus-text-muted)]" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={`Search ${getDimensionLabel(dimension).toLowerCase()}`}
+                  className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-[color:var(--loombus-text-muted)]"
+                />
+                {query ? (
+                  <button type="button" onClick={() => setQuery("")} className="min-h-11 min-w-11" aria-label="Clear search">
+                    <X aria-hidden="true" className="mx-auto h-4 w-4" />
+                  </button>
+                ) : null}
+              </span>
+            </label>
+            <p className="text-sm text-[color:var(--loombus-text-muted)]">
+              {filteredItems.length} {getDimensionLabel(dimension).toLowerCase()}
+            </p>
+          </div>
         </section>
 
         {data.message ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#CBAB5B]/50 bg-[#CBAB5B]/10 px-4 py-3 text-sm font-semibold">
-            <span>{data.message}</span>
-            {!data.canFollowTopics && data.viewerId ? (
-              <Link href="/premium" className="font-black text-[#8B6B24]">
-                View Premium
-              </Link>
-            ) : null}
+          <div role="status" className="border-b border-[color:var(--loombus-border)] py-4 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{data.message}</span>
+              {!data.canFollowTopics && data.viewerId ? (
+                <Link href="/premium" className="font-semibold text-[color:var(--loombus-gold)]">View Premium</Link>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -279,48 +248,34 @@ export default function SignalDirectoryClient() {
         ) : null}
 
         {data.loading ? (
-          <section className="rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-12 text-center shadow-sm">
-            <Sparkles
-              aria-hidden="true"
-              className="mx-auto h-7 w-7 text-[#A9822F]"
-            />
-            <h2 className="mt-4 text-xl font-black">
-              Reading directory activity…
-            </h2>
-            <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
+          <section aria-live="polite" className="border-b border-[color:var(--loombus-border)] py-12">
+            <h2 className="text-lg font-semibold">Reading directory activity…</h2>
+            <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
               Counting discussions, replies, views, saves, and recent activity.
             </p>
           </section>
         ) : filteredItems.length === 0 ? (
-          <section className="rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-12 text-center shadow-sm">
-            <Search
-              aria-hidden="true"
-              className="mx-auto h-7 w-7 text-[#A9822F]"
-            />
-            <h2 className="mt-4 text-xl font-black">
-              No matching directory entries.
-            </h2>
-            <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
+          <section className="border-b border-[color:var(--loombus-border)] py-12">
+            <h2 className="text-lg font-semibold">No matching directory entries.</h2>
+            <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
               Broaden the search or clear it to restore the full directory.
             </p>
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="mt-4 rounded-full border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-black"
+              className="mt-4 min-h-11 border-b border-[color:var(--loombus-gold)] text-sm font-semibold"
             >
               Clear search
             </button>
           </section>
         ) : (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section aria-label={`${getDimensionLabel(dimension)} directory`} className="divide-y divide-[color:var(--loombus-border)]">
             {filteredItems.map((item) => (
               <SignalDirectoryCard
                 key={item.value}
                 dimension={dimension}
                 item={item}
-                isFollowing={
-                  dimension === "topic" && data.followedSet.has(item.value)
-                }
+                isFollowing={dimension === "topic" && data.followedSet.has(item.value)}
                 saving={data.savingTopic === item.value}
                 onFollow={(topic) => void data.toggleTopicFollow(topic)}
                 onOpen={openValue}
