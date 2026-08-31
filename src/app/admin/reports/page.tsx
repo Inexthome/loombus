@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ReportsV2Client from "./reports-v2-client";
 import "./reports-v2.css";
+import "../trust-safety-editorial.css";
 
 export const metadata: Metadata = {
   title: "Reports | Loombus Admin",
