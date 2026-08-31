@@ -4,6 +4,7 @@ import { DiscussionFeedRefinements } from "@/components/discussion-feed-refineme
 import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
 import { DiscussionViewModeControl } from "@/components/discussion-view-mode-control";
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
+import { DiscussionsLaunchPricingBridge } from "@/components/discussions-launch-pricing-bridge";
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import { QuestionOfTheWeekBridge } from "@/components/question-of-the-week-bridge";
 import "../create/create-flat.css";
@@ -46,6 +47,7 @@ export default function DiscussionsLayout({ children }: Readonly<{ children: Rea
       <DiscussionPublishToast />
       <DiscussionVideoAutoplay />
       <DiscussionsCreateComposerBridge />
+      <DiscussionsLaunchPricingBridge />
       <DiscussionViewModeControl />
       <QuestionOfTheWeekBridge />
       {children}

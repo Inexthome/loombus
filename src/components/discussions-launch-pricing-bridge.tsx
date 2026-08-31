@@ -1,22 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-export default function DiscussionsLaunchPricingBanner() {
-  const [rail, setRail] = useState<HTMLElement | null>(null);
+export function DiscussionsLaunchPricingBridge() {
+  const pathname = usePathname();
+  const [browseTopicsRail, setBrowseTopicsRail] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const browseTopicsRail = document.querySelector<HTMLElement>(
-      "main > div > aside:first-child > section"
+    if (pathname !== "/discussions") {
+      setBrowseTopicsRail(null);
+      return;
+    }
+
+    const heading = Array.from(document.querySelectorAll<HTMLElement>("aside p")).find(
+      (element) => element.textContent?.trim().toLowerCase() === "browse topics"
     );
 
-    setRail(browseTopicsRail);
-  }, []);
+    setBrowseTopicsRail(heading?.closest("section") ?? null);
+  }, [pathname]);
 
-  if (!rail) return null;
+  if (pathname !== "/discussions" || !browseTopicsRail) return null;
 
   return createPortal(
     <div className="mt-5 border-t border-[color:var(--loombus-border-muted)] pt-5">
@@ -37,6 +44,6 @@ export default function DiscussionsLaunchPricingBanner() {
         <ChevronRight aria-hidden="true" className="h-4 w-4" />
       </Link>
     </div>,
-    rail
+    browseTopicsRail
   );
 }
