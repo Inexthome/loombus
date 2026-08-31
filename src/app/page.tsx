@@ -68,21 +68,21 @@ const destinations = [
     title: "Structured discussions",
     description:
       "Open discussions, debates, research questions, and problem solving with clearer context and durable replies.",
-    href: "/discussions",
+    href: "/create",
     label: "Explore discussions",
   },
   {
     title: "Library",
     description:
       "Read publications, keep your place, save notes and highlights, and move from a passage into a larger conversation.",
-    href: "/library",
+    href: "/create",
     label: "Open Library",
   },
   {
     title: "Rooms",
     description:
       "Private spaces for communities, organizations, classrooms, neighborhoods, teams, and shared work.",
-    href: "/rooms",
+    href: "/create",
     label: "Explore Rooms",
   },
 ];
@@ -123,7 +123,7 @@ export default function RootPage() {
             <Link href="/signup" className="root-editorial-primary-link">
               Get started
             </Link>
-            <Link href="/discussions" className="root-editorial-text-link">
+            <Link href="/create" className="root-editorial-text-link">
               See what people are discussing <span aria-hidden="true">→</span>
             </Link>
           </div>
