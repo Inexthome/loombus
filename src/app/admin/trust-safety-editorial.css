@@ -1,0 +1,376 @@
+/* Shared Loombus Editorial treatment for the Admin trust, safety, recovery, and audit suite. */
+
+:is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) {
+  min-height: 100vh;
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+:is(
+  .reports-v2-shell,
+  .safety-v2-shell,
+  .admin-enforcement-shell,
+  .deleted-v2-shell,
+  .deleted-replies-v2-shell,
+  .audit-v2-shell
+) {
+  width: min(100%, 88rem) !important;
+  gap: 0 !important;
+}
+
+/* Hero regions become editorial mastheads rather than raised cards. */
+:is(
+  .reports-v2-hero,
+  .safety-v2-hero,
+  .admin-enforcement-hero,
+  .deleted-v2-hero,
+  .deleted-replies-v2-hero,
+  .audit-v2-hero
+) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.5rem 0 1.75rem !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-hero,
+  .safety-v2-hero,
+  .deleted-v2-hero,
+  .deleted-replies-v2-hero,
+  .audit-v2-hero
+)::before {
+  display: none !important;
+}
+
+:is(
+  .reports-v2-hero h1,
+  .safety-v2-hero h1,
+  .admin-enforcement-hero h1,
+  .deleted-v2-hero h1,
+  .deleted-replies-v2-hero h1,
+  .audit-v2-hero h1
+) {
+  max-width: 18ch !important;
+  font-size: clamp(2.25rem, 5vw, 4.25rem) !important;
+}
+
+/* Main hero controls: keep one clear action, remove pill/card chrome. */
+:is(
+  .reports-v2-hero-actions,
+  .safety-v2-hero-actions,
+  .deleted-v2-hero-actions,
+  .deleted-replies-v2-hero-actions,
+  .audit-v2-hero-actions
+) :where(button, a),
+.admin-enforcement-hero > button {
+  min-height: 2.7rem !important;
+  border-radius: 0.4rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+:is(
+  .reports-v2-hero-actions,
+  .safety-v2-hero-actions,
+  .deleted-v2-hero-actions,
+  .deleted-replies-v2-hero-actions,
+  .audit-v2-hero-actions
+) a {
+  border-color: transparent !important;
+  background: transparent !important;
+  padding-inline: 0.2rem !important;
+  text-decoration: underline;
+  text-decoration-color: var(--loombus-border);
+  text-underline-offset: 0.3rem;
+}
+
+/* Summary cards become a continuous operational index. */
+:is(
+  .reports-v2-metrics,
+  .safety-v2-metrics,
+  .admin-enforcement-metrics,
+  .deleted-v2-metrics,
+  .deleted-replies-v2-metrics,
+  .audit-v2-metrics
+) {
+  gap: 0 !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+:is(
+  .reports-v2-metric,
+  .safety-v2-metric,
+  .admin-enforcement-metrics article,
+  .deleted-v2-metric,
+  .deleted-replies-v2-metric,
+  .audit-v2-metric
+) {
+  min-height: 5rem;
+  border: 0 !important;
+  border-right: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-metric,
+  .safety-v2-metric,
+  .admin-enforcement-metrics article,
+  .deleted-v2-metric,
+  .deleted-replies-v2-metric,
+  .audit-v2-metric
+):last-child {
+  border-right: 0 !important;
+}
+
+:is(
+  .reports-v2-metric.is-priority,
+  .safety-v2-metric.is-priority,
+  .admin-enforcement-metrics article.is-priority,
+  .deleted-v2-metric.is-priority,
+  .deleted-replies-v2-metric.is-priority,
+  .audit-v2-metric.is-priority
+) {
+  background: transparent !important;
+  box-shadow: inset 0 2px 0 #CBAB5B !important;
+}
+
+/* Toolbars become divider-led controls, not standalone panels. */
+:is(
+  .reports-v2-toolbar,
+  .safety-v2-toolbar,
+  .admin-enforcement-toolbar,
+  .deleted-v2-toolbar,
+  .deleted-replies-v2-toolbar,
+  .audit-v2-toolbar
+) {
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-search,
+  .safety-v2-search,
+  .admin-enforcement-toolbar > label,
+  .deleted-v2-search,
+  .deleted-replies-v2-search,
+  .audit-v2-search
+) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+  border-color: #CBAB5B !important;
+  box-shadow: none !important;
+}
+
+/* Queue and detail columns stay task-oriented but lose dashboard elevation. */
+:is(
+  .reports-v2-queue,
+  .reports-v2-detail,
+  .safety-v2-queue,
+  .safety-v2-detail,
+  .safety-v2-intelligence,
+  .safety-v2-repeat-section,
+  .deleted-v2-queue,
+  .deleted-v2-detail,
+  .deleted-replies-v2-queue,
+  .deleted-replies-v2-detail,
+  .audit-v2-queue,
+  .audit-v2-detail
+) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Enforcement uses a different naming generation; flatten its major work panels too. */
+:is(
+  .admin-enforcement-list,
+  .admin-enforcement-detail,
+  .admin-enforcement-panel,
+  .admin-enforcement-case,
+  .admin-enforcement-actions,
+  .admin-enforcement-restoration,
+  .admin-enforcement-outcome
+) {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Nested content records should read as sections rather than cards. */
+:is(
+  .deleted-v2-content-card,
+  .deleted-v2-context-card,
+  .deleted-v2-record-card,
+  .deleted-replies-v2-content-card,
+  .deleted-replies-v2-context-card,
+  .deleted-replies-v2-parent-card,
+  .deleted-replies-v2-record-card
+) {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border-muted) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Notices remain visible but use an editorial rule rather than a rounded alert card. */
+:is(
+  .reports-v2-notice,
+  .safety-v2-notice,
+  .admin-enforcement-notice,
+  .deleted-v2-notice,
+  .deleted-replies-v2-notice,
+  .audit-v2-notice
+) {
+  border: 0 !important;
+  border-left: 2px solid #CBAB5B !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Empty/loading states remain clear without oversized boxed containers. */
+:is(
+  .reports-v2-state-card,
+  .safety-v2-state-card,
+  .deleted-v2-state-card,
+  .deleted-replies-v2-state-card,
+  .audit-v2-state-card
+) {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Keep semantic status badges, but flatten ordinary navigation/actions. */
+:is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) :where(a, button)[class*="rounded-full"]:not([aria-label]) {
+  border-radius: 0.4rem !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .reports-v2-page,
+  .safety-v2-page,
+  .admin-enforcement-page,
+  .deleted-v2-page,
+  .deleted-replies-v2-page,
+  .audit-v2-page
+) :where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #CBAB5B !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 47.99rem) {
+  :is(
+    .reports-v2-metrics,
+    .safety-v2-metrics,
+    .admin-enforcement-metrics,
+    .deleted-v2-metrics,
+    .deleted-replies-v2-metrics,
+    .audit-v2-metrics
+  ) {
+    grid-template-columns: 1fr !important;
+  }
+
+  :is(
+    .reports-v2-metric,
+    .safety-v2-metric,
+    .admin-enforcement-metrics article,
+    .deleted-v2-metric,
+    .deleted-replies-v2-metric,
+    .audit-v2-metric
+  ) {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--loombus-border) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .reports-v2-page,
+    .safety-v2-page,
+    .admin-enforcement-page,
+    .deleted-v2-page,
+    .deleted-replies-v2-page,
+    .audit-v2-page
+  ) *,
+  :is(
+    .reports-v2-page,
+    .safety-v2-page,
+    .admin-enforcement-page,
+    .deleted-v2-page,
+    .deleted-replies-v2-page,
+    .audit-v2-page
+  ) *::before,
+  :is(
+    .reports-v2-page,
+    .safety-v2-page,
+    .admin-enforcement-page,
+    .deleted-v2-page,
+    .deleted-replies-v2-page,
+    .audit-v2-page
+  ) *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
