@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import IntelligentMatchingPage from "@/components/intelligent-matching-page";
+import "./matches-editorial.css";
 
 export const metadata: Metadata = {
   title: "Intelligent Matching",
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function MatchesPage() {
-  return <IntelligentMatchingPage />;
+  return (
+    <div data-loombus-matches-editorial>
+      <IntelligentMatchingPage />
+    </div>
+  );
 }
