@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { sendNativePushBroadcast } from "@/lib/push-broadcast";
 
 const MODEL =
   process.env.OPENAI_QUESTION_OF_WEEK_MODEL ||
@@ -10,6 +11,9 @@ const MODEL =
 
 const MAX_SOURCES = 6;
 const MIN_SOURCES = 3;
+const PUSH_TITLE = "Question of the Week is here";
+const PUSH_BODY = "One real-world question worth thinking through together. Join this week’s discussion.";
+const PUSH_AUDIT_ACTION = "question_of_the_week.push_announcement";
 
 type SourceCandidate = {
   title: string;
@@ -25,6 +29,15 @@ type WeeklyQuestionCandidate = {
   context: string;
   discussionPrompt: string;
   sources: SourceCandidate[];
+};
+
+type WeeklyQuestionRecord = {
+  id: string;
+  discussion_id: string;
+  week_start: string;
+  week_end: string;
+  published_at?: string | null;
+  category?: string | null;
 };
 
 type OpenAiResponse = {
@@ -252,6 +265,81 @@ function buildDiscussionBody(candidate: WeeklyQuestionCandidate) {
   ].join("\n");
 }
 
+async function ensureQuestionAnnouncement(
+  supabase: ReturnType<typeof createClient>,
+  actorId: string,
+  question: WeeklyQuestionRecord
+) {
+  const { data: discussion, error: discussionError } = await supabase
+    .from("discussions")
+    .select("id, deleted_at, audience_type")
+    .eq("id", question.discussion_id)
+    .maybeSingle();
+
+  if (discussionError) throw new Error(discussionError.message);
+  if (!discussion) throw new Error("Question of the Week discussion no longer exists.");
+  if (discussion.deleted_at) throw new Error("Question of the Week discussion is deleted and cannot be announced.");
+  if (discussion.audience_type !== "public") {
+    throw new Error("Question of the Week must be public before it can be announced.");
+  }
+
+  const { data: existingSend, error: existingSendError } = await supabase
+    .from("audit_logs")
+    .select("id, created_at")
+    .eq("action", PUSH_AUDIT_ACTION)
+    .eq("target_type", "discussion")
+    .eq("target_id", question.discussion_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingSendError) throw new Error(existingSendError.message);
+  if (existingSend) {
+    return {
+      sent: false,
+      alreadySent: true,
+      sentAt: existingSend.created_at,
+    };
+  }
+
+  const summary = await sendNativePushBroadcast({
+    title: PUSH_TITLE,
+    body: PUSH_BODY,
+    url: `/discussions/${question.discussion_id}`,
+  });
+
+  const { error: announcementAuditError } = await supabase.from("audit_logs").insert({
+    actor_id: actorId,
+    action: PUSH_AUDIT_ACTION,
+    target_type: "discussion",
+    target_id: question.discussion_id,
+    metadata: {
+      question_of_the_week_id: question.id,
+      week_start: question.week_start,
+      week_end: question.week_end,
+      title: PUSH_TITLE,
+      body: PUSH_BODY,
+      automatic: true,
+      eligible_users: summary.eligibleUsers,
+      eligible_tokens: summary.eligibleTokens,
+      attempted_tokens: summary.attemptedTokens,
+      accepted_tokens: summary.acceptedTokens,
+      failed_tokens: summary.failedTokens,
+      skipped_tokens: summary.skippedTokens,
+    },
+  });
+
+  if (announcementAuditError) {
+    throw new Error(`QOTW announcement was submitted but audit logging failed: ${announcementAuditError.message}`);
+  }
+
+  return {
+    sent: true,
+    alreadySent: false,
+    ...summary,
+  };
+}
+
 async function publishQuestion(request: NextRequest) {
   const configuredSecret = getConfiguredSecret();
   const providedSecret = getProvidedSecret(request);
@@ -274,12 +362,20 @@ async function publishQuestion(request: NextRequest) {
 
   if (existingError) return jsonError(existingError.message, 500);
   if (existing) {
-    return NextResponse.json({
-      ok: true,
-      created: false,
-      reason: "Question of the Week already exists for this week.",
-      question: existing,
-    });
+    try {
+      const announcement = await ensureQuestionAnnouncement(supabase, authorId, existing as WeeklyQuestionRecord);
+      return NextResponse.json({
+        ok: true,
+        created: false,
+        reason: "Question of the Week already exists for this week.",
+        question: existing,
+        announcement,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Question of the Week announcement failed.";
+      console.error("Question of the Week automatic announcement failed:", message);
+      return jsonError(`Question of the Week exists, but its automatic announcement failed: ${message}`, 502);
+    }
   }
 
   const { data: author, error: authorError } = await supabase
@@ -385,12 +481,26 @@ async function publishQuestion(request: NextRequest) {
   });
   if (auditError) console.error("Question of the Week audit log failed:", auditError.message);
 
+  let announcement;
+  try {
+    announcement = await ensureQuestionAnnouncement(
+      supabase,
+      authorId,
+      weeklyQuestion as WeeklyQuestionRecord
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Question of the Week announcement failed.";
+    console.error("Question of the Week automatic announcement failed:", message);
+    return jsonError(`Question of the Week was published, but its automatic announcement failed: ${message}`, 502);
+  }
+
   return NextResponse.json({
     ok: true,
     created: true,
     question: weeklyQuestion,
     title: candidate.title,
     sourceCount: candidate.sources.length,
+    announcement,
   });
 }
 
