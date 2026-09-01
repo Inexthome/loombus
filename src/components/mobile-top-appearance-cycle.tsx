@@ -20,7 +20,7 @@ function readAppearance(): AppearanceMode {
   const current = document.documentElement.dataset.loombusTheme;
   return current === "light" || current === "dark" || current === "system"
     ? current
-    : "system";
+    : "dark";
 }
 
 function nextAppearance(current: AppearanceMode): AppearanceMode {
@@ -34,7 +34,7 @@ function labelFor(mode: AppearanceMode) {
 
 export function MobileTopAppearanceCycle() {
   const [host, setHost] = useState<HTMLElement | null>(null);
-  const [mode, setMode] = useState<AppearanceMode>("system");
+  const [mode, setMode] = useState<AppearanceMode>("dark");
 
   useEffect(() => {
     setMode(readAppearance());
