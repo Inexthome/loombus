@@ -19,6 +19,27 @@ function safeExtension(name: string) {
   return clean.split(".").pop() || "file";
 }
 
+function readVideoDuration(file: File) {
+  return new Promise<number>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+      if (Number.isFinite(duration) && duration > 0) resolve(duration);
+      else reject(new Error("Unable to read video duration."));
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+      reject(new Error("Unable to read video duration."));
+    };
+    video.src = objectUrl;
+  });
+}
+
 async function cleanupProtectedUpload(args: {
   discussionId: string;
   storagePath: string;
@@ -44,6 +65,15 @@ export async function uploadDiscussionAttachments({
   for (const [index, item] of items.entries()) {
     const attachmentKind = getAttachmentKindForMimeType(item.file.type);
     if (!attachmentKind) return { ok: false, error: "Attachment type is not allowed." };
+
+    let videoDurationSeconds: number | null = null;
+    if (attachmentKind === "video") {
+      try {
+        videoDurationSeconds = await readVideoDuration(item.file);
+      } catch {
+        return { ok: false, error: "Unable to read video duration. Please choose a different video." };
+      }
+    }
 
     const storagePath = `${userId}/${discussionId}/${crypto.randomUUID()}.${safeExtension(item.file.name)}`;
     let storageBucket = PUBLIC_BUCKET;
@@ -105,6 +135,7 @@ export async function uploadDiscussionAttachments({
         fileName: item.file.name,
         mimeType: item.file.type,
         fileSizeBytes: item.file.size,
+        videoDurationSeconds,
         sortOrder: index,
       }),
     });
