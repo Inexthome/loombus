@@ -86,10 +86,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             try {
               const stored = window.localStorage.getItem("loombus:appearance");
               const allowed = ["system", "dark", "light"];
-              const mode = allowed.includes(stored || "") ? stored : "system";
-              document.documentElement.dataset.loombusTheme = mode || "system";
+              const mode = allowed.includes(stored || "") ? stored : "dark";
+              document.documentElement.dataset.loombusTheme = mode || "dark";
             } catch {
-              document.documentElement.dataset.loombusTheme = "system";
+              document.documentElement.dataset.loombusTheme = "dark";
             }
           })();
         ` }} />
