@@ -78,7 +78,7 @@ export function AttachmentGallery({ attachments }: { attachments: DiscussionAtta
   return (
     <section className="discussion-v2-attachments" aria-label="Discussion attachments">
       {attachments.map((attachment) => {
-        const mediaUrl = attachment.media_url ?? mediaUrl;
+        const mediaUrl = attachment.media_url ?? attachment.public_url;
         if (!mediaUrl) return null;
         if (attachment.attachment_kind === "image") {
           return (
