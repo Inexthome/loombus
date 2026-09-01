@@ -1,0 +1,15 @@
+name: Issue 672 patch runner test
+
+on:
+  push:
+    branches:
+      - issue-672-protected-discussion-media
+    paths:
+      - '.github/workflows/issue-672-test.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "issue-672 runner ready"
