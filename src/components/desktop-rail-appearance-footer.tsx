@@ -13,14 +13,14 @@ function isAppearanceMode(value: string | undefined | null): value is Appearance
 }
 
 function readAppearance(): AppearanceMode {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "dark";
   try {
     const stored = window.localStorage.getItem(APPEARANCE_KEY);
     if (isAppearanceMode(stored)) return stored;
   } catch {}
 
   const documentMode = document.documentElement.dataset.loombusTheme;
-  return isAppearanceMode(documentMode) ? documentMode : "system";
+  return isAppearanceMode(documentMode) ? documentMode : "dark";
 }
 
 function AppearanceGlyph({ mode, size = 18 }: { mode: AppearanceMode; size?: number }) {
@@ -30,7 +30,7 @@ function AppearanceGlyph({ mode, size = 18 }: { mode: AppearanceMode; size?: num
 }
 
 export function DesktopRailAppearanceFooter() {
-  const [appearance, setAppearance] = useState<AppearanceMode>("system");
+  const [appearance, setAppearance] = useState<AppearanceMode>("dark");
   const [railAvailable, setRailAvailable] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
 
