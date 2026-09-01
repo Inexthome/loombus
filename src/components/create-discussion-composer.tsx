@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { uploadDiscussionAttachments } from "@/lib/discussion-attachment-upload-client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES } from "@/lib/reality-lenses";
 import { PURPOSE_LANES } from "@/lib/purpose-lanes";
@@ -707,13 +708,6 @@ export default function CreateDiscussionComposer({
   function addSupportingContext(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []) as File[];
     if (files.length === 0) return;
-    if (attachmentsRestricted) {
-      setAttachmentMessage(
-        "Attachments require Public visibility. Change Future Discussion visibility in Settings."
-      );
-      event.target.value = "";
-      return;
-    }
     if (contextItems.length + files.length > MAX_DISCUSSION_ATTACHMENTS) {
       setAttachmentMessage(`You can attach up to ${MAX_DISCUSSION_ATTACHMENTS} files.`);
       event.target.value = "";
@@ -826,54 +820,13 @@ export default function CreateDiscussionComposer({
     accessToken: string;
     userId: string;
   }): Promise<{ ok: true } | { ok: false; error: string }> {
-    for (const [index, item] of contextItems.entries()) {
-      const extension = getSafeFileName(item.file.name).split(".").pop() || "file";
-      const storagePath = `${userId}/${discussionId}/${crypto.randomUUID()}.${extension}`;
-      const attachmentKind = getAttachmentKindForMimeType(item.file.type);
-      if (!attachmentKind) return { ok: false, error: "Attachment type is not allowed." };
-      const { error: uploadError } = await supabase.storage
-        .from(ATTACHMENT_BUCKET)
-        .upload(storagePath, item.file, {
-          contentType: item.file.type,
-          upsert: false,
-        });
-      if (uploadError) {
-        return {
-          ok: false,
-          error: `Discussion was saved, but ${item.file.name} could not upload: ${uploadError.message}`,
-        };
-      }
-      const { data: publicUrlData } = supabase.storage
-        .from(ATTACHMENT_BUCKET)
-        .getPublicUrl(storagePath);
-      const response = await fetch("/api/discussions/attachments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          discussionId,
-          storagePath,
-          publicUrl: publicUrlData.publicUrl,
-          fileName: item.file.name,
-          mimeType: item.file.type,
-          fileSizeBytes: item.file.size,
-          sortOrder: index,
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
-        return {
-          ok: false,
-          error:
-            result.error ??
-            `Discussion was saved, but ${item.file.name} could not be attached.`,
-        };
-      }
-    }
-    return { ok: true };
+    return uploadDiscussionAttachments({
+      items: contextItems,
+      discussionId,
+      accessToken,
+      userId,
+      protectedUpload: attachmentsRestricted,
+    });
   }
 
   async function publishDiscussion(event?: FormEvent<HTMLFormElement>) {
@@ -904,13 +857,6 @@ export default function CreateDiscussionComposer({
     }
     if (!body.trim()) {
       setMessage("Please enter discussion content.");
-      setPublishing(false);
-      return;
-    }
-    if (attachmentsRestricted && contextItems.length > 0) {
-      setMessage(
-        "Remove staged attachments or change Future Discussion visibility to Public in Settings."
-      );
       setPublishing(false);
       return;
     }
@@ -1235,7 +1181,7 @@ export default function CreateDiscussionComposer({
           </button>
           <button
             type="button"
-            disabled={attachmentsRestricted}
+            disabled={false}
             onClick={() => attachmentInputRef.current?.click()}
           >
             <Paperclip className="size-4" />

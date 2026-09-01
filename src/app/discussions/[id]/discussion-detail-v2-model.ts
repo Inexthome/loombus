@@ -92,7 +92,8 @@ export type DiscussionSummary = {
 
 export type DiscussionAttachment = {
   id: string;
-  public_url: string;
+  public_url: string | null;
+  media_url?: string | null;
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
