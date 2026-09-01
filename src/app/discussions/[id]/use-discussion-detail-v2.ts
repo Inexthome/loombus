@@ -255,7 +255,7 @@ export function useDiscussionDetailV2() {
         supabase
           .from("discussion_attachments")
           .select(
-            "id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order"
+            "id, storage_bucket, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order"
           )
           .eq("discussion_id", id)
           .order("sort_order", { ascending: true })
@@ -294,7 +294,28 @@ export function useDiscussionDetailV2() {
     setDiscussionTags(
       ((tagsResult.data ?? []) as Array<{ tag: string }>).map((row) => row.tag)
     );
-    setDiscussionAttachments((attachmentResult.data ?? []) as DiscussionAttachment[]);
+    const rawAttachments = (attachmentResult.data ?? []) as DiscussionAttachment[];
+    const mediaToken = viewer ? await getAccessToken() : null;
+    const resolvedAttachments = await Promise.all(
+      rawAttachments.map(async (attachment) => {
+        if (attachment.public_url) return { ...attachment, media_url: attachment.public_url };
+        try {
+          const response = await fetch(
+            `/api/discussions/attachments/access?attachmentId=${encodeURIComponent(attachment.id)}`,
+            {
+              headers: mediaToken ? { Authorization: `Bearer ${mediaToken}` } : {},
+              cache: "no-store",
+            }
+          );
+          if (!response.ok) return { ...attachment, media_url: null };
+          const result = (await response.json().catch(() => ({}))) as { url?: string };
+          return { ...attachment, media_url: result.url ?? null };
+        } catch {
+          return { ...attachment, media_url: null };
+        }
+      })
+    );
+    setDiscussionAttachments(resolvedAttachments);
     setRelatedDiscussions(visibleRelated);
     setCurrentUserId(viewer?.id ?? null);
 

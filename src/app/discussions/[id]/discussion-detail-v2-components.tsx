@@ -78,17 +78,19 @@ export function AttachmentGallery({ attachments }: { attachments: DiscussionAtta
   return (
     <section className="discussion-v2-attachments" aria-label="Discussion attachments">
       {attachments.map((attachment) => {
+        const mediaUrl = attachment.media_url ?? mediaUrl;
+        if (!mediaUrl) return null;
         if (attachment.attachment_kind === "image") {
           return (
             <a
               key={attachment.id}
-              href={attachment.public_url}
+              href={mediaUrl}
               target="_blank"
               rel="noreferrer"
               className="discussion-v2-attachment discussion-v2-attachment-image"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={attachment.public_url} alt={attachment.file_name} loading="lazy" />
+              <img src={mediaUrl} alt={attachment.file_name} loading="lazy" />
               <span className="discussion-v2-attachment-meta">
                 <ImageIcon aria-hidden="true" size={16} />
                 <span>{attachment.file_name}</span>
@@ -104,12 +106,12 @@ export function AttachmentGallery({ attachments }: { attachments: DiscussionAtta
                 controls
                 playsInline
                 preload="metadata"
-                src={attachment.public_url}
+                src={mediaUrl}
                 aria-label={`Video attachment: ${attachment.file_name}`}
               >
                 Your browser does not support this video.
               </video>
-              <a href={attachment.public_url} target="_blank" rel="noreferrer" className="discussion-v2-attachment-meta">
+              <a href={mediaUrl} target="_blank" rel="noreferrer" className="discussion-v2-attachment-meta">
                 <PlayCircle aria-hidden="true" size={16} />
                 <span>{attachment.file_name}</span>
                 <span>{formatAttachmentFileSize(attachment.file_size_bytes)}</span>
@@ -121,7 +123,7 @@ export function AttachmentGallery({ attachments }: { attachments: DiscussionAtta
         return (
           <a
             key={attachment.id}
-            href={attachment.public_url}
+            href={mediaUrl}
             target="_blank"
             rel="noreferrer"
             className="discussion-v2-attachment discussion-v2-attachment-file"
