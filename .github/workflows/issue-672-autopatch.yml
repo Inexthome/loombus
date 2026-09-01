@@ -1,0 +1,225 @@
+name: Issue 672 protected media autopatch
+
+on:
+  push:
+    branches:
+      - issue-672-protected-discussion-media
+    paths:
+      - .github/workflows/issue-672-autopatch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: issue-672-protected-discussion-media
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch protected Discussion media clients
+        shell: python
+        run: |
+          from pathlib import Path
+
+          composer_path = Path('src/components/create-discussion-composer.tsx')
+          composer = composer_path.read_text()
+          composer = composer.replace(
+              'const ATTACHMENT_BUCKET = "discussion-attachments";\n',
+              'const ATTACHMENT_BUCKET = "discussion-attachments";\nconst PROTECTED_ATTACHMENT_BUCKET = "discussion-attachments-protected";\n',
+              1,
+          )
+          composer = composer.replace('''    if (attachmentsRestricted) {
+              setAttachmentMessage(
+                "Attachments require Public visibility. Change Future Discussion visibility in Settings."
+              );
+              event.target.value = "";
+              return;
+            }
+''', '', 1)
+          composer = composer.replace('''    if (attachmentsRestricted && contextItems.length > 0) {
+              setMessage(
+                "Remove staged attachments or change Future Discussion visibility to Public in Settings."
+              );
+              setPublishing(false);
+              return;
+            }
+''', '', 1)
+          composer = composer.replace('disabled={attachmentsRestricted}', 'disabled={false}', 1)
+
+          start = composer.index('  async function uploadContext({')
+          end = composer.index('\n\n  async function publishDiscussion', start)
+          replacement = '''  async function uploadContext({
+            discussionId,
+            accessToken,
+            userId,
+          }: {
+            discussionId: string;
+            accessToken: string;
+            userId: string;
+          }): Promise<{ ok: true } | { ok: false; error: string }> {
+            const protectedUpload = attachmentsRestricted;
+            for (const [index, item] of contextItems.entries()) {
+              const extension = getSafeFileName(item.file.name).split(".").pop() || "file";
+              const storagePath = `${userId}/${discussionId}/${crypto.randomUUID()}.${extension}`;
+              const attachmentKind = getAttachmentKindForMimeType(item.file.type);
+              if (!attachmentKind) return { ok: false, error: "Attachment type is not allowed." };
+
+              let storageBucket = ATTACHMENT_BUCKET;
+              let publicUrl: string | null = null;
+
+              if (protectedUpload) {
+                const authorizationResponse = await fetch("/api/discussions/attachments/upload-url", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({ discussionId, storagePath }),
+                });
+                const authorization = await authorizationResponse.json().catch(() => ({}));
+                if (!authorizationResponse.ok || !authorization.token) {
+                  return {
+                    ok: false,
+                    error: authorization.error ?? `Discussion was saved, but ${item.file.name} could not be authorized for upload.`,
+                  };
+                }
+                storageBucket = authorization.bucket ?? PROTECTED_ATTACHMENT_BUCKET;
+                const { error: uploadError } = await supabase.storage
+                  .from(storageBucket)
+                  .uploadToSignedUrl(storagePath, authorization.token, item.file, {
+                    contentType: item.file.type,
+                  });
+                if (uploadError) {
+                  return {
+                    ok: false,
+                    error: `Discussion was saved, but ${item.file.name} could not upload: ${uploadError.message}`,
+                  };
+                }
+              } else {
+                const { error: uploadError } = await supabase.storage
+                  .from(ATTACHMENT_BUCKET)
+                  .upload(storagePath, item.file, {
+                    contentType: item.file.type,
+                    upsert: false,
+                  });
+                if (uploadError) {
+                  return {
+                    ok: false,
+                    error: `Discussion was saved, but ${item.file.name} could not upload: ${uploadError.message}`,
+                  };
+                }
+                publicUrl = supabase.storage.from(ATTACHMENT_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+              }
+
+              const response = await fetch("/api/discussions/attachments", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                  discussionId,
+                  storageBucket,
+                  storagePath,
+                  publicUrl,
+                  fileName: item.file.name,
+                  mimeType: item.file.type,
+                  fileSizeBytes: item.file.size,
+                  sortOrder: index,
+                }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                if (protectedUpload) {
+                  await fetch("/api/discussions/attachments/upload-cleanup", {
+                    method: "DELETE",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ discussionId, storagePath }),
+                  }).catch(() => null);
+                } else {
+                  await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
+                }
+                return {
+                  ok: false,
+                  error: result.error ?? `Discussion was saved, but ${item.file.name} could not be attached.`,
+                };
+              }
+            }
+            return { ok: true };
+          }'''
+          composer = composer[:start] + replacement + composer[end:]
+          composer_path.write_text(composer)
+
+          model_path = Path('src/app/discussions/[id]/discussion-detail-v2-model.ts')
+          model = model_path.read_text()
+          model = model.replace(
+              '  public_url: string;\n',
+              '  public_url: string | null;\n  media_url?: string | null;\n',
+              1,
+          )
+          model_path.write_text(model)
+
+          hook_path = Path('src/app/discussions/[id]/use-discussion-detail-v2.ts')
+          hook = hook_path.read_text()
+          hook = hook.replace(
+              '"id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order"',
+              '"id, storage_bucket, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order"',
+              1,
+          )
+          old = '    setDiscussionAttachments((attachmentResult.data ?? []) as DiscussionAttachment[]);\n'
+          new = '''    const rawAttachments = (attachmentResult.data ?? []) as DiscussionAttachment[];
+            const mediaToken = viewer ? await getAccessToken() : null;
+            const resolvedAttachments = await Promise.all(
+              rawAttachments.map(async (attachment) => {
+                if (attachment.public_url) return { ...attachment, media_url: attachment.public_url };
+                try {
+                  const response = await fetch(
+                    `/api/discussions/attachments/access?attachmentId=${encodeURIComponent(attachment.id)}`,
+                    {
+                      headers: mediaToken ? { Authorization: `Bearer ${mediaToken}` } : {},
+                      cache: "no-store",
+                    }
+                  );
+                  if (!response.ok) return { ...attachment, media_url: null };
+                  const result = (await response.json().catch(() => ({}))) as { url?: string };
+                  return { ...attachment, media_url: result.url ?? null };
+                } catch {
+                  return { ...attachment, media_url: null };
+                }
+              })
+            );
+            setDiscussionAttachments(resolvedAttachments);
+'''
+          if old not in hook:
+              raise SystemExit('attachment state assignment changed; refusing unsafe patch')
+          hook = hook.replace(old, new, 1)
+          hook_path.write_text(hook)
+
+          components_path = Path('src/app/discussions/[id]/discussion-detail-v2-components.tsx')
+          components = components_path.read_text()
+          marker = '      {attachments.map((attachment) => {\n'
+          if marker not in components:
+              raise SystemExit('attachment gallery changed; refusing unsafe patch')
+          components = components.replace(
+              marker,
+              marker + '        const mediaUrl = attachment.media_url ?? attachment.public_url;\n        if (!mediaUrl) return null;\n',
+              1,
+          )
+          components = components.replace('attachment.public_url', 'mediaUrl')
+          components_path.write_text(components)
+
+      - name: Commit client wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/create-discussion-composer.tsx src/app/discussions/'[id]'/discussion-detail-v2-model.ts src/app/discussions/'[id]'/use-discussion-detail-v2.ts src/app/discussions/'[id]'/discussion-detail-v2-components.tsx
+          git diff --cached --check
+          git commit -m "security: wire protected discussion media clients"
+          git push origin HEAD:issue-672-protected-discussion-media
