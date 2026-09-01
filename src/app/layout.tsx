@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: "Loombus, a signal-first platform where ideas move forward" }],
     type: "website",
   },
-  twitter: { card: "summary_large_image", title: siteSocialTitle, description: siteDescription, images: ["/opengraph-image"] },
+  twitter: { card: "summary_large_image", title: siteSocialTitle, description: siteDescription, images: ["/opengraph-image.png"] },
   icons: { icon: "/icon.png", apple: "/apple-icon.png", shortcut: "/favicon.ico" },
 };
 
