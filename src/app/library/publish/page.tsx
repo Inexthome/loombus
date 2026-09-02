@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BookOpen, Loader2, Send, Sparkles, Trash2 } from "lucide-react";
+import { LibraryAuthorCommerceEditor } from "@/components/library/library-author-commerce-editor";
 import { LibraryAuthorEpubUpload } from "@/components/library/library-author-epub-upload";
 import { supabase } from "@/lib/supabase/client";
 
@@ -30,6 +31,9 @@ type PublicationRow = {
   language_code: string;
   isbn: string | null;
   status: "draft" | "published" | "archived";
+  is_free: boolean;
+  price_cents: number | null;
+  currency: string | null;
 };
 
 type AuthorPublication = AuthorPublicationRow & { publication: PublicationRow };
@@ -159,7 +163,7 @@ export default function LibraryPublishPage() {
     const ids = ownershipRows.map((row) => row.publication_id);
     const publicationsResult = await supabase
       .from("library_publications")
-      .select("id, title, subtitle, description, publication_type, author_name, publisher_name, language_code, isbn, status")
+      .select("id, title, subtitle, description, publication_type, author_name, publisher_name, language_code, isbn, status, is_free, price_cents, currency")
       .in("id", ids);
 
     if (publicationsResult.error) {
@@ -377,7 +381,7 @@ export default function LibraryPublishPage() {
           <p className="library-publish-eyebrow">Author Publishing</p>
           <h1>Prepare work for the Loombus Library.</h1>
           <p>
-            Create and refine publication metadata, upload its EPUB, then submit the processed work for review. Drafts remain private; authors cannot directly publish or approve their own work.
+            Create and refine publication metadata, upload its EPUB, choose free or paid access, then submit the processed work for review. Drafts remain private; authors cannot directly publish or approve their own work.
           </p>
         </header>
 
@@ -485,6 +489,15 @@ export default function LibraryPublishPage() {
                 <input value={form.isbn} onChange={(event) => updateField("isbn", event.target.value)} />
               </label>
             </fieldset>
+
+            <LibraryAuthorCommerceEditor
+              publicationId={selected?.publication_id ?? null}
+              editable={Boolean(selected && editable)}
+              isFree={selected?.publication.is_free ?? true}
+              priceCents={selected?.publication.price_cents ?? null}
+              currency={selected?.publication.currency ?? null}
+              onSaved={loadWorkspace}
+            />
 
             <LibraryAuthorEpubUpload
               publicationId={selected?.publication_id ?? null}

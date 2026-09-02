@@ -429,6 +429,110 @@ html[data-loombus-theme="dark"] [data-library-publish-editorial] {
   min-width: 0;
 }
 
+.library-publish-commerce {
+  border-bottom: 1px solid var(--loombus-border);
+  padding: 1.4rem 0;
+}
+
+.library-publish-commerce-heading h3 {
+  margin: 0.35rem 0 0;
+  color: var(--loombus-text);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.library-publish-commerce-copy {
+  max-width: 42rem;
+  margin: 0.7rem 0 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.library-publish-commerce-fields {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.library-publish-commerce-fields:disabled {
+  opacity: 0.68;
+}
+
+.library-publish-commerce-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  border-top: 1px solid var(--loombus-border);
+  padding: 0.9rem 0;
+  cursor: pointer;
+}
+
+.library-publish-commerce-option:last-of-type {
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+.library-publish-commerce-option input {
+  margin-top: 0.18rem;
+  accent-color: var(--library-publish-gold);
+}
+
+.library-publish-commerce-option strong,
+.library-publish-commerce-option small {
+  display: block;
+}
+
+.library-publish-commerce-option strong {
+  color: var(--loombus-text);
+  font-size: 0.82rem;
+}
+
+.library-publish-commerce-option small {
+  margin-top: 0.2rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.library-publish-commerce-price {
+  padding-bottom: 0;
+}
+
+.library-publish-commerce-price-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--loombus-text-muted);
+  font-weight: 800;
+}
+
+.library-publish-commerce-price-input input {
+  border-bottom: 0;
+}
+
+.library-publish-commerce-error,
+.library-publish-commerce-message {
+  margin: 0.75rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.library-publish-commerce-error {
+  color: #c24f5d;
+}
+
+.library-publish-commerce-message {
+  color: var(--loombus-text-muted);
+}
+
+.library-publish-commerce .library-publish-secondary {
+  margin-top: 0.85rem;
+}
+
 /* Flatten the existing publishing tools into the same editorial sequence without changing their behavior. */
 [data-library-publish-editorial] section[aria-labelledby="library-cover-heading"],
 [data-library-publish-editorial] section[aria-label="Bibliographic metadata"],
