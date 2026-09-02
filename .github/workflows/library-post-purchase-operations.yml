@@ -1,0 +1,34 @@
+name: Verify Library post-purchase operations
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/library/commerce/receipt/route.ts"
+      - "src/components/library/library-commerce-center.tsx"
+      - "src/lib/library-commerce-events-server.ts"
+      - "supabase/migrations/**"
+      - "scripts/verification/verify-library-post-purchase-operations.mjs"
+      - ".github/workflows/library-post-purchase-operations.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/app/api/library/commerce/receipt/route.ts"
+      - "src/components/library/library-commerce-center.tsx"
+      - "src/lib/library-commerce-events-server.ts"
+      - "supabase/migrations/**"
+      - "scripts/verification/verify-library-post-purchase-operations.mjs"
+      - ".github/workflows/library-post-purchase-operations.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library post-purchase operations
+        run: node scripts/verification/verify-library-post-purchase-operations.mjs
