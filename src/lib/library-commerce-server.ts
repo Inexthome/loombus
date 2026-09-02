@@ -229,7 +229,6 @@ export async function createLibraryCheckout(input: {
     });
   }
 
-  const reservedFeeBps = Math.round((reservation.platform_fee_cents * 10_000) / reservation.amount_cents);
   const metadata = {
     product: LIBRARY_PRODUCT,
     reservation_id: reservation.id,
@@ -239,7 +238,6 @@ export async function createLibraryCheckout(input: {
     amount_cents: String(reservation.amount_cents),
     currency: reservation.currency,
     platform_fee_cents: String(reservation.platform_fee_cents),
-    platform_fee_bps: String(reservedFeeBps),
   };
 
   const session = await stripe().checkout.sessions.create({
