@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BookOpen, CircleDollarSign, Loader2, ReceiptText, WalletCards } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type LedgerRow = {
@@ -132,7 +132,7 @@ export function LibraryCommerceCenter() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-text-muted)]">{icon}{label}</div><p className="mt-3 text-2xl font-semibold">{value}</p></div>;
 }
 
