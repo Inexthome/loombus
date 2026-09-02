@@ -9,9 +9,9 @@ const LIBRARY_PRODUCT = "loombus_library_book";
 const CHECKOUT_SESSION_MS = 60 * 60 * 1000;
 const LIBRARY_LAUNCH_FEE_BPS = 1500;
 const LIBRARY_STANDARD_FEE_BPS = 2000;
-// The launch rate applies through September 2, 2027. The standard rate begins
-// at 00:00:00 UTC on September 3, 2027, so the cutoff is deterministic globally.
 const LIBRARY_STANDARD_FEE_START_MS = Date.UTC(2027, 8, 3, 0, 0, 0, 0);
+
+type LibraryTaxMode = "external_acknowledged" | "platform_stripe_tax";
 
 type CheckoutReservation = {
   id: string;
@@ -68,12 +68,8 @@ async function ensureNoActiveEntitlement(buyerId: string, publicationId: string)
     .eq("publication_id", publicationId)
     .in("status", ["paid", "disputed"])
     .maybeSingle();
-  if (error) {
-    throw new LibraryCommerceError("Unable to verify Library ownership.", 503, "library_entitlement_check_failed");
-  }
-  if (data?.id) {
-    throw new LibraryCommerceError("You already own this publication.", 409, "library_publication_already_owned");
-  }
+  if (error) throw new LibraryCommerceError("Unable to verify Library ownership.", 503, "library_entitlement_check_failed");
+  if (data?.id) throw new LibraryCommerceError("You already own this publication.", 409, "library_publication_already_owned");
 }
 
 export async function getLibrarySaleOffer(publicationId: string, buyerId: string) {
@@ -86,9 +82,7 @@ export async function getLibrarySaleOffer(publicationId: string, buyerId: string
   if (publicationError || !publication || publication.status !== "published") {
     throw new LibraryCommerceError("This publication is not available for purchase.", 404, "library_publication_unavailable");
   }
-  if (publication.is_free) {
-    throw new LibraryCommerceError("This publication is free to read.", 409, "library_publication_free");
-  }
+  if (publication.is_free) throw new LibraryCommerceError("This publication is free to read.", 409, "library_publication_free");
   if (!Number.isInteger(publication.price_cents) || publication.price_cents < 100 || publication.currency !== "USD") {
     throw new LibraryCommerceError("This publication does not have a valid selling price.", 409, "library_price_invalid");
   }
@@ -138,18 +132,14 @@ async function loadReservation(buyerId: string, publicationId: string) {
     .eq("buyer_id", buyerId)
     .eq("publication_id", publicationId)
     .maybeSingle();
-  if (error) {
-    throw new LibraryCommerceError("Unable to verify Library checkout state.", 503, "library_checkout_reservation_failed");
-  }
+  if (error) throw new LibraryCommerceError("Unable to verify Library checkout state.", 503, "library_checkout_reservation_failed");
   return (data ?? null) as CheckoutReservation | null;
 }
 
 async function deleteReservation(id: string) {
   const admin = getBillingSupabaseAdmin();
   const { error } = await (admin.from("library_book_checkout_reservations") as any).delete().eq("id", id);
-  if (error) {
-    throw new LibraryCommerceError("Unable to reset Library checkout state.", 503, "library_checkout_reservation_cleanup_failed");
-  }
+  if (error) throw new LibraryCommerceError("Unable to reset Library checkout state.", 503, "library_checkout_reservation_cleanup_failed");
 }
 
 async function reserveCheckout(input: {
@@ -191,9 +181,7 @@ async function persistReservationSession(reservationId: string, sessionId: strin
   const { error } = await (admin.from("library_book_checkout_reservations") as any)
     .update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })
     .eq("id", reservationId);
-  if (error) {
-    throw new LibraryCommerceError("Unable to save Library checkout state.", 503, "library_checkout_reservation_persist_failed");
-  }
+  if (error) throw new LibraryCommerceError("Unable to save Library checkout state.", 503, "library_checkout_reservation_persist_failed");
 }
 
 export async function createLibraryCheckout(input: {
@@ -201,6 +189,8 @@ export async function createLibraryCheckout(input: {
   buyerId: string;
   buyerEmail?: string | null;
   origin: string;
+  taxMode: LibraryTaxMode;
+  productTaxCode: string | null;
 }) {
   const offer = await getLibrarySaleOffer(input.publicationId, input.buyerId);
   const platformFeeCents = libraryPlatformFeeCents(offer.amountCents);
@@ -229,6 +219,10 @@ export async function createLibraryCheckout(input: {
     });
   }
 
+  if (input.taxMode === "platform_stripe_tax" && !input.productTaxCode) {
+    throw new LibraryCommerceError("Library tax product classification is required.", 503, "library_tax_code_unconfigured");
+  }
+
   const metadata = {
     product: LIBRARY_PRODUCT,
     reservation_id: reservation.id,
@@ -238,6 +232,7 @@ export async function createLibraryCheckout(input: {
     amount_cents: String(reservation.amount_cents),
     currency: reservation.currency,
     platform_fee_cents: String(reservation.platform_fee_cents),
+    tax_mode: input.taxMode,
   };
 
   const session = await stripe().checkout.sessions.create({
@@ -247,10 +242,17 @@ export async function createLibraryCheckout(input: {
       price_data: {
         currency: "usd",
         unit_amount: reservation.amount_cents,
-        product_data: { name: offer.title, metadata: { publication_id: reservation.publication_id } },
+        product_data: {
+          name: offer.title,
+          metadata: { publication_id: reservation.publication_id },
+          ...(input.taxMode === "platform_stripe_tax" && input.productTaxCode ? { tax_code: input.productTaxCode } : {}),
+        },
       },
       quantity: 1,
     }],
+    ...(input.taxMode === "platform_stripe_tax"
+      ? { automatic_tax: { enabled: true, liability: { type: "self" as const } } }
+      : {}),
     client_reference_id: reservation.buyer_id,
     customer_email: input.buyerEmail ?? undefined,
     success_url: `${input.origin}/library/publication/${encodeURIComponent(reservation.publication_id)}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -264,9 +266,7 @@ export async function createLibraryCheckout(input: {
     },
   }, { idempotencyKey: `loombus-library-book-${reservation.id}` });
 
-  if (!session.url) {
-    throw new LibraryCommerceError("Stripe did not return a Library checkout URL.", 502, "library_checkout_url_missing");
-  }
+  if (!session.url) throw new LibraryCommerceError("Stripe did not return a Library checkout URL.", 502, "library_checkout_url_missing");
   await persistReservationSession(reservation.id, session.id);
   return { url: session.url };
 }
@@ -274,12 +274,10 @@ export async function createLibraryCheckout(input: {
 async function purchaseBySession(sessionId: string) {
   const admin = getBillingSupabaseAdmin();
   const { data, error } = await (admin.from("library_book_purchases") as any)
-    .select("id,buyer_id,publication_id,status")
+    .select("id,buyer_id,publication_id,status,tax_mode,tax_amount_cents,stripe_tax_transfer_reversal_id,tax_withheld_at")
     .eq("stripe_checkout_session_id", sessionId)
     .maybeSingle();
-  if (error) {
-    throw new LibraryCommerceError("Unable to verify Library fulfillment.", 503, "library_purchase_lookup_failed");
-  }
+  if (error) throw new LibraryCommerceError("Unable to verify Library fulfillment.", 503, "library_purchase_lookup_failed");
   return data ?? null;
 }
 
@@ -289,35 +287,93 @@ async function reservationBySession(sessionId: string) {
     .select("id,buyer_id,publication_id,seller_id,amount_cents,currency,platform_fee_cents,stripe_checkout_session_id,checkout_expires_at")
     .eq("stripe_checkout_session_id", sessionId)
     .maybeSingle();
-  if (error) {
-    throw new LibraryCommerceError("Unable to verify Library checkout reservation.", 503, "library_checkout_reservation_lookup_failed");
-  }
+  if (error) throw new LibraryCommerceError("Unable to verify Library checkout reservation.", 503, "library_checkout_reservation_lookup_failed");
   return (data ?? null) as CheckoutReservation | null;
 }
 
-export async function fulfillLibraryCheckoutSession(session: Stripe.Checkout.Session) {
-  if (!isLibraryBookCheckoutSession(session)) return false;
-  const already = await purchaseBySession(session.id);
+function chargeFromPaymentIntent(paymentIntent: Stripe.PaymentIntent | string | null) {
+  if (!paymentIntent || typeof paymentIntent === "string") return null;
+  const charge = paymentIntent.latest_charge;
+  if (!charge || typeof charge === "string") return null;
+  return charge.deleted ? null : charge;
+}
+
+function transferIdFromCharge(charge: Stripe.Charge | null) {
+  if (!charge?.transfer) return null;
+  return typeof charge.transfer === "string" ? charge.transfer : charge.transfer.id;
+}
+
+async function hydrateTaxSession(session: Stripe.Checkout.Session) {
+  if (session.metadata?.tax_mode !== "platform_stripe_tax") return session;
+  return stripe().checkout.sessions.retrieve(session.id, { expand: ["payment_intent.latest_charge"] });
+}
+
+async function withholdPlatformTax(session: Stripe.Checkout.Session, taxAmountCents: number) {
+  if (taxAmountCents <= 0) return { reversalId: null, withheldAt: null };
+  const charge = chargeFromPaymentIntent(session.payment_intent);
+  const transferId = transferIdFromCharge(charge);
+  if (!transferId) {
+    throw new LibraryCommerceError("Library tax withholding could not resolve the destination transfer.", 503, "library_tax_transfer_missing");
+  }
+  const reversal = await stripe().transfers.createReversal(
+    transferId,
+    {
+      amount: taxAmountCents,
+      metadata: {
+        product: LIBRARY_PRODUCT,
+        checkout_session_id: session.id,
+        publication_id: session.metadata?.publication_id ?? "",
+        reason: "platform_tax_withholding",
+      },
+    },
+    { idempotencyKey: `loombus-library-tax-${session.id}` }
+  );
+  return { reversalId: reversal.id, withheldAt: new Date().toISOString() };
+}
+
+export async function fulfillLibraryCheckoutSession(sessionInput: Stripe.Checkout.Session) {
+  if (!isLibraryBookCheckoutSession(sessionInput)) return false;
+  const already = await purchaseBySession(sessionInput.id);
   if (already?.id) return true;
+
+  const session = await hydrateTaxSession(sessionInput);
   if (session.mode !== "payment" || session.payment_status !== "paid") {
     throw new LibraryCommerceError("Library checkout is not paid.", 409, "library_checkout_not_paid");
   }
 
   const reservation = await reservationBySession(session.id);
-  if (!reservation) {
-    throw new LibraryCommerceError("Library checkout reservation is missing.", 409, "library_checkout_reservation_missing");
+  if (!reservation) throw new LibraryCommerceError("Library checkout reservation is missing.", 409, "library_checkout_reservation_missing");
+
+  const taxMode = session.metadata?.tax_mode as LibraryTaxMode | undefined;
+  if (taxMode !== "external_acknowledged" && taxMode !== "platform_stripe_tax") {
+    throw new LibraryCommerceError("Library checkout tax posture is missing or invalid.", 409, "library_checkout_tax_mode_invalid");
   }
+
   if (
     session.metadata?.reservation_id !== reservation.id ||
     session.metadata?.publication_id !== reservation.publication_id ||
     (session.metadata?.buyer_id ?? session.client_reference_id) !== reservation.buyer_id ||
     session.metadata?.seller_id !== reservation.seller_id ||
-    session.amount_total !== reservation.amount_cents ||
+    session.amount_subtotal !== reservation.amount_cents ||
     session.currency?.toUpperCase() !== reservation.currency ||
     Number(session.metadata?.platform_fee_cents) !== reservation.platform_fee_cents
   ) {
     throw new LibraryCommerceError("Library checkout verification failed.", 409, "library_checkout_snapshot_mismatch");
   }
+
+  const automaticTax = session.automatic_tax as { enabled?: boolean; liability?: { type?: string } | null } | null;
+  if (taxMode === "platform_stripe_tax" && (!automaticTax?.enabled || automaticTax.liability?.type !== "self")) {
+    throw new LibraryCommerceError("Library checkout did not use the required platform Stripe Tax liability.", 409, "library_checkout_tax_liability_mismatch");
+  }
+
+  const taxAmountCents = taxMode === "platform_stripe_tax" ? Number(session.total_details?.amount_tax ?? 0) : 0;
+  if (!Number.isInteger(taxAmountCents) || taxAmountCents < 0) {
+    throw new LibraryCommerceError("Library checkout returned an invalid tax amount.", 409, "library_checkout_tax_amount_invalid");
+  }
+
+  const taxWithholding = taxMode === "platform_stripe_tax"
+    ? await withholdPlatformTax(session, taxAmountCents)
+    : { reversalId: null, withheldAt: null };
 
   const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
   const now = new Date().toISOString();
@@ -332,6 +388,10 @@ export async function fulfillLibraryCheckoutSession(session: Stripe.Checkout.Ses
     platform_fee_cents: reservation.platform_fee_cents,
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: paymentIntentId,
+    tax_mode: taxMode,
+    tax_amount_cents: taxAmountCents,
+    stripe_tax_transfer_reversal_id: taxWithholding.reversalId,
+    tax_withheld_at: taxWithholding.withheldAt,
     purchased_at: now,
     updated_at: now,
   });
