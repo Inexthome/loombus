@@ -8,7 +8,9 @@ import {
   ChevronRight,
   Clock3,
   MapPin,
+  MessageCircle,
   RefreshCw,
+  RotateCcw,
   Store,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,7 +43,7 @@ type Payload = {
   error?: string;
 };
 
-type Filter = "upcoming" | "all" | "pending" | ScheduleSource;
+type Filter = "upcoming" | "all" | "pending" | "completed" | "cancelled" | "reschedule" | ScheduleSource;
 
 function sourceLabel(source: ScheduleSource) {
   if (source === "marketplace") return "Marketplace";
@@ -75,6 +77,13 @@ function isPending(status: string) {
   return status === "pending" || status === "time proposed";
 }
 
+function appointmentRequestId(item: ScheduleItem) {
+  return item.id.startsWith("appointment:") ? item.id.slice("appointment:".length) : null;
+}
+
+const itemActionClass =
+  "inline-flex min-h-10 items-center gap-1.5 border-b border-[color:var(--loombus-border)] px-1 text-xs font-semibold transition hover:border-[color:var(--loombus-gold)] hover:text-[color:var(--loombus-gold)] disabled:opacity-50";
+
 export default function UnifiedAppointmentsOverview() {
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [filter, setFilter] = useState<Filter>("upcoming");
@@ -84,11 +93,12 @@ export default function UnifiedAppointmentsOverview() {
   const [liveUpdateWorking, setLiveUpdateWorking] = useState(false);
   const [liveUpdateStartedId, setLiveUpdateStartedId] = useState<string | null>(null);
   const [liveUpdatesAvailable, setLiveUpdatesAvailable] = useState(false);
+  const [rescheduleWorkingId, setRescheduleWorkingId] = useState<string | null>(null);
   const [nativePlatform] = useState(() => getNativePlatform());
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (preserveNotice = false) => {
     setLoading(true);
-    setNotice("");
+    if (!preserveNotice) setNotice("");
     try {
       const response = await scheduleAuthorizedFetch(
         "/api/appointments/unified",
@@ -136,6 +146,9 @@ export default function UnifiedAppointmentsOverview() {
         return startsAt >= currentTime && !["declined", "cancelled", "completed"].includes(item.status);
       }
       if (filter === "pending") return isPending(item.status);
+      if (filter === "completed") return item.status === "completed";
+      if (filter === "cancelled") return item.status === "cancelled" || item.status === "declined";
+      if (filter === "reschedule") return item.status === "time proposed";
       if (filter === "business" || filter === "marketplace" || filter === "room") {
         return item.source === filter;
       }
@@ -166,10 +179,56 @@ export default function UnifiedAppointmentsOverview() {
     }
   }
 
+  async function requestReschedule(item: ScheduleItem) {
+    const requestId = appointmentRequestId(item);
+    if (!requestId || rescheduleWorkingId) return;
+
+    const proposed = window.prompt(
+      "Requested date and time in local format, for example 2026-09-03T14:30"
+    );
+    if (!proposed) return;
+
+    const proposedDate = new Date(proposed);
+    if (!Number.isFinite(proposedDate.getTime())) {
+      setNotice("Choose a valid date and time for the reschedule request.");
+      return;
+    }
+
+    setRescheduleWorkingId(item.id);
+    setNotice("");
+    try {
+      const response = await scheduleAuthorizedFetch(
+        "/api/appointments/request-reschedule",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId,
+            proposedStart: proposedDate.toISOString(),
+          }),
+        },
+        "/appointments"
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to request a new appointment time.");
+      }
+      setNotice("Reschedule request sent. The provider must confirm the new time.");
+      await load(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to request a new appointment time.");
+    } finally {
+      setRescheduleWorkingId(null);
+    }
+  }
+
   const filters: Array<{ key: Filter; label: string }> = [
     { key: "upcoming", label: "Upcoming" },
     { key: "all", label: "All" },
     { key: "pending", label: "Pending" },
+    { key: "reschedule", label: "Reschedule" },
+    { key: "completed", label: "Completed" },
+    { key: "cancelled", label: "Cancelled" },
     { key: "business", label: "Business" },
     { key: "marketplace", label: "Marketplace" },
     { key: "room", label: "Rooms" },
@@ -259,42 +318,72 @@ export default function UnifiedAppointmentsOverview() {
         </div>
       ) : (
         <div className="divide-y divide-[color:var(--loombus-border-muted)] border-t border-[color:var(--loombus-border-muted)]">
-          {visibleItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              className="group flex items-start gap-4 py-5 transition sm:py-6"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center border border-[color:var(--loombus-border)] text-[color:var(--loombus-gold)] [&>svg]:h-5 [&>svg]:w-5">
-                <SourceIcon source={item.source} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <strong className="text-base">{item.title}</strong>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--loombus-gold)]">
-                    {sourceLabel(item.source)}
+          {visibleItems.map((item) => {
+            const requestId = appointmentRequestId(item);
+            return (
+              <article key={item.id} className="flex flex-col gap-4 py-5 sm:py-6 lg:flex-row lg:items-start">
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center border border-[color:var(--loombus-border)] text-[color:var(--loombus-gold)] [&>svg]:h-5 [&>svg]:w-5">
+                    <SourceIcon source={item.source} />
                   </span>
-                  <span className="text-xs font-semibold capitalize text-[color:var(--loombus-text-muted)]">
-                    {item.status}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <strong className="text-base">{item.title}</strong>
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--loombus-gold)]">
+                        {sourceLabel(item.source)}
+                      </span>
+                      <span className="text-xs font-semibold capitalize text-[color:var(--loombus-text-muted)]">
+                        {item.status}
+                      </span>
+                    </span>
+                    <span className="mt-1 block text-sm font-medium text-[color:var(--loombus-text-muted)]">
+                      {item.context}
+                    </span>
+                    <span className="mt-3 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
+                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
+                      {dateRange(item)}
+                    </span>
+                    {item.location ? (
+                      <span className="mt-2 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
+                        {item.location}
+                      </span>
+                    ) : null}
                   </span>
-                </span>
-                <span className="mt-1 block text-sm font-medium text-[color:var(--loombus-text-muted)]">
-                  {item.context}
-                </span>
-                <span className="mt-3 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
-                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
-                  {dateRange(item)}
-                </span>
-                {item.location ? (
-                  <span className="mt-2 flex items-start gap-2 text-sm text-[color:var(--loombus-text-muted)]">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--loombus-gold)]" aria-hidden="true" />
-                    {item.location}
-                  </span>
-                ) : null}
-              </span>
-              <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-[color:var(--loombus-text-subtle)] transition group-hover:text-[color:var(--loombus-gold)]" aria-hidden="true" />
-            </Link>
-          ))}
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 lg:max-w-[25rem] lg:justify-end">
+                  <Link href={item.href} className={itemActionClass}>
+                    View source
+                    <ChevronRight aria-hidden="true" className="h-4 w-4" />
+                  </Link>
+                  {requestId ? (
+                    <>
+                      <Link href="/messages" className={itemActionClass}>
+                        <MessageCircle aria-hidden="true" className="h-4 w-4" />
+                        Message
+                      </Link>
+                      <Link href="/calendar" className={itemActionClass}>
+                        <CalendarClock aria-hidden="true" className="h-4 w-4" />
+                        Calendar
+                      </Link>
+                    </>
+                  ) : null}
+                  {requestId && item.status === "confirmed" ? (
+                    <button
+                      type="button"
+                      disabled={Boolean(rescheduleWorkingId)}
+                      onClick={() => void requestReschedule(item)}
+                      className={itemActionClass}
+                    >
+                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
+                      {rescheduleWorkingId === item.id ? "Requesting…" : "Request new time"}
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
