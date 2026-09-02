@@ -185,9 +185,9 @@ if (hasCompleteStoreBaseline) {
 if (iosVersion !== "1.0.6" || iosBuild !== 2) {
   throw new Error(`Expected iOS release 1.0.6 (2), found ${iosVersion} (${iosBuild}).`);
 }
-if (androidVersionName !== "1.0.6" || androidVersionCode !== 13) {
+if (androidVersionName !== "1.0.6" || androidVersionCode !== 14) {
   throw new Error(
-    `Expected Android release 1.0.6 (13), found ${androidVersionName} (${androidVersionCode}).`
+    `Expected Android release 1.0.6 (14), found ${androidVersionName} (${androidVersionCode}).`
   );
 }
 
