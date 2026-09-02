@@ -1,14 +1,16 @@
 import fs from "node:fs";
 
 const migrationPath = "supabase/migrations/20260823073000_harden_library_unpublished_member_state.sql";
+const commerceMigrationPath = "supabase/migrations/20260902071500_harden_library_checkout_entitlements.sql";
 const boundaryPath = "src/components/library/library-reader-access-boundary.tsx";
 const readerPagePath = "src/app/library/read/[publicationId]/page.tsx";
 
-for (const path of [migrationPath, boundaryPath, readerPagePath]) {
+for (const path of [migrationPath, commerceMigrationPath, boundaryPath, readerPagePath]) {
   if (!fs.existsSync(path)) throw new Error(`Missing Library unpublished hardening file: ${path}`);
 }
 
 const migration = fs.readFileSync(migrationPath, "utf8");
+const commerceMigration = fs.readFileSync(commerceMigrationPath, "utf8");
 const boundary = fs.readFileSync(boundaryPath, "utf8");
 const readerPage = fs.readFileSync(readerPagePath, "utf8");
 
@@ -36,12 +38,27 @@ if (restrictiveCount < 5) {
 for (const fragment of [
   '.from("library_publications")',
   '.eq("id", publicationId)',
-  '.eq("status", "published")',
+  'publication.status !== "published"',
+  'library_current_user_can_access_publication',
+  'purchase_required',
   'This publication is no longer available.',
   'Back to Library',
 ]) {
   if (!boundary.includes(fragment)) {
     throw new Error(`Missing Reader access-boundary contract: ${fragment}`);
+  }
+}
+
+for (const fragment of [
+  'library commerce requires publication access',
+  'as restrictive',
+  'library_current_user_can_access_publication',
+  "publication.status = 'published'",
+  'publication.is_free is true',
+  'profiles.is_admin is true',
+]) {
+  if (!commerceMigration.toLowerCase().includes(fragment.toLowerCase())) {
+    throw new Error(`Missing paid-content access-hardening contract: ${fragment}`);
   }
 }
 
