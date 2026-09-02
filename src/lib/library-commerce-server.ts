@@ -6,6 +6,19 @@ import { getMemberPayoutIdentity, refreshMemberPayoutAccount } from "@/lib/membe
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const LIBRARY_PRODUCT = "loombus_library_book";
+const CHECKOUT_SESSION_MS = 60 * 60 * 1000;
+
+type CheckoutReservation = {
+  id: string;
+  buyer_id: string;
+  publication_id: string;
+  seller_id: string;
+  amount_cents: number;
+  currency: "USD";
+  platform_fee_cents: number;
+  stripe_checkout_session_id: string | null;
+  checkout_expires_at: string;
+};
 
 export class LibraryCommerceError extends Error {
   status: number;
@@ -37,11 +50,7 @@ export function getLibraryPlatformFeeBps() {
   }
   const bps = Number.parseInt(raw, 10);
   if (bps < 0 || bps > 3000) {
-    throw new LibraryCommerceError(
-      "The configured Library platform fee is invalid.",
-      503,
-      "library_platform_fee_invalid"
-    );
+    throw new LibraryCommerceError("The configured Library platform fee is invalid.", 503, "library_platform_fee_invalid");
   }
   return bps;
 }
@@ -52,6 +61,22 @@ export function libraryPlatformFeeCents(amountCents: number) {
 
 export function isLibraryBookCheckoutSession(session: Stripe.Checkout.Session) {
   return session.metadata?.product === LIBRARY_PRODUCT;
+}
+
+async function ensureNoActiveEntitlement(buyerId: string, publicationId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (admin.from("library_book_purchases") as any)
+    .select("id,status")
+    .eq("buyer_id", buyerId)
+    .eq("publication_id", publicationId)
+    .in("status", ["paid", "disputed"])
+    .maybeSingle();
+  if (error) {
+    throw new LibraryCommerceError("Unable to verify Library ownership.", 503, "library_entitlement_check_failed");
+  }
+  if (data?.id) {
+    throw new LibraryCommerceError("You already own this publication.", 409, "library_publication_already_owned");
+  }
 }
 
 export async function getLibrarySaleOffer(publicationId: string, buyerId: string) {
@@ -82,18 +107,7 @@ export async function getLibrarySaleOffer(publicationId: string, buyerId: string
     throw new LibraryCommerceError("Authors already have access to their own publication.", 409, "library_author_purchase_not_required");
   }
 
-  const { data: entitlement, error: entitlementError } = await (admin.from("library_book_purchases") as any)
-    .select("id,status")
-    .eq("buyer_id", buyerId)
-    .eq("publication_id", publicationId)
-    .in("status", ["paid", "disputed"])
-    .maybeSingle();
-  if (entitlementError) {
-    throw new LibraryCommerceError("Unable to verify Library ownership.", 503, "library_entitlement_check_failed");
-  }
-  if (entitlement?.id) {
-    throw new LibraryCommerceError("You already own this publication.", 409, "library_publication_already_owned");
-  }
+  await ensureNoActiveEntitlement(buyerId, publicationId);
 
   let payout = await getMemberPayoutIdentity(ownership.user_id);
   if (payout) payout = await refreshMemberPayoutAccount(ownership.user_id);
@@ -115,6 +129,76 @@ export async function getLibrarySaleOffer(publicationId: string, buyerId: string
   };
 }
 
+function reservationExpired(reservation: CheckoutReservation) {
+  const expiresAt = new Date(reservation.checkout_expires_at).getTime();
+  return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
+}
+
+async function loadReservation(buyerId: string, publicationId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (admin.from("library_book_checkout_reservations") as any)
+    .select("id,buyer_id,publication_id,seller_id,amount_cents,currency,platform_fee_cents,stripe_checkout_session_id,checkout_expires_at")
+    .eq("buyer_id", buyerId)
+    .eq("publication_id", publicationId)
+    .maybeSingle();
+  if (error) {
+    throw new LibraryCommerceError("Unable to verify Library checkout state.", 503, "library_checkout_reservation_failed");
+  }
+  return (data ?? null) as CheckoutReservation | null;
+}
+
+async function deleteReservation(id: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { error } = await (admin.from("library_book_checkout_reservations") as any).delete().eq("id", id);
+  if (error) {
+    throw new LibraryCommerceError("Unable to reset Library checkout state.", 503, "library_checkout_reservation_cleanup_failed");
+  }
+}
+
+async function reserveCheckout(input: {
+  buyerId: string;
+  publicationId: string;
+  sellerId: string;
+  amountCents: number;
+  platformFeeCents: number;
+}) {
+  const admin = getBillingSupabaseAdmin();
+  const existing = await loadReservation(input.buyerId, input.publicationId);
+  if (existing && !reservationExpired(existing)) return existing;
+  if (existing) await deleteReservation(existing.id);
+
+  const checkoutExpiresAt = new Date(Date.now() + CHECKOUT_SESSION_MS).toISOString();
+  const { data, error } = await (admin.from("library_book_checkout_reservations") as any)
+    .insert({
+      buyer_id: input.buyerId,
+      publication_id: input.publicationId,
+      seller_id: input.sellerId,
+      amount_cents: input.amountCents,
+      currency: "USD",
+      platform_fee_cents: input.platformFeeCents,
+      checkout_expires_at: checkoutExpiresAt,
+    })
+    .select("id,buyer_id,publication_id,seller_id,amount_cents,currency,platform_fee_cents,stripe_checkout_session_id,checkout_expires_at")
+    .single();
+
+  if (!error && data) return data as CheckoutReservation;
+  if (error?.code === "23505") {
+    const winner = await loadReservation(input.buyerId, input.publicationId);
+    if (winner && !reservationExpired(winner)) return winner;
+  }
+  throw new LibraryCommerceError("Unable to reserve Library checkout.", 503, "library_checkout_reservation_failed");
+}
+
+async function persistReservationSession(reservationId: string, sessionId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { error } = await (admin.from("library_book_checkout_reservations") as any)
+    .update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })
+    .eq("id", reservationId);
+  if (error) {
+    throw new LibraryCommerceError("Unable to save Library checkout state.", 503, "library_checkout_reservation_persist_failed");
+  }
+}
+
 export async function createLibraryCheckout(input: {
   publicationId: string;
   buyerId: string;
@@ -123,14 +207,40 @@ export async function createLibraryCheckout(input: {
 }) {
   const offer = await getLibrarySaleOffer(input.publicationId, input.buyerId);
   const platformFeeCents = libraryPlatformFeeCents(offer.amountCents);
+  let reservation = await reserveCheckout({
+    buyerId: input.buyerId,
+    publicationId: offer.publicationId,
+    sellerId: offer.sellerId,
+    amountCents: offer.amountCents,
+    platformFeeCents,
+  });
+
+  if (reservation.stripe_checkout_session_id) {
+    const existingSession = await stripe().checkout.sessions.retrieve(reservation.stripe_checkout_session_id);
+    if (existingSession.status === "open" && existingSession.url) return { url: existingSession.url };
+    if (existingSession.status === "complete") {
+      if (existingSession.payment_status === "paid") await fulfillLibraryCheckoutSession(existingSession);
+      throw new LibraryCommerceError("This checkout already completed. Your Library access is being finalized.", 409, "library_checkout_already_completed");
+    }
+    await deleteReservation(reservation.id);
+    reservation = await reserveCheckout({
+      buyerId: input.buyerId,
+      publicationId: offer.publicationId,
+      sellerId: offer.sellerId,
+      amountCents: offer.amountCents,
+      platformFeeCents,
+    });
+  }
+
   const metadata = {
     product: LIBRARY_PRODUCT,
-    publication_id: offer.publicationId,
-    buyer_id: input.buyerId,
-    seller_id: offer.sellerId,
-    amount_cents: String(offer.amountCents),
-    currency: "USD",
-    platform_fee_cents: String(platformFeeCents),
+    reservation_id: reservation.id,
+    publication_id: reservation.publication_id,
+    buyer_id: reservation.buyer_id,
+    seller_id: reservation.seller_id,
+    amount_cents: String(reservation.amount_cents),
+    currency: reservation.currency,
+    platform_fee_cents: String(reservation.platform_fee_cents),
   };
 
   const session = await stripe().checkout.sessions.create({
@@ -138,81 +248,104 @@ export async function createLibraryCheckout(input: {
     payment_method_types: ["card"],
     line_items: [{
       price_data: {
-        currency: offer.currency,
-        unit_amount: offer.amountCents,
-        product_data: { name: offer.title, metadata: { publication_id: offer.publicationId } },
+        currency: "usd",
+        unit_amount: reservation.amount_cents,
+        product_data: { name: offer.title, metadata: { publication_id: reservation.publication_id } },
       },
       quantity: 1,
     }],
-    client_reference_id: input.buyerId,
+    client_reference_id: reservation.buyer_id,
     customer_email: input.buyerEmail ?? undefined,
-    success_url: `${input.origin}/library/publication/${encodeURIComponent(offer.publicationId)}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${input.origin}/library/publication/${encodeURIComponent(offer.publicationId)}?checkout=cancelled`,
+    success_url: `${input.origin}/library/publication/${encodeURIComponent(reservation.publication_id)}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${input.origin}/library/publication/${encodeURIComponent(reservation.publication_id)}?checkout=cancelled`,
+    expires_at: Math.floor(new Date(reservation.checkout_expires_at).getTime() / 1000),
     metadata,
     payment_intent_data: {
       metadata,
-      application_fee_amount: platformFeeCents,
+      application_fee_amount: reservation.platform_fee_cents,
       transfer_data: { destination: offer.stripeAccountId },
     },
-  }, {
-    idempotencyKey: `loombus-library-book:${input.buyerId}:${offer.publicationId}:${offer.amountCents}`,
-  });
+  }, { idempotencyKey: `loombus-library-book-${reservation.id}` });
 
   if (!session.url) {
     throw new LibraryCommerceError("Stripe did not return a Library checkout URL.", 502, "library_checkout_url_missing");
   }
+  await persistReservationSession(reservation.id, session.id);
   return { url: session.url };
+}
+
+async function purchaseBySession(sessionId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (admin.from("library_book_purchases") as any)
+    .select("id,buyer_id,publication_id,status")
+    .eq("stripe_checkout_session_id", sessionId)
+    .maybeSingle();
+  if (error) {
+    throw new LibraryCommerceError("Unable to verify Library fulfillment.", 503, "library_purchase_lookup_failed");
+  }
+  return data ?? null;
+}
+
+async function reservationBySession(sessionId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (admin.from("library_book_checkout_reservations") as any)
+    .select("id,buyer_id,publication_id,seller_id,amount_cents,currency,platform_fee_cents,stripe_checkout_session_id,checkout_expires_at")
+    .eq("stripe_checkout_session_id", sessionId)
+    .maybeSingle();
+  if (error) {
+    throw new LibraryCommerceError("Unable to verify Library checkout reservation.", 503, "library_checkout_reservation_lookup_failed");
+  }
+  return (data ?? null) as CheckoutReservation | null;
 }
 
 export async function fulfillLibraryCheckoutSession(session: Stripe.Checkout.Session) {
   if (!isLibraryBookCheckoutSession(session)) return false;
+  const already = await purchaseBySession(session.id);
+  if (already?.id) return true;
   if (session.mode !== "payment" || session.payment_status !== "paid") {
     throw new LibraryCommerceError("Library checkout is not paid.", 409, "library_checkout_not_paid");
   }
 
-  const publicationId = session.metadata?.publication_id;
-  const buyerId = session.metadata?.buyer_id ?? session.client_reference_id ?? null;
-  const sellerId = session.metadata?.seller_id;
-  if (!publicationId || !buyerId || !sellerId) {
-    throw new LibraryCommerceError("Library checkout metadata is incomplete.", 409, "library_checkout_metadata_invalid");
+  const reservation = await reservationBySession(session.id);
+  if (!reservation) {
+    throw new LibraryCommerceError("Library checkout reservation is missing.", 409, "library_checkout_reservation_missing");
   }
-
-  const admin = getBillingSupabaseAdmin();
-  const { data: publication, error: publicationError } = await (admin.from("library_publications") as any)
-    .select("id,status,is_free,price_cents,currency")
-    .eq("id", publicationId)
-    .maybeSingle();
-  if (publicationError || !publication || publication.is_free || publication.currency !== "USD") {
-    throw new LibraryCommerceError("Library checkout no longer matches a paid publication.", 409, "library_checkout_publication_invalid");
-  }
-
-  const expectedAmount = Number(session.metadata?.amount_cents);
-  const expectedFee = Number(session.metadata?.platform_fee_cents);
-  if (!Number.isInteger(expectedAmount) || expectedAmount !== session.amount_total || expectedAmount !== publication.price_cents) {
-    throw new LibraryCommerceError("Library checkout amount verification failed.", 409, "library_checkout_amount_mismatch");
-  }
-  if (!Number.isInteger(expectedFee) || expectedFee < 0 || expectedFee > expectedAmount) {
-    throw new LibraryCommerceError("Library checkout fee verification failed.", 409, "library_checkout_fee_mismatch");
+  if (
+    session.metadata?.reservation_id !== reservation.id ||
+    session.metadata?.publication_id !== reservation.publication_id ||
+    (session.metadata?.buyer_id ?? session.client_reference_id) !== reservation.buyer_id ||
+    session.metadata?.seller_id !== reservation.seller_id ||
+    session.amount_total !== reservation.amount_cents ||
+    session.currency?.toUpperCase() !== reservation.currency ||
+    Number(session.metadata?.platform_fee_cents) !== reservation.platform_fee_cents
+  ) {
+    throw new LibraryCommerceError("Library checkout verification failed.", 409, "library_checkout_snapshot_mismatch");
   }
 
   const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
   const now = new Date().toISOString();
-  const { error } = await (admin.from("library_book_purchases") as any).upsert({
-    buyer_id: buyerId,
-    publication_id: publicationId,
-    seller_id: sellerId,
+  const admin = getBillingSupabaseAdmin();
+  const { error } = await (admin.from("library_book_purchases") as any).insert({
+    buyer_id: reservation.buyer_id,
+    publication_id: reservation.publication_id,
+    seller_id: reservation.seller_id,
     status: "paid",
-    amount_cents: expectedAmount,
-    currency: "USD",
-    platform_fee_cents: expectedFee,
+    amount_cents: reservation.amount_cents,
+    currency: reservation.currency,
+    platform_fee_cents: reservation.platform_fee_cents,
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: paymentIntentId,
     purchased_at: now,
     updated_at: now,
-  }, { onConflict: "stripe_checkout_session_id" });
+  });
   if (error) {
+    if (error.code === "23505") {
+      const concurrent = await purchaseBySession(session.id);
+      if (concurrent?.id) return true;
+    }
     throw new LibraryCommerceError(`Unable to fulfill Library purchase: ${error.message}`, 503, "library_purchase_fulfillment_failed");
   }
+  await deleteReservation(reservation.id);
   return true;
 }
 
