@@ -89,10 +89,14 @@ function rpcPayload(form: DraftForm) {
   };
 }
 
+function statusLabel(status: SubmissionStatus) {
+  return status.replace("_", " ");
+}
+
 function authorStatusLabel(row: AuthorPublication) {
-  if (row.retired_at) return "unpublished";
-  if (row.published_at) return "published";
-  return row.submission_status.replace("_", " ");
+  if (row.publication.status === "published") return "published";
+  if (row.publication.status === "archived") return "unpublished";
+  return statusLabel(row.submission_status);
 }
 
 export default function LibraryPublishPage() {
@@ -110,88 +114,90 @@ export default function LibraryPublishPage() {
     [rows, selectedId]
   );
 
-  const editable = Boolean(
-    selected &&
-      selected.publication.status === "draft" &&
-      ["draft", "changes_requested"].includes(selected.submission_status)
-  );
+  const editable = !selected || selected.submission_status === "draft" || selected.submission_status === "changes_requested";
   const deletable = Boolean(
-    selected &&
-      !selected.published_at &&
-      !selected.retired_at &&
-      ["draft", "changes_requested", "rejected"].includes(selected.submission_status)
+    selected
+      && selected.publication.status === "draft"
+      && !selected.published_at
+      && ["draft", "changes_requested", "rejected"].includes(selected.submission_status)
   );
-  const retirable = Boolean(selected && !selected.published_at && selected.publication.status === "archived" && !selected.retired_at);
+  const retirable = Boolean(
+    selected
+      && selected.publication.status === "archived"
+      && selected.published_at
+      && !selected.retired_at
+  );
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const auth = await supabase.auth.getUser();
-    if (!auth.data.user) {
+
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+    if (userError || !userResult.user) {
       setRows([]);
-      setSelectedId(null);
       setLoading(false);
-      setError("Sign in to manage Library publishing.");
+      setError("Sign in to manage Library publications.");
       return;
     }
 
-    const authorResult = await supabase
+    const ownershipResult = await supabase
       .from("library_author_publications")
-      .select("publication_id,submission_status,submitted_at,reviewed_at,review_note,published_at,retired_at,updated_at")
+      .select("publication_id, submission_status, submitted_at, reviewed_at, review_note, published_at, retired_at, updated_at")
       .is("retired_at", null)
       .order("updated_at", { ascending: false });
 
-    if (authorResult.error) {
-      setRows([]);
+    if (ownershipResult.error) {
       setLoading(false);
-      setError("Unable to load your Library publications.");
+      setError("Unable to load your publishing workspace.");
       return;
     }
 
-    const authorRows = (authorResult.data ?? []) as AuthorPublicationRow[];
-    if (!authorRows.length) {
+    const ownershipRows = (ownershipResult.data ?? []) as AuthorPublicationRow[];
+    if (!ownershipRows.length) {
       setRows([]);
       setSelectedId(null);
+      setForm(emptyForm);
       setLoading(false);
       return;
     }
 
-    const publicationIds = authorRows.map((row) => row.publication_id);
-    const publicationResult = await supabase
+    const ids = ownershipRows.map((row) => row.publication_id);
+    const publicationsResult = await supabase
       .from("library_publications")
-      .select("id,title,subtitle,description,publication_type,author_name,publisher_name,language_code,isbn,status,is_free,price_cents,currency")
-      .in("id", publicationIds);
+      .select("id, title, subtitle, description, publication_type, author_name, publisher_name, language_code, isbn, status, is_free, price_cents, currency")
+      .in("id", ids);
 
-    if (publicationResult.error) {
-      setRows([]);
+    if (publicationsResult.error) {
       setLoading(false);
-      setError("Unable to load publication metadata.");
+      setError("Unable to load your draft metadata.");
       return;
     }
 
-    const publications = new Map(
-      ((publicationResult.data ?? []) as PublicationRow[]).map((publication) => [publication.id, publication])
+    const publicationMap = new Map(
+      ((publicationsResult.data ?? []) as PublicationRow[]).map((publication) => [publication.id, publication])
     );
-    const nextRows = authorRows.flatMap((authorRow) => {
-      const publication = publications.get(authorRow.publication_id);
-      return publication ? [{ ...authorRow, publication }] : [];
-    });
-    setRows(nextRows);
+    const combined = ownershipRows
+      .map((ownership) => {
+        const publication = publicationMap.get(ownership.publication_id);
+        return publication ? { ...ownership, publication } : null;
+      })
+      .filter((row): row is AuthorPublication => Boolean(row));
 
-    const nextSelectedId = selectedId && nextRows.some((row) => row.publication_id === selectedId)
-      ? selectedId
-      : nextRows[0]?.publication_id ?? null;
-    setSelectedId(nextSelectedId);
-    const nextSelected = nextRows.find((row) => row.publication_id === nextSelectedId) ?? null;
-    setForm(nextSelected ? formFromPublication(nextSelected.publication) : emptyForm);
+    setRows(combined);
+    setSelectedId((current) => {
+      const nextId = current && combined.some((row) => row.publication_id === current)
+        ? current
+        : combined[0]?.publication_id ?? null;
+      const next = combined.find((row) => row.publication_id === nextId);
+      setForm(next ? formFromPublication(next.publication) : emptyForm);
+      return nextId;
+    });
     setLoading(false);
-  }, [selectedId]);
+  }, []);
 
   useEffect(() => {
     void loadWorkspace();
-    // Initial workspace hydration only; explicit actions reload the workspace.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadWorkspace]);
 
   function choosePublication(row: AuthorPublication) {
     setSelectedId(row.publication_id);
@@ -211,81 +217,85 @@ export default function LibraryPublishPage() {
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
-    setContentReady(false);
+    if (selected) setContentReady(false);
   }
 
   async function saveDraft() {
-    if (saving) return;
     if (!form.title.trim()) {
-      setError("Add a title before saving this publication.");
+      setError("Add a title before saving.");
       return;
     }
 
     setSaving(true);
     setMessage(null);
     setError(null);
-    try {
-      if (selected) {
-        const result = await supabase.rpc("update_library_author_publication", {
-          p_publication_id: selected.publication_id,
-          ...rpcPayload(form),
-        });
-        if (result.error) throw result.error;
-        setMessage("Publication draft saved.");
-      } else {
-        const result = await supabase.rpc("create_library_author_publication", rpcPayload(form));
-        if (result.error) throw result.error;
-        const createdId = typeof result.data === "string" ? result.data : null;
-        if (createdId) setSelectedId(createdId);
-        setMessage("Private publication draft created.");
+
+    if (!selectedId) {
+      const result = await supabase.rpc("create_library_author_draft", rpcPayload(form));
+      if (result.error || !result.data) {
+        setError("Unable to create this draft.");
+        setSaving(false);
+        return;
+      }
+      setSelectedId(result.data as string);
+      setMessage("Draft created. It is private until Loombus approves and publishes it.");
+    } else {
+      const result = await supabase.rpc("update_library_author_draft", {
+        p_publication_id: selectedId,
+        ...rpcPayload(form),
+      });
+      if (result.error) {
+        setError("Unable to save this draft in its current review state.");
+        setSaving(false);
+        return;
       }
       setContentReady(false);
-      await loadWorkspace();
-    } catch (saveError) {
-      console.error("Unable to save Library publication.", saveError);
-      setError("Unable to save this publication in its current state.");
-    } finally {
-      setSaving(false);
+      setMessage("Draft saved. Reconfirm final proofing after submit-relevant changes.");
     }
+
+    await loadWorkspace();
+    setSaving(false);
   }
 
   async function submitForReview() {
-    if (!selected || !editable || !contentReady || saving) return;
-    if (!form.title.trim()) {
-      setError("Add a title before submitting this publication.");
+    if (!selected || !editable) return;
+    if (!contentReady) {
+      setError("Upload and process an EPUB before submitting, then review the current Reader proof and complete final preflight.");
       return;
     }
 
     setSaving(true);
     setMessage(null);
     setError(null);
-    try {
-      const saveResult = await supabase.rpc("update_library_author_publication", {
-        p_publication_id: selected.publication_id,
-        ...rpcPayload(form),
-      });
-      if (saveResult.error) throw saveResult.error;
 
-      const submitResult = await supabase.rpc("submit_library_author_publication", {
-        p_publication_id: selected.publication_id,
-      });
-      if (submitResult.error) throw submitResult.error;
-
-      setContentReady(false);
-      await loadWorkspace();
-      setMessage("Publication submitted for Loombus review.");
-    } catch (submitError) {
-      console.error("Unable to submit Library publication.", submitError);
-      setError("Unable to submit this publication. Review the current EPUB proof and complete final preflight before trying again.");
-    } finally {
+    const saveResult = await supabase.rpc("update_library_author_draft", {
+      p_publication_id: selected.publication_id,
+      ...rpcPayload(form),
+    });
+    if (saveResult.error) {
+      setError("Save the draft successfully before submitting it.");
       setSaving(false);
+      return;
     }
+
+    const submitResult = await supabase.rpc("submit_library_author_publication", {
+      p_publication_id: selected.publication_id,
+    });
+    if (submitResult.error) {
+      setError("Unable to submit this publication for review. Confirm its current EPUB proof and final preflight are complete.");
+      setSaving(false);
+      return;
+    }
+
+    setMessage("Submitted for Loombus review. Submission does not publish the work automatically.");
+    await loadWorkspace();
+    setSaving(false);
   }
 
   async function deletePublication() {
     if (!selected || !deletable || saving) return;
     const confirmed = window.confirm(
-      `Permanently delete “${selected.publication.title}”? This is allowed only because it has never been published. This action cannot be undone.`
+      `Delete “${selected.publication.title}”? This permanently removes this never-published publication, its processed sections, and its private EPUB. This cannot be undone.`
     );
     if (!confirmed) return;
 
@@ -360,8 +370,14 @@ export default function LibraryPublishPage() {
     <main data-library-publish-editorial className="library-publish-page">
       <div className="library-publish-shell">
         <div className="library-publish-topbar">
-          <Link href="/library" className="library-publish-back"><ArrowLeft aria-hidden="true" />Library</Link>
-          <button type="button" onClick={startNewDraft} className="library-publish-new"><Sparkles aria-hidden="true" />New publication</button>
+          <Link href="/library" className="library-publish-back">
+            <ArrowLeft aria-hidden="true" />
+            Library
+          </Link>
+          <button type="button" onClick={startNewDraft} className="library-publish-new">
+            <Sparkles aria-hidden="true" />
+            New publication
+          </button>
         </div>
 
         <header className="library-publish-header">
@@ -375,7 +391,10 @@ export default function LibraryPublishPage() {
 
         <div className="library-publish-workspace">
           <aside className="library-publish-rail" aria-labelledby="library-publish-list-heading">
-            <div className="library-publish-rail-heading"><div><p className="library-publish-eyebrow">Your work</p><h2 id="library-publish-list-heading">Publications</h2></div>{loading ? <Loader2 className="library-publish-spinner" aria-label="Loading publications" /> : null}</div>
+            <div className="library-publish-rail-heading">
+              <div><p className="library-publish-eyebrow">Your work</p><h2 id="library-publish-list-heading">Publications</h2></div>
+              {loading ? <Loader2 className="library-publish-spinner" aria-label="Loading publications" /> : null}
+            </div>
             {!loading && !rows.length ? <p className="library-publish-empty">No author publications yet. Create your first private draft.</p> : null}
             <div className="library-publish-list" role="list">
               {rows.map((row) => (
@@ -416,9 +435,7 @@ export default function LibraryPublishPage() {
 
             <LibraryAuthorEpubUpload publicationId={selected?.publication_id ?? null} editable={Boolean(selected && editable)} published={selected?.publication.status === "published"} onReadyChange={setContentReady} />
 
-            {selected && !editable ? (
-              <p className="library-publish-lock-note">{selected.publication.status === "published" ? "This publication is published in the Loombus Library and is locked from author-side draft editing." : selected.publication.status === "archived" ? "This publication is currently unpublished. You may remove it from your publishing workspace; Loombus will preserve historical references so prior Library activity does not break." : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}</p>
-            ) : null}
+            {selected && !editable ? <p className="library-publish-lock-note">{selected.publication.status === "published" ? "This publication is published in the Loombus Library and is locked from author-side draft editing." : selected.publication.status === "archived" ? "This publication is currently unpublished. You may remove it from your publishing workspace; Loombus will preserve historical references so prior Library activity does not break." : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}</p> : null}
 
             <footer className="library-publish-actions">
               <div className="library-publish-secondary-actions">
