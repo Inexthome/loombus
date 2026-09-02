@@ -127,7 +127,7 @@ export function LibraryAuthorCommerceEditor({
   );
   const canEditDraftCommerce = Boolean(publicationId && editable && !isPublished);
   const canEditPublishedPrice = Boolean(publicationId && isPublished && !isFree);
-  const canConfigureNewDraft = Boolean(!publicationId && editable && !isPublished);
+  const canConfigureNewDraft = Boolean(!publicationId && !isPublished);
 
   function chooseAccessMode(next: "free" | "paid") {
     setAccessMode(next);
@@ -215,7 +215,7 @@ export function LibraryAuthorCommerceEditor({
             : "Free publications are readable by Library members. Paid publications use verified Stripe checkout and unlock permanent access on the buyer’s Loombus account."}
       </p>
 
-      <fieldset disabled={saving || isPublished || (!publicationId && !editable)} className="library-publish-commerce-fields">
+      <fieldset disabled={saving || isPublished || (!publicationId && !canConfigureNewDraft)} className="library-publish-commerce-fields">
         <label className="library-publish-commerce-option">
           <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "free"} onChange={() => chooseAccessMode("free")} />
           <span><strong>Free</strong><small>Readers can access the complete publication at no cost.</small></span>
@@ -237,7 +237,7 @@ export function LibraryAuthorCommerceEditor({
               onChange={(event) => updatePrice(event.target.value)}
               placeholder="9.99"
               aria-label="Publication price in US dollars"
-              disabled={saving || (isPublished && isFree) || (!isPublished && !editable)}
+              disabled={saving || (isPublished && isFree) || (!isPublished && publicationId !== null && !editable)}
             />
           </span>
         </label>
