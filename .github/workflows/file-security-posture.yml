@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   verify:
@@ -29,4 +30,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify file security posture
+        id: verify
+        continue-on-error: true
         run: node scripts/verification/verify-file-security-posture.mjs
+      - name: Surface inventory diagnostics
+        if: steps.verify.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- file-security-inventory-diagnostic -->';
+            const report = fs.existsSync('.file-security-upload-inventory.txt')
+              ? fs.readFileSync('.file-security-upload-inventory.txt', 'utf8')
+              : 'Verification failed before the upload inventory report was written.';
+            const body = `${marker}\n### File security inventory diagnostic\n\n\`\`\`text\n${report}\n\`\`\``;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+      - name: Fail verification
+        if: steps.verify.outcome == 'failure'
+        run: exit 1
