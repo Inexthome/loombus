@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     let charge: Stripe.Charge | null = null;
     if (typeof paymentIntent.latest_charge === "string") {
       charge = await stripeClient.charges.retrieve(paymentIntent.latest_charge);
-    } else if (paymentIntent.latest_charge && !paymentIntent.latest_charge.deleted) {
+    } else if (paymentIntent.latest_charge) {
       charge = paymentIntent.latest_charge;
     }
 
