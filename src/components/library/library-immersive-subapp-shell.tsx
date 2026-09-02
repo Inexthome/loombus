@@ -44,6 +44,7 @@ const MORE_TARGETS: Array<{ label: string; view?: LibraryViewTarget; href?: stri
   { label: "Authors", view: "Authors" },
   { label: "Research", href: "/library/research" },
   { label: "My Publications", href: "/library/publish" },
+  { label: "Purchases & Sales", href: "/library/commerce" },
 ];
 
 function getStoredAppearance(): AppearanceMode {
