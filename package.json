@@ -16,6 +16,7 @@
     "verify:mobile-permissions": "node scripts/verification/verify-mobile-permissions.mjs",
     "verify:mobile-release-hardening": "node scripts/verification/verify-mobile-release-hardening.mjs",
     "verify:mobile-release-metadata": "node scripts/verification/verify-mobile-release-metadata.mjs",
+    "verify:file-security": "node scripts/verification/verify-file-security-posture.mjs",
     "verify:teen-safety": "node --import ./scripts/teen-safety-vercel-bypass.mjs --import ./scripts/teen-safety-http-throttle.mjs scripts/verify-teen-safety-production.mjs",
     "cap": "cap",
     "cap:sync": "cap sync && node scripts/mobile/patch-ios-google-signin-package.mjs",

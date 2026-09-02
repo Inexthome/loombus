@@ -4,6 +4,7 @@ import {
   PublicPolicyPage,
   type PublicPolicySection,
 } from "@/components/public-policy-page";
+import { FILE_SECURITY_POSTURE } from "@/lib/file-security-posture";
 
 const supportEmail = "support@loombus.com";
 
@@ -204,7 +205,7 @@ const sections: PublicPolicySection[] = [
       <>verify the sender, file type, destination, payment request, and claimed organization independently;</>,
       <>do not enable macros, install software, grant remote access, or enter credentials after following an untrusted file or link;</>,
       <>report malware, phishing, credential collection, non-consensual imagery, child exploitation material, or dangerous files immediately;</>,
-      <>remember that file scanning and content review cannot guarantee a file is safe.</>,
+      <>{FILE_SECURITY_POSTURE.disclosure}</>,
     ],
   },
   {
@@ -418,7 +419,7 @@ export default function SafetyPage() {
       }
       sections={sections}
       effectiveDate="July 18, 2026"
-      reviewedDate="July 18, 2026"
+      reviewedDate="September 1, 2026"
     />
   );
 }
