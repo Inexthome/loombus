@@ -10,9 +10,13 @@ type ProfileAccess = {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ATTACHMENT_URL_TTL_SECONDS = 5 * 60;
 
 function jsonError(message: string, status: number, code?: string) {
-  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
+  return NextResponse.json(code ? { error: message, code } : { error: message }, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 function getSupabaseForRequest(request: NextRequest) {
@@ -26,6 +30,15 @@ function getSupabaseForRequest(request: NextRequest) {
       global: { headers: authorization ? { Authorization: authorization } : {} },
     }
   );
+}
+
+function getServiceSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function isValidUuid(value: unknown): value is string {
@@ -48,7 +61,9 @@ async function getCurrentUser(supabase: any) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const enforcement = getAccountEnforcementResult((profile ?? null) as ProfileAccess | null);
+  const enforcement = getAccountEnforcementResult(
+    (profile ?? null) as ProfileAccess | null
+  );
 
   if (!enforcement.allowed) {
     return {
@@ -73,7 +88,6 @@ export async function GET(request: NextRequest) {
   }
 
   const conversationId = new URL(request.url).searchParams.get("id");
-
   if (!isValidUuid(conversationId)) {
     return jsonError("Invalid conversation id.", 400);
   }
@@ -85,13 +99,8 @@ export async function GET(request: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (membershipError) {
-    return jsonError(membershipError.message, 500);
-  }
-
-  if (!membership) {
-    return jsonError("Conversation not found.", 404);
-  }
+  if (membershipError) return jsonError(membershipError.message, 500);
+  if (!membership) return jsonError("Conversation not found.", 404);
 
   const { data: conversation, error: conversationError } = await supabase
     .from("private_conversations")
@@ -99,22 +108,15 @@ export async function GET(request: NextRequest) {
     .eq("id", conversationId)
     .maybeSingle();
 
-  if (conversationError) {
-    return jsonError(conversationError.message, 500);
-  }
-
-  if (!conversation) {
-    return jsonError("Conversation not found.", 404);
-  }
+  if (conversationError) return jsonError(conversationError.message, 500);
+  if (!conversation) return jsonError("Conversation not found.", 404);
 
   const { data: members, error: membersError } = await supabase
     .from("private_conversation_members")
     .select("conversation_id, user_id, joined_at, archived_at, deleted_at")
     .eq("conversation_id", conversationId);
 
-  if (membersError) {
-    return jsonError(membersError.message, 500);
-  }
+  if (membersError) return jsonError(membersError.message, 500);
 
   const otherUserIds = [
     ...new Set(
@@ -139,9 +141,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: true })
     .limit(200);
 
-  if (messagesError) {
-    return jsonError(messagesError.message, 500);
-  }
+  if (messagesError) return jsonError(messagesError.message, 500);
 
   const messageRows = (messages ?? []) as any[];
   const messageIds = messageRows.map((message) => message.id);
@@ -155,67 +155,84 @@ export async function GET(request: NextRequest) {
           .order("sort_order", { ascending: true })
       : { data: [], error: null };
 
-  if (attachmentsError) {
-    return jsonError(attachmentsError.message, 500);
+  if (attachmentsError) return jsonError(attachmentsError.message, 500);
+
+  const service = getServiceSupabase();
+  if ((attachments ?? []).length > 0 && !service) {
+    return jsonError("Private attachment delivery is not configured.", 503);
   }
 
   const attachmentMap = new Map<string, any[]>();
-
   for (const attachment of attachments ?? []) {
+    let signedUrl: string | null = null;
+    if (service) {
+      const signed = await service.storage
+        .from(attachment.storage_bucket)
+        .createSignedUrl(attachment.storage_path, ATTACHMENT_URL_TTL_SECONDS);
+      signedUrl = signed.error ? null : signed.data?.signedUrl ?? null;
+    }
+
     const existing = attachmentMap.get(attachment.message_id) ?? [];
-    existing.push(attachment);
+    existing.push({ ...attachment, authorized_url: signedUrl });
     attachmentMap.set(attachment.message_id, existing);
   }
 
-  return NextResponse.json({
-    conversation: {
-      id: conversation.id,
-      createdBy: conversation.created_by,
-      createdAt: conversation.created_at,
-      updatedAt: conversation.updated_at,
-      lastMessageAt: conversation.last_message_at,
-      isSystem: conversation.is_system,
-      currentUserState: {
-        joinedAt: membership.joined_at,
-        lastReadMessageId: membership.last_read_message_id,
-        lastReadAt: membership.last_read_at,
-        archivedAt: membership.archived_at,
-        deletedAt: membership.deleted_at,
-        mutedAt: membership.muted_at,
-      },
-      members: ((members ?? []) as any[]).map((member) => ({
-        userId: member.user_id,
-        joinedAt: member.joined_at,
-        archivedAt: member.archived_at,
-        deletedAt: member.deleted_at,
-      })),
-      otherProfiles: profiles ?? [],
-    },
-    messages: messageRows.map((message) => ({
-      id: message.id,
-      conversationId: message.conversation_id,
-      senderId: message.sender_id,
-      messageType: message.message_type,
-      body: message.deleted_by_sender ? "" : message.body,
-      createdAt: message.created_at,
-      editedAt: message.edited_at,
-      deletedBySender: message.deleted_by_sender,
-      readByRecipientAt: message.read_by_recipient_at,
-      attachments: (attachmentMap.get(message.id) ?? []).map((attachment) => ({
-        id: attachment.id,
-        messageId: attachment.message_id,
-        conversationId: attachment.conversation_id,
-        userId: attachment.user_id,
-        storageBucket: attachment.storage_bucket,
-        storagePath: attachment.storage_path,
-        publicUrl: attachment.public_url,
-        fileName: attachment.file_name,
-        mimeType: attachment.mime_type,
-        fileSizeBytes: attachment.file_size_bytes,
-        attachmentKind: attachment.attachment_kind,
-        sortOrder: attachment.sort_order,
-        createdAt: attachment.created_at,
-      })),
+  const responseMessages = messageRows.map((message) => ({
+    id: message.id,
+    conversationId: message.conversation_id,
+    senderId: message.sender_id,
+    messageType: message.message_type,
+    body: message.deleted_by_sender ? "" : message.body,
+    createdAt: message.created_at,
+    editedAt: message.edited_at,
+    deletedBySender: message.deleted_by_sender,
+    readByRecipientAt: message.read_by_recipient_at,
+    attachments: (attachmentMap.get(message.id) ?? []).map((attachment) => ({
+      id: attachment.id,
+      messageId: attachment.message_id,
+      conversationId: attachment.conversation_id,
+      userId: attachment.user_id,
+      storageBucket: attachment.storage_bucket,
+      storagePath: attachment.storage_path,
+      // Keep the existing response field for web/mobile compatibility, but its
+      // value is now a short-lived URL minted only after membership authorization.
+      publicUrl: attachment.authorized_url,
+      fileName: attachment.file_name,
+      mimeType: attachment.mime_type,
+      fileSizeBytes: attachment.file_size_bytes,
+      attachmentKind: attachment.attachment_kind,
+      sortOrder: attachment.sort_order,
+      createdAt: attachment.created_at,
     })),
-  });
+  }));
+
+  return NextResponse.json(
+    {
+      conversation: {
+        id: conversation.id,
+        createdBy: conversation.created_by,
+        createdAt: conversation.created_at,
+        updatedAt: conversation.updated_at,
+        lastMessageAt: conversation.last_message_at,
+        isSystem: conversation.is_system,
+        currentUserState: {
+          joinedAt: membership.joined_at,
+          lastReadMessageId: membership.last_read_message_id,
+          lastReadAt: membership.last_read_at,
+          archivedAt: membership.archived_at,
+          deletedAt: membership.deleted_at,
+          mutedAt: membership.muted_at,
+        },
+        members: ((members ?? []) as any[]).map((member) => ({
+          userId: member.user_id,
+          joinedAt: member.joined_at,
+          archivedAt: member.archived_at,
+          deletedAt: member.deleted_at,
+        })),
+        otherProfiles: profiles ?? [],
+      },
+      messages: responseMessages,
+    },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
