@@ -46,18 +46,22 @@ export async function GET(request: NextRequest) {
     publicationById = new Map((data ?? []).map((publication: any) => [publication.id, publication]));
   }
 
-  let payout = await getMemberPayoutIdentity(user.id);
-  if (payout) {
-    try {
-      payout = await refreshMemberPayoutAccount(user.id);
-    } catch (error) {
-      console.error("Unable to refresh Library payout state.", error);
-    }
+  let payout = null;
+  try {
+    payout = await getMemberPayoutIdentity(user.id);
+    if (payout) payout = await refreshMemberPayoutAccount(user.id);
+  } catch (error) {
+    console.error("Unable to load or refresh Library payout state.", error);
   }
 
-  const paidSales = sales.filter((row: any) => row.status === "paid" || row.status === "disputed");
-  const grossCents = paidSales.reduce((sum: number, row: any) => sum + Number(row.amount_cents ?? 0), 0);
-  const platformFeeCents = paidSales.reduce((sum: number, row: any) => sum + Number(row.platform_fee_cents ?? 0), 0);
+  // Only settled paid sales are included in earnings. Disputed purchases retain
+  // reader entitlement while Stripe resolves the dispute, but are not reported
+  // as settled author revenue.
+  const settledSales = sales.filter((row: any) => row.status === "paid");
+  const disputedSales = sales.filter((row: any) => row.status === "disputed");
+  const grossCents = settledSales.reduce((sum: number, row: any) => sum + Number(row.amount_cents ?? 0), 0);
+  const platformFeeCents = settledSales.reduce((sum: number, row: any) => sum + Number(row.platform_fee_cents ?? 0), 0);
+  const disputedGrossCents = disputedSales.reduce((sum: number, row: any) => sum + Number(row.amount_cents ?? 0), 0);
 
   return NextResponse.json(
     {
@@ -68,10 +72,12 @@ export async function GET(request: NextRequest) {
         publication: publicationById.get(row.publication_id) ?? null,
       })),
       summary: {
-        sale_count: paidSales.length,
+        sale_count: settledSales.length,
         gross_cents: grossCents,
         platform_fee_cents: platformFeeCents,
         author_share_cents: Math.max(0, grossCents - platformFeeCents),
+        disputed_sale_count: disputedSales.length,
+        disputed_gross_cents: disputedGrossCents,
       },
       payout: payout
         ? {
