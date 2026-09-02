@@ -3,6 +3,7 @@ import { LibraryKnowledgePromotionBridge } from "@/components/library/library-kn
 import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
 import "../library-research-editorial.css";
 import "../library-research-editorial-completion.css";
+import "../editorial-structural-rebuild.css";
 
 export default function LibraryEvidenceKnowledgePage() {
   return (
