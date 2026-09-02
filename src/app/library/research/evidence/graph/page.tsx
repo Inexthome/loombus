@@ -4,6 +4,7 @@ import { LibraryResearchEditorialNav } from "@/components/library/library-resear
 import "./library-knowledge-graph-editorial.css";
 import "./library-knowledge-graph-editorial-v6.css";
 import "./library-knowledge-graph-editorial-completion.css";
+import "./library-knowledge-graph-editorial-structural.css";
 
 export default function LibraryKnowledgeGraphPage() {
   return (
