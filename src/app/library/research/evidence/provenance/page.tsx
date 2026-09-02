@@ -2,6 +2,7 @@ import { LibraryFocusedProvenanceSurface } from "@/components/library/library-fo
 import { LibraryKnowledgeProvenanceSurface } from "@/components/library/library-knowledge-provenance-surface";
 import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
 import "../../library-research-editorial.css";
+import "../../library-research-editorial-completion.css";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
