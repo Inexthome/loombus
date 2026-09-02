@@ -88,7 +88,7 @@ export function LibraryKnowledgeGraphV7Surface() {
               {online ? "Online" : "Offline"}
             </span>
             <button type="button" onClick={retry} className="inline-flex items-center gap-2 text-[var(--loombus-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)]" aria-label="Reload Knowledge Graph surface">
-              <RefreshCcw className="size-4" aria-hidden="true" /> Reload
+              <RefreshCcw className="size-4" aria-hidden="true" /> Reload graph
             </button>
           </div>
         </div>
