@@ -1,0 +1,51 @@
+name: Mobile native experience
+
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - "ios/**"
+      - "public/.well-known/apple-app-site-association"
+      - "src/app/.well-known/assetlinks.json/route.ts"
+      - "src/lib/native-live-updates.ts"
+      - "scripts/verification/verify-mobile-native-experience.mjs"
+      - ".github/workflows/mobile-native-experience.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-native-experience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Native Experience contract
+        run: node scripts/verification/verify-mobile-native-experience.mjs
+
+      - name: Verify release metadata
+        run: npm run verify:mobile-release-metadata
+
+      - name: Verify mobile live updates
+        run: npm run verify:mobile-live-updates
+
+      - name: Verify notification badge sync
+        run: npm run verify:mobile-notification-badge-sync
+
+      - name: Verify mobile permissions
+        run: npm run verify:mobile-permissions
+
+      - name: Verify release hardening
+        run: npm run verify:mobile-release-hardening
