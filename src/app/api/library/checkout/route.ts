@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createLibraryCheckout, LibraryCommerceError } from "@/lib/library-commerce-server";
+import { assertLibraryTaxCheckoutReady } from "@/lib/library-tax-readiness-server";
 
 function safeOrigin(request: NextRequest) {
   const candidate = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get("origin") || "https://loombus.com";
@@ -34,6 +35,8 @@ export async function POST(request: NextRequest) {
     if (!body.publicationId) {
       return NextResponse.json({ error: "Publication is required." }, { status: 400 });
     }
+
+    assertLibraryTaxCheckoutReady();
 
     const result = await createLibraryCheckout({
       publicationId: body.publicationId,
