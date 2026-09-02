@@ -3,6 +3,7 @@ import fs from "node:fs";
 const files = {
   receiptRoute: "src/app/api/library/commerce/receipt/route.ts",
   commerceCenter: "src/components/library/library-commerce-center.tsx",
+  commerceEvents: "src/lib/library-commerce-events-server.ts",
   entitlementMigration: "supabase/migrations/20260902071500_harden_library_checkout_entitlements.sql",
 };
 
@@ -12,6 +13,7 @@ for (const path of Object.values(files)) {
 
 const receiptRoute = fs.readFileSync(files.receiptRoute, "utf8");
 const commerceCenter = fs.readFileSync(files.commerceCenter, "utf8");
+const commerceEvents = fs.readFileSync(files.commerceEvents, "utf8");
 const entitlementMigration = fs.readFileSync(files.entitlementMigration, "utf8");
 
 for (const fragment of [
@@ -28,15 +30,12 @@ for (const fragment of [
   }
 }
 
-if (receiptRoute.includes("seller_id", receiptRoute.indexOf('.eq("buyer_id", user.id)'))) {
-  // Seller ledger access must never be treated as authority to retrieve a buyer receipt.
-  const purchaseQuery = receiptRoute.slice(
-    receiptRoute.indexOf('.from("library_book_purchases")'),
-    receiptRoute.indexOf("if (error)")
-  );
-  if (purchaseQuery.includes('.eq("seller_id"')) {
-    throw new Error("Library receipt retrieval must authorize against buyer ownership, not seller ownership.");
-  }
+const purchaseQuery = receiptRoute.slice(
+  receiptRoute.indexOf('.from("library_book_purchases")'),
+  receiptRoute.indexOf("if (error)")
+);
+if (purchaseQuery.includes('.eq("seller_id"')) {
+  throw new Error("Library receipt retrieval must authorize against buyer ownership, not seller ownership.");
 }
 
 for (const fragment of [
@@ -56,11 +55,20 @@ for (const fragment of [
 for (const fragment of [
   "library commerce requires publication access",
   "library_current_user_can_access_publication",
-  "refunded",
-  "chargeback",
+  "purchase.status in ('paid', 'disputed')",
 ]) {
   if (!entitlementMigration.toLowerCase().includes(fragment.toLowerCase())) {
-    throw new Error(`Missing entitlement-revocation contract: ${fragment}`);
+    throw new Error(`Missing active-entitlement contract: ${fragment}`);
+  }
+}
+
+for (const fragment of [
+  'status: "refunded"',
+  'status: "chargeback"',
+  'status: "disputed"',
+]) {
+  if (!commerceEvents.includes(fragment)) {
+    throw new Error(`Missing payment-lifecycle contract: ${fragment}`);
   }
 }
 
