@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
         status: "pending",
         requested_start: proposedStart,
         requested_end: proposedEnd,
-        proposed_start: null,
-        proposed_end: null,
+        proposed_start: proposedStart,
+        proposed_end: proposedEnd,
         acted_at: new Date().toISOString(),
       })
       .eq("id", requestId)
