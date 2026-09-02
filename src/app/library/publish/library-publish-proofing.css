@@ -1,0 +1,160 @@
+[data-library-publish-editorial] .library-publish-preflight-list {
+  display: grid;
+  gap: 0;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--library-publish-rule, var(--loombus-border));
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list > p {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.1rem 0.75rem;
+  margin: 0;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--library-publish-rule, var(--loombus-border));
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list > p > span {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list > p[data-complete="true"] > span {
+  border-color: color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
+  background: var(--loombus-gold-surface);
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list strong {
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-list small {
+  color: var(--loombus-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-confirmations {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.15rem;
+  padding: 0;
+  border: 0;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-confirmations label {
+  display: grid;
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.7rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+[data-library-publish-editorial] .library-publish-preflight-confirmations input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.18rem;
+  accent-color: var(--loombus-gold);
+}
+
+[data-library-publish-editorial] .library-publish-preflight-confirmations .library-publish-secondary {
+  justify-self: start;
+  margin-top: 0.25rem;
+}
+
+[data-library-publish-editorial] .library-publish-comparison {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--loombus-border);
+}
+
+[data-library-publish-editorial] .library-publish-comparison > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--loombus-border);
+  font-size: 0.8rem;
+}
+
+[data-library-publish-editorial] .library-publish-comparison > div[data-changed="true"] {
+  box-shadow: inset 2px 0 0 var(--loombus-gold);
+  padding-left: 0.75rem;
+}
+
+[data-library-publish-editorial] .library-publish-comparison strong {
+  font-weight: 650;
+}
+
+[data-library-publish-editorial] .library-publish-comparison span {
+  overflow-wrap: anywhere;
+  color: var(--loombus-text-muted);
+}
+
+[data-library-publish-editorial] .library-publish-comparison small {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--loombus-text-subtle);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-library-publish-editorial] .library-publish-history {
+  margin-top: 1rem;
+  border-top: 1px solid var(--loombus-border);
+}
+
+[data-library-publish-editorial] .library-publish-history > p {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.45fr) minmax(7rem, 0.5fr) minmax(0, 1fr);
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--loombus-border);
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+}
+
+[data-library-publish-editorial] .library-publish-history > p[data-current="true"],
+[data-library-publish-editorial] .library-publish-history > p[data-staged="true"] {
+  box-shadow: inset 2px 0 0 var(--loombus-gold);
+  padding-left: 0.75rem;
+}
+
+[data-library-publish-editorial] .library-publish-history strong {
+  color: var(--loombus-text);
+  font-weight: 650;
+}
+
+[data-library-publish-editorial] .library-publish-history span {
+  text-transform: capitalize;
+}
+
+[data-library-publish-editorial] .library-publish-history small {
+  color: var(--loombus-text-subtle);
+  font-size: inherit;
+}
+
+@media (max-width: 720px) {
+  [data-library-publish-editorial] .library-publish-comparison > div,
+  [data-library-publish-editorial] .library-publish-history > p {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+}
