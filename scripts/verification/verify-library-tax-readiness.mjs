@@ -28,11 +28,13 @@ const docs = fs.readFileSync(files.docs, "utf8");
 
 for (const fragment of [
   "LOOMBUS_LIBRARY_TAX_MODE",
+  "LOOMBUS_LIBRARY_TAX_LEDGER_READY",
   "LOOMBUS_LIBRARY_STRIPE_TAX_CODE",
   '"external_acknowledged"',
   '"platform_stripe_tax"',
   "library_tax_posture_unconfigured",
   "library_tax_posture_invalid",
+  "library_tax_ledger_not_ready",
   "library_tax_code_unconfigured",
 ]) {
   if (!taxGate.includes(fragment)) throw new Error(`Missing fail-closed tax contract: ${fragment}`);
@@ -84,13 +86,20 @@ for (const fragment of [
   "tax_withheld_at",
 ]) {
   if (!taxMigration.includes(fragment)) throw new Error(`Missing Library tax audit migration contract: ${fragment}`);
-  if (!commerceRoute.includes(fragment) && ["tax_mode", "tax_amount_cents"].includes(fragment)) {
-    throw new Error(`Missing Library commerce tax disclosure field: ${fragment}`);
-  }
+}
+
+for (const fragment of [
+  "isLibraryTaxLedgerReady()",
+  "baseLedgerColumns",
+  "tax_mode,tax_amount_cents",
+  "tax_amount_cents: Number(row.tax_amount_cents ?? 0)",
+]) {
+  if (!commerceRoute.includes(fragment)) throw new Error(`Missing pre-migration Library commerce compatibility: ${fragment}`);
 }
 
 for (const fragment of [
   "LOOMBUS_LIBRARY_TAX_MODE=",
+  "LOOMBUS_LIBRARY_TAX_LEDGER_READY=false",
   "LOOMBUS_LIBRARY_STRIPE_TAX_CODE=",
   "platform_stripe_tax",
 ]) {
@@ -103,6 +112,7 @@ for (const fragment of [
   "chargeback",
   "partial refunds",
   "Stripe Dashboard requirements",
+  "LOOMBUS_LIBRARY_TAX_LEDGER_READY=true",
 ]) {
   if (!docs.toLowerCase().includes(fragment.toLowerCase())) {
     throw new Error(`Missing Library tax lifecycle documentation: ${fragment}`);
