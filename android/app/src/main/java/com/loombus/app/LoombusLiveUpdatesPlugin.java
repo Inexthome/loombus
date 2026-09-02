@@ -12,6 +12,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
+import android.view.HapticFeedbackConstants;
+import android.view.View;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import com.getcapacitor.JSArray;
@@ -34,6 +36,56 @@ public class LoombusLiveUpdatesPlugin extends Plugin {
     public void load() {
         super.load();
         createNotificationChannel();
+    }
+
+    @PluginMethod
+    public void share(PluginCall call) {
+        String title = call.getString("title", "").trim();
+        String text = call.getString("text", "").trim();
+        String url = call.getString("url", "").trim();
+
+        StringBuilder body = new StringBuilder();
+        if (!text.isEmpty()) body.append(text);
+        if (!url.isEmpty()) {
+            if (body.length() > 0) body.append("\n\n");
+            body.append(url);
+        }
+        if (body.length() == 0 && !title.isEmpty()) body.append(title);
+        if (body.length() == 0) {
+            call.reject("Share requires a title, text, or URL.");
+            return;
+        }
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        if (!title.isEmpty()) shareIntent.putExtra(Intent.EXTRA_SUBJECT, title);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, body.toString());
+        Intent chooser = Intent.createChooser(shareIntent, title.isEmpty() ? "Share from Loombus" : title);
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        try {
+            getContext().startActivity(chooser);
+            JSObject result = new JSObject();
+            result.put("completed", true);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Unable to open the Android share sheet.", error);
+        }
+    }
+
+    @PluginMethod
+    public void haptic(PluginCall call) {
+        String style = call.getString("style", "light");
+        getActivity().runOnUiThread(() -> {
+            View root = getActivity().getWindow().getDecorView();
+            int feedback = HapticFeedbackConstants.CONTEXT_CLICK;
+            if ("success".equals(style)) feedback = HapticFeedbackConstants.CONFIRM;
+            if ("warning".equals(style)) feedback = HapticFeedbackConstants.REJECT;
+            if ("error".equals(style)) feedback = HapticFeedbackConstants.REJECT;
+            if ("heavy".equals(style)) feedback = HapticFeedbackConstants.LONG_PRESS;
+            root.performHapticFeedback(feedback);
+            call.resolve();
+        });
     }
 
     @PluginMethod
