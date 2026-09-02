@@ -27,6 +27,20 @@ type AppointmentInput = {
   href: string;
 };
 
+export type NativeHapticStyle =
+  | "light"
+  | "medium"
+  | "heavy"
+  | "success"
+  | "warning"
+  | "error";
+
+export type NativeShareInput = {
+  title?: string;
+  text?: string;
+  url?: string;
+};
+
 type LoombusLiveUpdatesPlugin = {
   getStatus(): Promise<LiveUpdateStatus>;
   startAppointment(input: AppointmentInput): Promise<{
@@ -41,6 +55,8 @@ type LoombusLiveUpdatesPlugin = {
     count?: number;
     applied?: boolean;
   }>;
+  share(input: NativeShareInput): Promise<{ completed?: boolean }>;
+  haptic(input: { style: NativeHapticStyle }): Promise<void>;
 };
 
 const LiveUpdates = registerPlugin<LoombusLiveUpdatesPlugin>(
@@ -50,6 +66,32 @@ const LiveUpdates = registerPlugin<LoombusLiveUpdatesPlugin>(
 const TERMINAL_STATUSES = new Set(["cancelled", "completed", "declined"]);
 const ELIGIBLE_STATUSES = new Set(["accepted", "approved", "confirmed"]);
 const START_WINDOW_MS = 60 * 60 * 1000;
+
+export async function shareFromLoombus(input: NativeShareInput) {
+  const platform = getNativePlatform();
+  if (platform === "ios" || platform === "android") {
+    return LiveUpdates.share(input);
+  }
+
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    await navigator.share(input);
+    return { completed: true };
+  }
+
+  const fallback = input.url || input.text || input.title || "";
+  if (fallback && typeof navigator !== "undefined" && navigator.clipboard) {
+    await navigator.clipboard.writeText(fallback);
+    return { completed: true };
+  }
+
+  return { completed: false };
+}
+
+export async function performLoombusHaptic(style: NativeHapticStyle = "light") {
+  const platform = getNativePlatform();
+  if (platform !== "ios" && platform !== "android") return;
+  await LiveUpdates.haptic({ style });
+}
 
 export async function setNativeNotificationBadgeCount(count: number) {
   const platform = getNativePlatform();
