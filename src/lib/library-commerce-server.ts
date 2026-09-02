@@ -7,6 +7,11 @@ import { getMemberPayoutIdentity, refreshMemberPayoutAccount } from "@/lib/membe
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const LIBRARY_PRODUCT = "loombus_library_book";
 const CHECKOUT_SESSION_MS = 60 * 60 * 1000;
+const LIBRARY_LAUNCH_FEE_BPS = 1500;
+const LIBRARY_STANDARD_FEE_BPS = 2000;
+// The launch rate applies through September 2, 2027. The standard rate begins
+// at 00:00:00 UTC on September 3, 2027, so the cutoff is deterministic globally.
+const LIBRARY_STANDARD_FEE_START_MS = Date.UTC(2027, 8, 3, 0, 0, 0, 0);
 
 type CheckoutReservation = {
   id: string;
@@ -39,24 +44,16 @@ function stripe() {
   return new Stripe(STRIPE_SECRET_KEY);
 }
 
-export function getLibraryPlatformFeeBps() {
-  const raw = process.env.LOOMBUS_LIBRARY_PLATFORM_FEE_BPS;
-  if (!raw || !/^\d+$/.test(raw)) {
-    throw new LibraryCommerceError(
-      "Library checkout is waiting for the Loombus Library platform fee configuration.",
-      503,
-      "library_platform_fee_not_configured"
-    );
+export function getLibraryPlatformFeeBps(at = new Date()) {
+  const timestamp = at.getTime();
+  if (!Number.isFinite(timestamp)) {
+    throw new LibraryCommerceError("Unable to determine the Library platform fee.", 503, "library_platform_fee_date_invalid");
   }
-  const bps = Number.parseInt(raw, 10);
-  if (bps < 0 || bps > 3000) {
-    throw new LibraryCommerceError("The configured Library platform fee is invalid.", 503, "library_platform_fee_invalid");
-  }
-  return bps;
+  return timestamp < LIBRARY_STANDARD_FEE_START_MS ? LIBRARY_LAUNCH_FEE_BPS : LIBRARY_STANDARD_FEE_BPS;
 }
 
-export function libraryPlatformFeeCents(amountCents: number) {
-  return Math.floor((amountCents * getLibraryPlatformFeeBps()) / 10_000);
+export function libraryPlatformFeeCents(amountCents: number, at = new Date()) {
+  return Math.floor((amountCents * getLibraryPlatformFeeBps(at)) / 10_000);
 }
 
 export function isLibraryBookCheckoutSession(session: Stripe.Checkout.Session) {
