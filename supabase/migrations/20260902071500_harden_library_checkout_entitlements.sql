@@ -3,7 +3,7 @@
 -- Adds a server-only checkout reservation snapshot so Stripe sessions are
 -- idempotent without coupling fulfillment to an author's later price changes.
 -- Also makes normalized publication section SELECT access fail closed for paid
--- publications at the database layer.
+-- publications at the database layer while preserving author and admin review access.
 
 create table if not exists public.library_book_checkout_reservations (
   id uuid primary key default gen_random_uuid(),
@@ -39,6 +39,58 @@ revoke all on table public.library_book_checkout_reservations from authenticated
 comment on table public.library_book_checkout_reservations is
   'Server-only Library checkout snapshots. Prevent duplicate live checkout sessions and preserve the price/seller/fee contract that Stripe was created with.';
 
+-- Extend the canonical entitlement predicate with the existing Loombus admin role.
+-- Admin reviewers must retain normalized-content access for submitted work, while
+-- ordinary members remain limited to authored, free, or purchased publications.
+create or replace function public.library_current_user_can_access_publication(
+  p_publication_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select auth.uid() is not null and (
+    exists (
+      select 1
+        from public.profiles profile
+       where profile.id = auth.uid()
+         and profile.is_admin is true
+    )
+    or exists (
+      select 1
+        from public.library_publications publication
+       where publication.id = p_publication_id
+         and (
+           exists (
+             select 1
+               from public.library_author_publications author_publication
+              where author_publication.publication_id = publication.id
+                and author_publication.user_id = auth.uid()
+                and author_publication.retired_at is null
+           )
+           or (
+             publication.status = 'published'
+             and (
+               publication.is_free is true
+               or exists (
+                 select 1
+                   from public.library_book_purchases purchase
+                  where purchase.publication_id = publication.id
+                    and purchase.buyer_id = auth.uid()
+                    and purchase.status in ('paid', 'disputed')
+               )
+             )
+           )
+         )
+    )
+  );
+$$;
+
+revoke all on function public.library_current_user_can_access_publication(uuid) from public;
+grant execute on function public.library_current_user_can_access_publication(uuid) to authenticated;
+
 -- Existing Library section policies remain in place. This restrictive policy adds
 -- a commerce boundary on top of them, so a published paid work is not readable
 -- merely because an older permissive published-section policy exists.
@@ -64,4 +116,4 @@ create policy "library commerce requires publication access"
   );
 
 comment on policy "library commerce requires publication access" on public.library_publication_sections is
-  'Fail-closed full-text boundary: anonymous readers may select only published free sections; authenticated readers must satisfy the canonical Library publication entitlement predicate.';
+  'Fail-closed full-text boundary: anonymous readers may select only published free sections; authenticated readers must satisfy the canonical Library publication entitlement predicate, including author and admin review access.';
