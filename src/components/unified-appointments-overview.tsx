@@ -74,7 +74,7 @@ function dateRange(item: ScheduleItem) {
 }
 
 function isPending(status: string) {
-  return status === "pending" || status === "time proposed";
+  return status === "pending" || status === "time proposed" || status === "reschedule requested";
 }
 
 function appointmentRequestId(item: ScheduleItem) {
@@ -148,7 +148,9 @@ export default function UnifiedAppointmentsOverview() {
       if (filter === "pending") return isPending(item.status);
       if (filter === "completed") return item.status === "completed";
       if (filter === "cancelled") return item.status === "cancelled" || item.status === "declined";
-      if (filter === "reschedule") return item.status === "time proposed";
+      if (filter === "reschedule") {
+        return item.status === "time proposed" || item.status === "reschedule requested";
+      }
       if (filter === "business" || filter === "marketplace" || filter === "room") {
         return item.source === filter;
       }
