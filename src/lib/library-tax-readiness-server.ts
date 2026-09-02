@@ -4,6 +4,11 @@ import { LibraryCommerceError } from "@/lib/library-commerce-server";
 
 export type LibraryTaxMode = "external_acknowledged" | "platform_stripe_tax";
 
+export type LibraryTaxCheckoutConfig = {
+  mode: LibraryTaxMode;
+  productTaxCode: string | null;
+};
+
 export function getLibraryTaxMode(): LibraryTaxMode | null {
   const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const value = raw?.trim().toLowerCase();
@@ -12,7 +17,7 @@ export function getLibraryTaxMode(): LibraryTaxMode | null {
   return null;
 }
 
-export function assertLibraryTaxCheckoutReady() {
+export function assertLibraryTaxCheckoutReady(): LibraryTaxCheckoutConfig {
   const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const mode = getLibraryTaxMode();
 
@@ -33,12 +38,16 @@ export function assertLibraryTaxCheckoutReady() {
   }
 
   if (mode === "platform_stripe_tax") {
-    throw new LibraryCommerceError(
-      "Paid Library checkout is temporarily unavailable while platform tax withholding and refund reversals are being finalized.",
-      503,
-      "library_platform_tax_flow_not_ready"
-    );
+    const productTaxCode = process.env.LOOMBUS_LIBRARY_STRIPE_TAX_CODE?.trim() || null;
+    if (!productTaxCode) {
+      throw new LibraryCommerceError(
+        "Paid Library checkout is temporarily unavailable because the Library Stripe Tax product classification is not configured.",
+        503,
+        "library_tax_code_unconfigured"
+      );
+    }
+    return { mode, productTaxCode };
   }
 
-  return mode;
+  return { mode, productTaxCode: null };
 }
