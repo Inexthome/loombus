@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save } from "lucide-react";
+import { LibraryBibliographicMetadataEditor } from "@/components/library/library-bibliographic-metadata-editor";
 import { supabase } from "@/lib/supabase/client";
 
 type Props = {
@@ -197,61 +198,69 @@ export function LibraryAuthorCommerceEditor({
   }
 
   return (
-    <section aria-labelledby="library-commerce-heading" className="library-publish-commerce">
-      <div className="library-publish-commerce-heading">
-        <div>
-          <p className="library-publish-eyebrow">Selling &amp; Access</p>
-          <h3 id="library-commerce-heading">{isPublished ? "Manage this publication’s selling price." : "Choose how readers access this publication."}</h3>
+    <>
+      <LibraryBibliographicMetadataEditor
+        mode="publication"
+        publicationId={publicationId}
+        editable={editable}
+      />
+
+      <section aria-labelledby="library-commerce-heading" className="library-publish-commerce">
+        <div className="library-publish-commerce-heading">
+          <div>
+            <p className="library-publish-eyebrow">Selling &amp; Access</p>
+            <h3 id="library-commerce-heading">{isPublished ? "Manage this publication’s selling price." : "Choose how readers access this publication."}</h3>
+          </div>
         </div>
-      </div>
 
-      <p className="library-publish-commerce-copy">
-        {isPublished
-          ? isFree
-            ? "This publication is already published as free. Changing its access mode requires a controlled publishing transition so reader access is not silently revoked."
-            : "This paid publication is live. You can change its one-time USD price without unpublishing it. Existing purchases keep the amount and Loombus fee recorded at the time of sale."
-          : canConfigureNewDraft
-            ? "Choose free or paid access now. Your selection will be saved automatically when you create the draft; paid checkout remains controlled separately by Loombus commerce readiness."
-            : "Free publications are readable by Library members. Paid publications use verified Stripe checkout and unlock permanent access on the buyer’s Loombus account."}
-      </p>
+        <p className="library-publish-commerce-copy">
+          {isPublished
+            ? isFree
+              ? "This publication is already published as free. Changing its access mode requires a controlled publishing transition so reader access is not silently revoked."
+              : "This paid publication is live. You can change its one-time USD price without unpublishing it. Existing purchases keep the amount and Loombus fee recorded at the time of sale."
+            : canConfigureNewDraft
+              ? "Choose free or paid access now. Your selection will be saved automatically when you create the draft; paid checkout remains controlled separately by Loombus commerce readiness."
+              : "Free publications are readable by Library members. Paid publications use verified Stripe checkout and unlock permanent access on the buyer’s Loombus account."}
+        </p>
 
-      <fieldset disabled={saving || isPublished || (!publicationId && !canConfigureNewDraft)} className="library-publish-commerce-fields">
-        <label className="library-publish-commerce-option">
-          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "free"} onChange={() => chooseAccessMode("free")} />
-          <span><strong>Free</strong><small>Readers can access the complete publication at no cost.</small></span>
-        </label>
-        <label className="library-publish-commerce-option">
-          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "paid"} onChange={() => chooseAccessMode("paid")} />
-          <span><strong>Paid</strong><small>Set the one-time price for permanent access.</small></span>
-        </label>
-      </fieldset>
+        <fieldset disabled={saving || isPublished || (!publicationId && !canConfigureNewDraft)} className="library-publish-commerce-fields">
+          <label className="library-publish-commerce-option">
+            <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "free"} onChange={() => chooseAccessMode("free")} />
+            <span><strong>Free</strong><small>Readers can access the complete publication at no cost.</small></span>
+          </label>
+          <label className="library-publish-commerce-option">
+            <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "paid"} onChange={() => chooseAccessMode("paid")} />
+            <span><strong>Paid</strong><small>Set the one-time price for permanent access.</small></span>
+          </label>
+        </fieldset>
 
-      {accessMode === "paid" ? (
-        <label className="library-publish-field library-publish-commerce-price">
-          <span className="library-publish-field-label">Price <span>USD</span></span>
-          <span className="library-publish-commerce-price-input">
-            <span aria-hidden="true">$</span>
-            <input
-              inputMode="decimal"
-              value={price}
-              onChange={(event) => updatePrice(event.target.value)}
-              placeholder="9.99"
-              aria-label="Publication price in US dollars"
-              disabled={saving || (isPublished && isFree) || (!isPublished && publicationId !== null && !editable)}
-            />
-          </span>
-        </label>
-      ) : null}
+        {accessMode === "paid" ? (
+          <label className="library-publish-field library-publish-commerce-price">
+            <span className="library-publish-field-label">Price <span>USD</span></span>
+            <span className="library-publish-commerce-price-input">
+              <span aria-hidden="true">$</span>
+              <input
+                inputMode="decimal"
+                value={price}
+                onChange={(event) => updatePrice(event.target.value)}
+                placeholder="9.99"
+                aria-label="Publication price in US dollars"
+                disabled={saving || (isPublished && isFree) || (!isPublished && publicationId !== null && !editable)}
+              />
+            </span>
+          </label>
+        ) : null}
 
-      {error ? <p role="alert" className="library-publish-commerce-error">{error}</p> : null}
-      {message ? <p role="status" className="library-publish-commerce-message">{message}</p> : null}
+        {error ? <p role="alert" className="library-publish-commerce-error">{error}</p> : null}
+        {message ? <p role="status" className="library-publish-commerce-message">{message}</p> : null}
 
-      {publicationId && (canEditDraftCommerce || canEditPublishedPrice) ? (
-        <button type="button" disabled={saving} onClick={() => void saveCommerce()} className="library-publish-secondary">
-          {saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <Save aria-hidden="true" />}
-          {isPublished ? "Update published price" : "Save selling settings"}
-        </button>
-      ) : null}
-    </section>
+        {publicationId && (canEditDraftCommerce || canEditPublishedPrice) ? (
+          <button type="button" disabled={saving} onClick={() => void saveCommerce()} className="library-publish-secondary">
+            {saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <Save aria-hidden="true" />}
+            {isPublished ? "Update published price" : "Save selling settings"}
+          </button>
+        ) : null}
+      </section>
+    </>
   );
 }
