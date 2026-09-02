@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, BookOpen, CircleDollarSign, Loader2, ReceiptText, WalletCards } from "lucide-react";
+import { AlertTriangle, BookOpen, CircleDollarSign, ExternalLink, Loader2, ReceiptText, WalletCards } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -54,10 +54,24 @@ function dateLabel(value: string | null) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value));
 }
 
+function purchaseStatusCopy(status: string) {
+  if (status === "paid") return "Access active on your Loombus account.";
+  if (status === "disputed") return "Payment disputed. Library access remains active while the dispute is reviewed.";
+  if (status === "refunded") return "Refunded. Paid full-text access is no longer active.";
+  if (status === "chargeback") return "Chargeback completed. Paid full-text access is no longer active.";
+  return "This transaction has not reached an active paid-entitlement state.";
+}
+
+function canOpenReceipt(status: string) {
+  return ["paid", "disputed", "refunded", "chargeback"].includes(status);
+}
+
 export function LibraryCommerceCenter() {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,6 +106,43 @@ export function LibraryCommerceCenter() {
     return payload.payout.requirements_due.length ? "Payout setup needs attention" : "Payout verification pending";
   }, [payload]);
 
+  const openReceipt = useCallback(async (purchaseId: string) => {
+    if (receiptBusyId) return;
+    setReceiptBusyId(purchaseId);
+    setReceiptError(null);
+
+    const { data: sessionResult } = await supabase.auth.getSession();
+    const token = sessionResult.session?.access_token;
+    if (!token) {
+      setReceiptError("Sign in again to retrieve this receipt.");
+      setReceiptBusyId(null);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/library/commerce/receipt", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ purchaseId }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || typeof body.receiptUrl !== "string") {
+        setReceiptError(body.error ?? "Unable to retrieve this receipt.");
+        return;
+      }
+
+      const popup = window.open(body.receiptUrl, "_blank", "noopener,noreferrer");
+      if (!popup) window.location.assign(body.receiptUrl);
+    } catch {
+      setReceiptError("Unable to retrieve this receipt right now.");
+    } finally {
+      setReceiptBusyId(null);
+    }
+  }, [receiptBusyId]);
+
   if (loading) {
     return <main className="grid min-h-[70vh] place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[var(--loombus-gold)]" aria-label="Loading Library commerce" /></main>;
   }
@@ -103,13 +154,20 @@ export function LibraryCommerceCenter() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Purchases &amp; Sales</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your permanent Library purchases and author sales in one ledger. Settled author share is the sale price minus the Loombus platform fee; payment-processing effects are accounted for by Stripe separately.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your Library purchase and author-sales ledger. Settled author share is the sale price minus the Loombus platform fee; payment-processing effects are accounted for by Stripe separately.</p>
           </div>
           <Link href="/library/publish" className="rounded-full border border-[var(--loombus-border)] px-4 py-2.5 text-sm font-semibold transition hover:border-[var(--loombus-gold)]">Manage publications</Link>
         </div>
       </header>
 
       {error ? <div role="alert" className="mt-6 rounded-2xl border border-red-500/30 p-4 text-sm">{error}</div> : null}
+      {receiptError ? (
+        <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <span>{receiptError}</span>
+          <Link href="/support" className="font-semibold text-[var(--loombus-gold)]">Contact Loombus Support</Link>
+        </div>
+      ) : null}
+
       {payload ? (
         <>
           <section className="grid gap-3 border-b border-[var(--loombus-border)] py-7 sm:grid-cols-2 lg:grid-cols-4" aria-label="Author commerce summary">
@@ -133,8 +191,19 @@ export function LibraryCommerceCenter() {
             </div>
           </section>
 
-          <Ledger title="Your purchases" empty="You have not purchased a Library publication yet." rows={payload.purchases} mode="purchase" />
+          <Ledger
+            title="Your purchases"
+            empty="You have not purchased a Library publication yet."
+            rows={payload.purchases}
+            mode="purchase"
+            receiptBusyId={receiptBusyId}
+            onViewReceipt={openReceipt}
+          />
           <Ledger title="Your book sales" empty="No paid Library sales yet." rows={payload.sales} mode="sale" />
+
+          <section className="py-7 text-sm text-[var(--loombus-text-muted)]">
+            <p>Need help with a purchase, refund, dispute, or receipt? <Link href="/support" className="font-semibold text-[var(--loombus-gold)]">Contact Loombus Support</Link>.</p>
+          </section>
         </>
       ) : null}
     </main>
@@ -145,7 +214,21 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
   return <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-[var(--loombus-text-muted)]">{icon}{label}</div><p className="mt-3 text-2xl font-semibold">{value}</p></div>;
 }
 
-function Ledger({ title, empty, rows, mode }: { title: string; empty: string; rows: LedgerRow[]; mode: "purchase" | "sale" }) {
+function Ledger({
+  title,
+  empty,
+  rows,
+  mode,
+  receiptBusyId = null,
+  onViewReceipt,
+}: {
+  title: string;
+  empty: string;
+  rows: LedgerRow[];
+  mode: "purchase" | "sale";
+  receiptBusyId?: string | null;
+  onViewReceipt?: (purchaseId: string) => void | Promise<void>;
+}) {
   return (
     <section className="border-b border-[var(--loombus-border)] py-8 last:border-b-0">
       <h2 className="text-xl font-semibold">{title}</h2>
@@ -153,15 +236,28 @@ function Ledger({ title, empty, rows, mode }: { title: string; empty: string; ro
         <div className="mt-4 divide-y divide-[var(--loombus-border)] border-y border-[var(--loombus-border)]">
           {rows.map((row) => {
             const saleAmount = row.status === "paid" ? (row.author_share_cents ?? 0) : row.amount_cents;
+            const receiptAvailable = mode === "purchase" && canOpenReceipt(row.status) && Boolean(onViewReceipt);
             return (
               <div key={row.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <div className="min-w-0">
                   <Link href={`/library/publication/${encodeURIComponent(row.publication_id)}`} className="font-semibold hover:text-[var(--loombus-gold)]">{row.publication?.title ?? "Library publication"}</Link>
                   <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{dateLabel(row.purchased_at ?? row.created_at)} · <span className="capitalize">{row.status}</span></p>
+                  {mode === "purchase" ? <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">{purchaseStatusCopy(row.status)}</p> : null}
                 </div>
                 <div className="text-left sm:text-right">
                   <p className="font-semibold">{money(mode === "sale" ? saleAmount : row.amount_cents, row.currency)}</p>
                   {mode === "sale" ? <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{row.status === "paid" ? `Author share · Gross ${money(row.amount_cents, row.currency)} · Loombus fee ${money(row.platform_fee_cents, row.currency)}` : `Gross transaction amount · ${row.status}`}</p> : null}
+                  {receiptAvailable ? (
+                    <button
+                      type="button"
+                      disabled={Boolean(receiptBusyId)}
+                      onClick={() => void onViewReceipt?.(row.id)}
+                      className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--loombus-border)] px-3 text-xs font-semibold transition hover:border-[var(--loombus-gold)] disabled:opacity-50"
+                    >
+                      {receiptBusyId === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />}
+                      {receiptBusyId === row.id ? "Opening receipt…" : "View Stripe receipt"}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             );
