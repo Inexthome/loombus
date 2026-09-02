@@ -10,7 +10,9 @@ Loombus Library paid-book checkout uses Stripe Checkout with Connect destination
 - `platform_stripe_tax` — Stripe Checkout calculates tax with platform liability. Loombus snapshots the calculated tax and creates an idempotent transfer reversal for the tax amount so the tax remains on the platform instead of the connected author account.
 - unset or any other value — paid Library checkout is blocked.
 
-`platform_stripe_tax` also requires `LOOMBUS_LIBRARY_STRIPE_TAX_CODE`. The code must match the rights granted by the Library product. Stripe currently lists `txcd_10302000` for downloaded digital books with permanent rights; select the production code based on the actual Library rights and tax advice rather than treating that example as a legal determination.
+Both modes also require `LOOMBUS_LIBRARY_TAX_LEDGER_READY=true`. Keep it false until `supabase/migrations/20260902082000_add_library_tax_audit.sql` has been applied successfully in production. The commerce ledger remains readable against the pre-migration schema, but paid checkout stays fail-closed so a buyer cannot be charged before Loombus can durably record the tax posture.
+
+`platform_stripe_tax` additionally requires `LOOMBUS_LIBRARY_STRIPE_TAX_CODE`. The code must match the rights granted by the Library product. Stripe currently lists `txcd_10302000` for downloaded digital books with permanent rights; select the production code based on the actual Library rights and tax advice rather than treating that example as a legal determination.
 
 ## Platform-liable transaction flow
 
@@ -44,8 +46,9 @@ Before setting `LOOMBUS_LIBRARY_TAX_MODE=platform_stripe_tax` in production:
 4. Set the appropriate default tax behavior for prices in Stripe Tax settings.
 5. Select the correct Library product tax code and set `LOOMBUS_LIBRARY_STRIPE_TAX_CODE`.
 6. Verify the Stripe webhook receives Checkout completion, refund, and dispute events.
-7. Apply the Library tax-audit Supabase migration before enabling the mode.
-8. Run a live-mode controlled transaction only after test-mode tax, withholding, refund, and entitlement reconciliation have passed.
+7. Apply `supabase/migrations/20260902082000_add_library_tax_audit.sql`.
+8. Set `LOOMBUS_LIBRARY_TAX_LEDGER_READY=true` only after the migration succeeds.
+9. Run a live-mode controlled transaction only after test-mode tax, withholding, refund, and entitlement reconciliation have passed.
 
 ## Operational rule
 
