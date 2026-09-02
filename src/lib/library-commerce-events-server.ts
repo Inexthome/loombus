@@ -44,7 +44,11 @@ async function updatePurchase(id: string, values: Record<string, unknown>) {
   if (error) throw new Error(`Unable to update Library purchase state: ${error.message}`);
 }
 
-async function reconcileFullDestinationChargeLoss(charge: Stripe.Charge, purchaseId: string, reason: "refund" | "chargeback") {
+export async function reconcileLibraryDestinationChargeLoss(
+  charge: Stripe.Charge,
+  purchaseId: string,
+  reason: "refund" | "chargeback"
+) {
   const destinationTransferId = transferId(charge.transfer);
   if (destinationTransferId) {
     const transfer = await stripe().transfers.retrieve(destinationTransferId);
@@ -100,7 +104,7 @@ export async function syncLibraryPaymentStripeEvent(event: Stripe.Event) {
     const purchase = await findPurchaseByPaymentIntent(intentId);
     if (!purchase?.id) return false;
     if (charge.amount_refunded >= charge.amount) {
-      await reconcileFullDestinationChargeLoss(charge, purchase.id, "refund");
+      await reconcileLibraryDestinationChargeLoss(charge, purchase.id, "refund");
       await updatePurchase(purchase.id, {
         status: "refunded",
         refunded_at: new Date().toISOString(),
@@ -128,7 +132,7 @@ export async function syncLibraryPaymentStripeEvent(event: Stripe.Event) {
       await updatePurchase(purchase.id, { status: "paid" });
     } else if (dispute.status === "lost") {
       const charge = await chargeFromDispute(dispute);
-      if (charge) await reconcileFullDestinationChargeLoss(charge, purchase.id, "chargeback");
+      if (charge) await reconcileLibraryDestinationChargeLoss(charge, purchase.id, "chargeback");
       await updatePurchase(purchase.id, {
         status: "chargeback",
         disputed_at: new Date().toISOString(),
