@@ -4,6 +4,11 @@ import { LibraryCommerceError } from "@/lib/library-commerce-server";
 
 export type LibraryTaxMode = "external_acknowledged" | "platform_stripe_tax";
 
+export type LibraryTaxCheckoutConfig = {
+  mode: LibraryTaxMode;
+  productTaxCode: string | null;
+};
+
 export function getLibraryTaxMode(): LibraryTaxMode | null {
   const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const value = raw?.trim().toLowerCase();
@@ -12,7 +17,11 @@ export function getLibraryTaxMode(): LibraryTaxMode | null {
   return null;
 }
 
-export function assertLibraryTaxCheckoutReady() {
+export function isLibraryTaxLedgerReady() {
+  return process.env.LOOMBUS_LIBRARY_TAX_LEDGER_READY?.trim().toLowerCase() === "true";
+}
+
+export function assertLibraryTaxCheckoutReady(): LibraryTaxCheckoutConfig {
   const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const mode = getLibraryTaxMode();
 
@@ -32,13 +41,27 @@ export function assertLibraryTaxCheckoutReady() {
     );
   }
 
-  if (mode === "platform_stripe_tax") {
+  // Both modes write the tax posture into the purchase ledger. Keep checkout
+  // fail-closed until production has applied the tax-audit migration.
+  if (!isLibraryTaxLedgerReady()) {
     throw new LibraryCommerceError(
-      "Paid Library checkout is temporarily unavailable while platform tax withholding and refund reversals are being finalized.",
+      "Paid Library checkout is temporarily unavailable while the tax ledger migration is completed.",
       503,
-      "library_platform_tax_flow_not_ready"
+      "library_tax_ledger_not_ready"
     );
   }
 
-  return mode;
+  if (mode === "platform_stripe_tax") {
+    const productTaxCode = process.env.LOOMBUS_LIBRARY_STRIPE_TAX_CODE?.trim() || null;
+    if (!productTaxCode) {
+      throw new LibraryCommerceError(
+        "Paid Library checkout is temporarily unavailable because the Library Stripe Tax product classification is not configured.",
+        503,
+        "library_tax_code_unconfigured"
+      );
+    }
+    return { mode, productTaxCode };
+  }
+
+  return { mode, productTaxCode: null };
 }
