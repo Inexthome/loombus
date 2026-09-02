@@ -12,6 +12,8 @@ type LedgerRow = {
   amount_cents: number;
   currency: string;
   platform_fee_cents: number;
+  tax_mode?: string | null;
+  tax_amount_cents?: number | null;
   author_share_cents?: number;
   purchased_at: string | null;
   created_at: string;
@@ -154,7 +156,7 @@ export function LibraryCommerceCenter() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Purchases &amp; Sales</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your Library purchase and author-sales ledger. Settled author share is the sale price minus the Loombus platform fee; payment-processing effects are accounted for by Stripe separately.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your Library purchase and author-sales ledger. Settled author share is the book price minus the Loombus platform fee. Stripe-calculated tax, when applicable, is shown separately and is not author revenue.</p>
           </div>
           <Link href="/library/publish" className="rounded-full border border-[var(--loombus-border)] px-4 py-2.5 text-sm font-semibold transition hover:border-[var(--loombus-gold)]">Manage publications</Link>
         </div>
@@ -235,7 +237,9 @@ function Ledger({
       {!rows.length ? <p className="mt-4 text-sm text-[var(--loombus-text-muted)]">{empty}</p> : (
         <div className="mt-4 divide-y divide-[var(--loombus-border)] border-y border-[var(--loombus-border)]">
           {rows.map((row) => {
+            const taxCents = Math.max(0, Number(row.tax_amount_cents ?? 0));
             const saleAmount = row.status === "paid" ? (row.author_share_cents ?? 0) : row.amount_cents;
+            const purchaseTotal = row.amount_cents + taxCents;
             const receiptAvailable = mode === "purchase" && canOpenReceipt(row.status) && Boolean(onViewReceipt);
             return (
               <div key={row.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -245,8 +249,13 @@ function Ledger({
                   {mode === "purchase" ? <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">{purchaseStatusCopy(row.status)}</p> : null}
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="font-semibold">{money(mode === "sale" ? saleAmount : row.amount_cents, row.currency)}</p>
-                  {mode === "sale" ? <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{row.status === "paid" ? `Author share · Gross ${money(row.amount_cents, row.currency)} · Loombus fee ${money(row.platform_fee_cents, row.currency)}` : `Gross transaction amount · ${row.status}`}</p> : null}
+                  <p className="font-semibold">{money(mode === "sale" ? saleAmount : purchaseTotal, row.currency)}</p>
+                  {mode === "purchase" ? (
+                    <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">
+                      Book price {money(row.amount_cents, row.currency)}{taxCents > 0 ? ` · Tax ${money(taxCents, row.currency)}` : " · Tax $0.00"}
+                    </p>
+                  ) : null}
+                  {mode === "sale" ? <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{row.status === "paid" ? `Author share · Gross ${money(row.amount_cents, row.currency)} · Loombus fee ${money(row.platform_fee_cents, row.currency)}${taxCents > 0 ? ` · Tax collected ${money(taxCents, row.currency)}` : ""}` : `Gross transaction amount · ${row.status}`}</p> : null}
                   {receiptAvailable ? (
                     <button
                       type="button"
