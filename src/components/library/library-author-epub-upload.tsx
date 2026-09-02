@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { FileUp, Loader2, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { LibraryAuthorCoverUpload } from "@/components/library/library-author-cover-upload";
 import { LibraryAuthorNormalizedPreview } from "@/components/library/library-author-normalized-preview";
-import { LibraryBibliographicMetadataEditor } from "@/components/library/library-bibliographic-metadata-editor";
+import { LibraryAuthorProofingPreflight } from "@/components/library/library-author-proofing-preflight";
 import { supabase } from "@/lib/supabase/client";
 
 const MAX_EPUB_BYTES = 50 * 1024 * 1024;
@@ -48,7 +48,7 @@ async function sha256File(file: File) {
 
 function statusCopy(source: SourceRow | null) {
   if (!source) return "No EPUB uploaded yet.";
-  if (source.ingestion_status === "ready") return "EPUB processed successfully. Readable content is ready for review.";
+  if (source.ingestion_status === "ready") return "EPUB processed successfully. Readable content is ready for proofing.";
   if (source.ingestion_status === "processing") return "Loombus is processing this EPUB.";
   if (source.ingestion_status === "failed") return "The EPUB could not be processed. You can replace it and try again.";
   return "EPUB uploaded and waiting for processing.";
@@ -83,9 +83,7 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
       return;
     }
 
-    const nextSource = (result.data ?? null) as SourceRow | null;
-    setSource(nextSource);
-    onReadyChange(nextSource?.ingestion_status === "ready");
+    setSource((result.data ?? null) as SourceRow | null);
     setLoading(false);
   }, [onReadyChange, publicationId]);
 
@@ -121,8 +119,7 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
       });
       if (prepareResult.error) throw prepareResult.error;
 
-      const preparedRows = (prepareResult.data ?? []) as PreparedSourceRow[];
-      const prepared = preparedRows[0];
+      const prepared = ((prepareResult.data ?? []) as PreparedSourceRow[])[0];
       if (!prepared) throw new Error("Unable to prepare this EPUB upload.");
 
       const uploadResult = await supabase.storage
@@ -149,7 +146,7 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
       const result = (await response.json().catch(() => null)) as { error?: string; sectionCount?: number } | null;
       if (!response.ok) throw new Error(result?.error ?? "Unable to process this EPUB.");
 
-      setMessage(`EPUB processed successfully${result?.sectionCount ? ` into ${result.sectionCount} readable sections` : ""}.`);
+      setMessage(`EPUB processed successfully${result?.sectionCount ? ` into ${result.sectionCount} readable sections` : ""}. Review the normalized proof and complete final preflight before submission.`);
       setFile(null);
       await loadSource();
     } catch (uploadError) {
@@ -161,10 +158,11 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
     }
   }
 
+  const sourceReady = source?.ingestion_status === "ready";
+
   return (
     <>
       <LibraryAuthorCoverUpload publicationId={publicationId} editable={editable} published={published} />
-      <LibraryBibliographicMetadataEditor mode="publication" publicationId={publicationId} editable={editable && !published} />
 
       <section className="mt-6 border-t border-[var(--loombus-border)] pt-5" aria-labelledby="library-epub-heading">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -187,18 +185,14 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
                 </p>
               ) : null}
             </div>
-            {source?.ingestion_status === "ready" ? (
-              <span className="rounded-full border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-3 py-1.5 text-xs font-semibold">Ready for review</span>
+            {sourceReady ? (
+              <span className="rounded-full border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-3 py-1.5 text-xs font-semibold">Ready to proof</span>
             ) : null}
           </div>
           {source?.ingestion_error ? <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{source.ingestion_error}</p> : null}
         </div>
 
-        <LibraryAuthorNormalizedPreview
-          publicationId={publicationId}
-          ready={source?.ingestion_status === "ready"}
-          published={published}
-        />
+        <LibraryAuthorNormalizedPreview publicationId={publicationId} ready={sourceReady} published={published} />
 
         {error ? <div role="alert" className="mt-3 rounded-xl border border-[var(--loombus-border)] p-3 text-xs text-[var(--loombus-text-muted)]">{error}</div> : null}
         {message ? <div role="status" className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-3 text-xs">{message}</div> : null}
@@ -233,6 +227,15 @@ export function LibraryAuthorEpubUpload({ publicationId, editable, published, on
           <p className="mt-4 text-xs leading-5 text-[var(--loombus-text-subtle)]">EPUB replacement is locked while this publication is under review.</p>
         )}
       </section>
+
+      {publicationId && !published ? (
+        <LibraryAuthorProofingPreflight
+          publicationId={publicationId}
+          editable={editable && !uploading}
+          sourceReady={sourceReady}
+          onReadyChange={onReadyChange}
+        />
+      ) : null}
     </>
   );
 }
