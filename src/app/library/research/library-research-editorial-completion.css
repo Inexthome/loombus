@@ -1,0 +1,423 @@
+/* Loombus Editorial UI completion layer for Research, Evidence, Provenance, and Promotion.
+   This intentionally changes presentation only; data access and workflow behavior remain in the existing components. */
+
+[data-library-research-editorial] {
+  min-height: 100vh;
+  background: var(--loombus-page-bg);
+}
+
+html[data-loombus-theme="light"] [data-library-research-editorial] {
+  background: #FEFBEC;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-library-research-editorial] {
+    background: #FEFBEC;
+  }
+}
+
+/* Keep the research suite aligned to the same calm 72rem editorial measure used by publishing. */
+[data-library-research-editorial] main {
+  min-height: auto !important;
+  padding-top: 1.15rem !important;
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+/* Page masthead: text first, icon secondary, one ruled baseline. */
+[data-library-research-editorial] main header {
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  padding-bottom: 1.65rem !important;
+}
+
+[data-library-research-editorial] main header > a:first-child {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.76rem !important;
+  font-weight: 750 !important;
+}
+
+[data-library-research-editorial] main header > a:first-child:hover {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial] main header > div {
+  margin-top: 1rem !important;
+  align-items: flex-start !important;
+}
+
+[data-library-research-editorial] main header > div > div:first-child:has(svg) {
+  width: 2rem !important;
+  height: 2rem !important;
+  margin-top: 0.15rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #CBAB5B !important;
+}
+
+[data-library-research-editorial] main h1 {
+  max-width: 48rem;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  font-weight: 820 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.02 !important;
+}
+
+[data-library-research-editorial] main header p {
+  max-width: 44rem !important;
+  margin-top: 0.5rem !important;
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+}
+
+/* Route navigation reads like an editorial section index, not a dashboard tab bar. */
+[data-library-research-editorial] .research-editorial-route-nav {
+  padding-top: max(4.75rem, calc(env(safe-area-inset-top) + 4rem));
+}
+
+[data-library-research-editorial] .research-editorial-route-nav-inner {
+  gap: 1.45rem;
+}
+
+[data-library-research-editorial] .research-editorial-route-nav a {
+  min-height: 3rem;
+  font-size: 0.73rem;
+  font-weight: 760;
+  letter-spacing: 0.015em;
+}
+
+/* Feedback becomes part of the document flow. */
+[data-library-research-editorial] main [role="alert"],
+[data-library-research-editorial] main [role="status"] {
+  margin-top: 1.1rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 0 0.95rem !important;
+  box-shadow: none !important;
+}
+
+/* Search and filters are a single editorial utility band. */
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="Search"]),
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="search"]) {
+  margin-top: 1.3rem !important;
+  min-height: 3.1rem;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="Search"]) > svg,
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="search"]) > svg {
+  color: #CBAB5B !important;
+}
+
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="Search"]) input,
+[data-library-research-editorial] main div:has(> svg + input[placeholder*="search"]) input {
+  min-height: 3rem !important;
+  border: 0 !important;
+  padding-inline: 0.75rem 0 !important;
+}
+
+/* Form controls: flat, labeled, generous line-height. */
+[data-library-research-editorial] main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+[data-library-research-editorial] main textarea,
+[data-library-research-editorial] main select {
+  min-height: 2.75rem;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-library-research-editorial] main textarea {
+  padding: 0.7rem 0 !important;
+  line-height: 1.65 !important;
+}
+
+[data-library-research-editorial] main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+  padding-inline: 0 !important;
+}
+
+[data-library-research-editorial] main select {
+  padding-left: 0 !important;
+}
+
+[data-library-research-editorial] main input:focus,
+[data-library-research-editorial] main textarea:focus,
+[data-library-research-editorial] main select:focus {
+  border-bottom-color: #CBAB5B !important;
+}
+
+/* Top-level mode switches are index tabs, not pills. */
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) {
+  margin-top: 1.2rem !important;
+  gap: 1.4rem !important;
+  border-bottom: 1px solid var(--loombus-border);
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] > div.flex.flex-wrap.gap-2:has(> button) > button {
+  min-height: 3rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* RESEARCH: collections become a restrained index and passages become editorial records. */
+[data-library-research-editorial="research"] main > div[class*="max-w-"] > div[class*="grid"] {
+  gap: 2rem !important;
+}
+
+[data-library-research-editorial="research"] main aside {
+  position: relative;
+}
+
+[data-library-research-editorial="research"] main aside > section {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.15rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="research"] main aside > section + section {
+  margin-top: 1.25rem !important;
+}
+
+[data-library-research-editorial="research"] main aside button[data-active] {
+  min-height: 2.55rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-inline: 0.8rem 0 !important;
+}
+
+[data-library-research-editorial="research"] main aside button[data-active="true"] {
+  box-shadow: inset 2px 0 0 #CBAB5B;
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial="research"] main article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.3rem 0 1.45rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="research"] main article:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+[data-library-research-editorial="research"] main article blockquote {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.02rem !important;
+  line-height: 1.7 !important;
+}
+
+/* EVIDENCE: creator form acts like a working margin; claims/knowledge read as records. */
+[data-library-research-editorial="evidence"] main > div[class*="max-w-"] > div[class*="grid"] {
+  gap: 2.4rem !important;
+}
+
+[data-library-research-editorial="evidence"] main section[class*="sticky"] {
+  top: 5.5rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.15rem 0 1.3rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="evidence"] main article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 1.4rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="evidence"] main article:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+[data-library-research-editorial="evidence"] main article > div:first-child h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 650 !important;
+  letter-spacing: -0.015em !important;
+}
+
+[data-library-research-editorial="evidence"] main article details {
+  margin-top: 1.1rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 0 !important;
+}
+
+[data-library-research-editorial="evidence"] main article details > div > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.9rem 0 !important;
+}
+
+/* PROVENANCE: provenance is a ledger, so remove card stacking and emphasize lineage rules. */
+[data-library-research-editorial="provenance"] main aside {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="provenance"] main article,
+[data-library-research-editorial="provenance"] main section > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="provenance"] main article:first-child,
+[data-library-research-editorial="provenance"] main section > div[class*="rounded"]:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+/* PROMOTE: a linear editorial review queue with one decisive action. */
+[data-library-research-editorial="promote"] main > div[class*="max-w-"] > div[class*="grid"] {
+  gap: 2.5rem !important;
+}
+
+[data-library-research-editorial="promote"] main aside {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main aside button {
+  min-height: 3rem;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.8rem 0 0.8rem 0.8rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main aside button[data-active="true"] {
+  box-shadow: inset 2px 0 0 #CBAB5B !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"]:first-child {
+  border-top: 1px solid var(--loombus-border) !important;
+}
+
+/* Secondary controls recede; destructive icon buttons stay discoverable. */
+[data-library-research-editorial] main button.rounded-full.border,
+[data-library-research-editorial] main a.rounded-full.border {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial] main button.rounded-full.border:hover,
+[data-library-research-editorial] main a.rounded-full.border:hover {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-research-editorial] main button[class*="bg-[var(--loombus-gold)]"] {
+  min-height: 2.75rem;
+  border-radius: 999px !important;
+  background: #CBAB5B !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial] main .border-dashed {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 2.25rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Dropdowns and popovers are the exception: they remain contained. */
+[data-library-research-editorial] details > div[class*="absolute"] {
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 0.65rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 20px 46px rgb(0 0 0 / 0.18) !important;
+}
+
+@media (max-width: 1023px) {
+  [data-library-research-editorial="evidence"] main section[class*="sticky"] {
+    position: static !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-library-research-editorial] .research-editorial-route-nav {
+    padding-top: max(4.25rem, calc(env(safe-area-inset-top) + 3.65rem));
+  }
+
+  [data-library-research-editorial] main {
+    padding-inline: 1rem !important;
+    padding-bottom: max(6.5rem, calc(5rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  [data-library-research-editorial] main h1 {
+    font-size: clamp(1.85rem, 9vw, 2.35rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-library-research-editorial] *,
+  [data-library-research-editorial] *::before,
+  [data-library-research-editorial] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
