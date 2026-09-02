@@ -60,10 +60,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
         scrollView.maximumZoomScale = 5.0
         scrollView.bouncesZoom = true
         scrollView.delegate = self
+        installPullToRefresh(on: webView)
 
         if !loombusOAuthHandlerConfigured {
             webView.configuration.userContentController.add(self, name: "loombusOAuth")
             loombusOAuthHandlerConfigured = true
+        }
+    }
+
+    private func installPullToRefresh(on webView: WKWebView) {
+        guard webView.scrollView.refreshControl == nil else {
+            return
+        }
+
+        let refreshControl = UIRefreshControl()
+        refreshControl.accessibilityLabel = "Refresh Loombus"
+        refreshControl.addTarget(
+            self,
+            action: #selector(refreshLoombus(_:)),
+            for: .valueChanged
+        )
+        webView.scrollView.refreshControl = refreshControl
+    }
+
+    @objc private func refreshLoombus(_ refreshControl: UIRefreshControl) {
+        let feedback = UIImpactFeedbackGenerator(style: .light)
+        feedback.prepare()
+        feedback.impactOccurred()
+
+        guard let bridgeController = findBridgeViewController(from: window?.rootViewController),
+              let webView = bridgeController.webView else {
+            refreshControl.endRefreshing()
+            return
+        }
+
+        webView.reload()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            refreshControl.endRefreshing()
         }
     }
 
@@ -191,6 +224,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
         return true
     }
 
+    private func handleLoombusUniversalLink(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+              url.host?.lowercased() == "loombus.com" else {
+            return false
+        }
+
+        DispatchQueue.main.async {
+            guard let bridgeController = self.findBridgeViewController(from: self.window?.rootViewController),
+                  let webView = bridgeController.webView else {
+                return
+            }
+            webView.load(URLRequest(url: url))
+        }
+
+        return true
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "loombusOAuth",
               let urlString = message.body as? String,
@@ -234,12 +284,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        // Called when the app was launched with an activity, including Universal Links.
-        // Feel free to add additional processing here, but if you want the App API to support
-        // tracking app url opens, make sure to keep this call.
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL,
+           handleLoombusUniversalLink(url) {
+            return true
+        }
+
+        // Preserve Capacitor's App API handling for any non-Loombus universal activity.
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
-
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         NotificationCenter.default.post(
@@ -272,6 +325,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
             }
         }
     }
-
-
 }
