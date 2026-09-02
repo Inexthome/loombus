@@ -36,13 +36,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Publication is required." }, { status: 400 });
     }
 
-    assertLibraryTaxCheckoutReady();
+    const tax = assertLibraryTaxCheckoutReady();
 
     const result = await createLibraryCheckout({
       publicationId: body.publicationId,
       buyerId: userResult.user.id,
       buyerEmail: userResult.user.email,
       origin: safeOrigin(request),
+      taxMode: tax.mode,
+      productTaxCode: tax.productTaxCode,
     });
     return NextResponse.json(result);
   } catch (error) {
