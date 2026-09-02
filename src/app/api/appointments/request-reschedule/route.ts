@@ -91,8 +91,10 @@ export async function POST(request: NextRequest) {
       .from("business_appointment_requests")
       .update({
         status: "pending",
-        proposed_start: proposedStart,
-        proposed_end: proposedEnd,
+        requested_start: proposedStart,
+        requested_end: proposedEnd,
+        proposed_start: null,
+        proposed_end: null,
         acted_at: new Date().toISOString(),
       })
       .eq("id", requestId)
@@ -126,8 +128,8 @@ export async function POST(request: NextRequest) {
     return json({
       updated: true,
       status: "pending",
-      proposedStart,
-      proposedEnd,
+      requestedStart: proposedStart,
+      requestedEnd: proposedEnd,
     });
   } catch (error) {
     console.error("Appointment requester reschedule failed:", error);
