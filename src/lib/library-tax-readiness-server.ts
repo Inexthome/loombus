@@ -17,6 +17,10 @@ export function getLibraryTaxMode(): LibraryTaxMode | null {
   return null;
 }
 
+export function isLibraryTaxLedgerReady() {
+  return process.env.LOOMBUS_LIBRARY_TAX_LEDGER_READY?.trim().toLowerCase() === "true";
+}
+
 export function assertLibraryTaxCheckoutReady(): LibraryTaxCheckoutConfig {
   const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const mode = getLibraryTaxMode();
@@ -38,6 +42,14 @@ export function assertLibraryTaxCheckoutReady(): LibraryTaxCheckoutConfig {
   }
 
   if (mode === "platform_stripe_tax") {
+    if (!isLibraryTaxLedgerReady()) {
+      throw new LibraryCommerceError(
+        "Paid Library checkout is temporarily unavailable while the tax ledger migration is completed.",
+        503,
+        "library_tax_ledger_not_ready"
+      );
+    }
+
     const productTaxCode = process.env.LOOMBUS_LIBRARY_STRIPE_TAX_CODE?.trim() || null;
     if (!productTaxCode) {
       throw new LibraryCommerceError(
