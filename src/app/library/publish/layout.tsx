@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import "./library-publish-editorial.css";
+import "./library-publish-proofing.css";
 
 export default function LibraryPublishLayout({ children }: { children: ReactNode }) {
   return (
