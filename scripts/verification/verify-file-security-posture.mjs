@@ -5,6 +5,7 @@ const root = process.cwd();
 const posturePath = "src/lib/file-security-posture.ts";
 const safetyPath = "src/app/safety/page.tsx";
 const inventoryPath = "docs/security/file-upload-security-posture.md";
+const reportPath = path.join(root, ".file-security-upload-inventory.txt");
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -77,6 +78,18 @@ walk(path.join(root, "src"));
 discovered.sort();
 
 const undocumented = discovered.filter((relativePath) => !inventory.includes(`\`${relativePath}\``));
+fs.writeFileSync(
+  reportPath,
+  [
+    `Discovered upload-capable source files: ${discovered.length}`,
+    ...discovered.map((item) => `- ${item}`),
+    "",
+    `Undocumented source files: ${undocumented.length}`,
+    ...undocumented.map((item) => `- ${item}`),
+    "",
+  ].join("\n")
+);
+
 if (undocumented.length > 0) {
   fail(
     "upload-capable source files are missing from the deterministic inventory:\n" +
