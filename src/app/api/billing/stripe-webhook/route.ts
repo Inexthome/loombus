@@ -18,6 +18,7 @@ import {
 } from "@/lib/creator-supporter-billing";
 import { syncAdoptedCreatorPayoutAccountEvent } from "@/lib/creator-supporter-payout-adoption-server";
 import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
+import { syncLibraryPaymentStripeEvent } from "@/lib/library-commerce-events-server";
 import { fulfillLibraryCheckoutSession } from "@/lib/library-commerce-server";
 import { syncMemberPayoutAccountEvent } from "@/lib/member-payout-account-server";
 import { syncProfessionalBookingPaymentStripeEvent } from "@/lib/professional-booking-payment-server";
@@ -425,6 +426,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (await syncLibraryPaymentStripeEvent(event)) {
+      return NextResponse.json({ received: true });
+    }
     if (await syncProfessionalBookingPaymentStripeEvent(event)) {
       return NextResponse.json({ received: true });
     }
