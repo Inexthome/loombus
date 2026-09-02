@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CircleDollarSign, Loader2, ReceiptText, WalletCards } from "lucide-react";
+import { AlertTriangle, BookOpen, CircleDollarSign, Loader2, ReceiptText, WalletCards } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -34,6 +34,8 @@ type Payload = {
     gross_cents: number;
     platform_fee_cents: number;
     author_share_cents: number;
+    disputed_sale_count: number;
+    disputed_gross_cents: number;
   };
   payout: {
     details_submitted: boolean;
@@ -101,7 +103,7 @@ export function LibraryCommerceCenter() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Purchases &amp; Sales</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your permanent Library purchases and author sales in one ledger. Author share is the sale price minus the Loombus platform fee; payment-processing effects are accounted for by Stripe separately.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Your permanent Library purchases and author sales in one ledger. Settled author share is the sale price minus the Loombus platform fee; payment-processing effects are accounted for by Stripe separately.</p>
           </div>
           <Link href="/library/publish" className="rounded-full border border-[var(--loombus-border)] px-4 py-2.5 text-sm font-semibold transition hover:border-[var(--loombus-gold)]">Manage publications</Link>
         </div>
@@ -111,11 +113,18 @@ export function LibraryCommerceCenter() {
       {payload ? (
         <>
           <section className="grid gap-3 border-b border-[var(--loombus-border)] py-7 sm:grid-cols-2 lg:grid-cols-4" aria-label="Author commerce summary">
-            <Metric icon={<ReceiptText className="h-4 w-4" />} label="Completed sales" value={String(payload.summary.sale_count)} />
-            <Metric icon={<CircleDollarSign className="h-4 w-4" />} label="Gross book sales" value={money(payload.summary.gross_cents)} />
+            <Metric icon={<ReceiptText className="h-4 w-4" />} label="Settled sales" value={String(payload.summary.sale_count)} />
+            <Metric icon={<CircleDollarSign className="h-4 w-4" />} label="Settled gross sales" value={money(payload.summary.gross_cents)} />
             <Metric icon={<WalletCards className="h-4 w-4" />} label="Loombus platform fees" value={money(payload.summary.platform_fee_cents)} />
-            <Metric icon={<BookOpen className="h-4 w-4" />} label="Author share" value={money(payload.summary.author_share_cents)} />
+            <Metric icon={<BookOpen className="h-4 w-4" />} label="Settled author share" value={money(payload.summary.author_share_cents)} />
           </section>
+
+          {payload.summary.disputed_sale_count > 0 ? (
+            <aside className="my-6 flex gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm" role="status">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+              <p><strong>{payload.summary.disputed_sale_count} disputed {payload.summary.disputed_sale_count === 1 ? "sale" : "sales"}</strong> totaling {money(payload.summary.disputed_gross_cents)} are excluded from settled earnings while Stripe resolves the dispute. Reader entitlement remains active during the dispute.</p>
+            </aside>
+          ) : null}
 
           <section className="border-b border-[var(--loombus-border)] py-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -142,18 +151,21 @@ function Ledger({ title, empty, rows, mode }: { title: string; empty: string; ro
       <h2 className="text-xl font-semibold">{title}</h2>
       {!rows.length ? <p className="mt-4 text-sm text-[var(--loombus-text-muted)]">{empty}</p> : (
         <div className="mt-4 divide-y divide-[var(--loombus-border)] border-y border-[var(--loombus-border)]">
-          {rows.map((row) => (
-            <div key={row.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-              <div className="min-w-0">
-                <Link href={`/library/publication/${encodeURIComponent(row.publication_id)}`} className="font-semibold hover:text-[var(--loombus-gold)]">{row.publication?.title ?? "Library publication"}</Link>
-                <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{dateLabel(row.purchased_at ?? row.created_at)} · <span className="capitalize">{row.status}</span></p>
+          {rows.map((row) => {
+            const saleAmount = row.status === "paid" ? (row.author_share_cents ?? 0) : row.amount_cents;
+            return (
+              <div key={row.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="min-w-0">
+                  <Link href={`/library/publication/${encodeURIComponent(row.publication_id)}`} className="font-semibold hover:text-[var(--loombus-gold)]">{row.publication?.title ?? "Library publication"}</Link>
+                  <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{dateLabel(row.purchased_at ?? row.created_at)} · <span className="capitalize">{row.status}</span></p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <p className="font-semibold">{money(mode === "sale" ? saleAmount : row.amount_cents, row.currency)}</p>
+                  {mode === "sale" ? <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{row.status === "paid" ? `Author share · Gross ${money(row.amount_cents, row.currency)} · Loombus fee ${money(row.platform_fee_cents, row.currency)}` : `Gross transaction amount · ${row.status}`}</p> : null}
+                </div>
               </div>
-              <div className="text-left sm:text-right">
-                <p className="font-semibold">{money(mode === "sale" ? (row.author_share_cents ?? 0) : row.amount_cents, row.currency)}</p>
-                {mode === "sale" ? <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Gross {money(row.amount_cents, row.currency)} · Loombus fee {money(row.platform_fee_cents, row.currency)}</p> : null}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
