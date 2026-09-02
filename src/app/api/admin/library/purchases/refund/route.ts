@@ -50,9 +50,7 @@ export async function POST(request: NextRequest) {
     const latestCharge = intent.latest_charge;
     const charge = typeof latestCharge === "string"
       ? await stripeClient.charges.retrieve(latestCharge)
-      : latestCharge && !latestCharge.deleted
-        ? latestCharge
-        : null;
+      : latestCharge ?? null;
     if (!charge) return jsonError("Stripe charge could not be resolved.", 409, "charge_missing");
 
     const refund = await stripeClient.refunds.create(
