@@ -1,0 +1,195 @@
+/* Structural Loombus Editorial UI refinement for Research/Evidence/Provenance/Promote. */
+
+[data-library-research-editorial] {
+  --editorial-rule: color-mix(in srgb, var(--loombus-border) 88%, transparent);
+}
+
+[data-library-research-editorial] main {
+  background: transparent !important;
+}
+
+[data-library-research-editorial] main > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+/* Research: compact editorial index + passage records. */
+[data-library-research-editorial="research"] main > div > div[class*="grid"] {
+  grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr) !important;
+  gap: 2.25rem !important;
+}
+
+[data-library-research-editorial="research"] main aside {
+  border-right: 1px solid var(--editorial-rule);
+  padding-right: 1.5rem;
+}
+
+[data-library-research-editorial="research"] main aside > section {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="research"] main aside > section > div:first-child {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--editorial-rule);
+}
+
+[data-library-research-editorial="research"] main aside input,
+[data-library-research-editorial="research"] main aside textarea {
+  min-height: 2.75rem !important;
+  padding: 0.65rem 0 !important;
+}
+
+[data-library-research-editorial="research"] main article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.4rem 0 1.55rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="research"] main article:first-of-type {
+  border-top: 1px solid var(--editorial-rule) !important;
+}
+
+[data-library-research-editorial="research"] main blockquote {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.05rem, 1.6vw, 1.28rem) !important;
+  line-height: 1.55 !important;
+}
+
+/* Evidence: authoring margin + reasoning records. */
+[data-library-research-editorial="evidence"] main > div > div[class*="grid"] {
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr) !important;
+  gap: 2.5rem !important;
+}
+
+[data-library-research-editorial="evidence"] main section[class*="sticky"] {
+  border: 0 !important;
+  border-right: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 1.75rem 0 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="evidence"] main article {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.25rem 0 1.5rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="evidence"] main article:first-of-type {
+  border-top: 1px solid var(--editorial-rule) !important;
+}
+
+[data-library-research-editorial="evidence"] main article > details {
+  margin-top: 1.25rem !important;
+  border-top: 1px solid var(--editorial-rule) !important;
+}
+
+[data-library-research-editorial="evidence"] main article > details > div > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  padding: 1rem 0 !important;
+}
+
+[data-library-research-editorial="evidence"] main div[class*="rounded"]:has(> svg + h2) {
+  border: 0 !important;
+  border-top: 1px solid var(--editorial-rule) !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 3rem 0 !important;
+}
+
+/* Promote: source index + one publication-review sequence. */
+[data-library-research-editorial="promote"] main > div > div[class*="grid"] {
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) !important;
+  gap: 3rem !important;
+}
+
+[data-library-research-editorial="promote"] main aside {
+  border-right: 1px solid var(--editorial-rule) !important;
+  padding-right: 1.5rem !important;
+}
+
+[data-library-research-editorial="promote"] main aside > div[class*="rounded"],
+[data-library-research-editorial="promote"] main aside > button {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main aside > button[data-active="true"] {
+  border-left: 2px solid var(--research-editorial-gold) !important;
+  padding-left: 0.75rem !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.35rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="rounded"]:first-child {
+  border-top: 1px solid var(--editorial-rule) !important;
+}
+
+[data-library-research-editorial="promote"] main section > div[class*="text-center"] {
+  border: 0 !important;
+  border-top: 1px solid var(--editorial-rule) !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 3rem 0 !important;
+}
+
+[data-library-research-editorial="promote"] main section label[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  padding: 0.9rem 0 !important;
+}
+
+/* Provenance: lineage reads as a ledger rather than a card stack. */
+[data-library-research-editorial="provenance"] main article,
+[data-library-research-editorial="provenance"] main section > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--editorial-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1023px) {
+  [data-library-research-editorial="research"] main > div > div[class*="grid"],
+  [data-library-research-editorial="evidence"] main > div > div[class*="grid"],
+  [data-library-research-editorial="promote"] main > div > div[class*="grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 1.75rem !important;
+  }
+
+  [data-library-research-editorial="research"] main aside,
+  [data-library-research-editorial="evidence"] main section[class*="sticky"],
+  [data-library-research-editorial="promote"] main aside {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--editorial-rule) !important;
+    padding: 0 0 1.5rem !important;
+  }
+}

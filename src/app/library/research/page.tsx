@@ -4,6 +4,7 @@ import { LibraryResearchPassageHandoff } from "@/components/library/library-rese
 import { LibraryResearchSurface } from "@/components/library/library-research-surface";
 import "./library-research-editorial.css";
 import "./library-research-editorial-completion.css";
+import "./editorial-structural-rebuild.css";
 
 export default function LibraryResearchPage() {
   return (

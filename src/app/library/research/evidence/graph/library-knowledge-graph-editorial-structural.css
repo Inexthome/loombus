@@ -1,0 +1,139 @@
+/* Structural Editorial UI refinement for the private Knowledge Graph. */
+
+[data-library-knowledge-graph-editorial] {
+  --graph-rule: color-mix(in srgb, var(--loombus-border) 88%, transparent);
+  min-height: 100vh;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-provenance-band,
+[data-library-knowledge-graph-editorial] .graph-editorial-runtime-band,
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"],
+[data-library-knowledge-graph-editorial] section > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-provenance-band {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-provenance-copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-context-link {
+  flex: 0 0 auto;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-counts {
+  color: var(--loombus-text-muted);
+  font-size: 0.75rem;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-counts strong {
+  color: var(--loombus-text);
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-runtime,
+[data-library-knowledge-graph-editorial] .graph-editorial-runtime > div,
+[data-library-knowledge-graph-editorial] #library-knowledge-graph,
+[data-library-knowledge-graph-editorial] #library-knowledge-graph > *,
+[data-library-knowledge-graph-editorial] #library-knowledge-graph main,
+[data-library-knowledge-graph-editorial] #library-knowledge-graph > section {
+  background: transparent !important;
+}
+
+/* Eliminate the legacy full-width gray/white phase breaks between graph generations. */
+[data-library-knowledge-graph-editorial] #library-knowledge-graph [class*="bg-[var(--loombus-page-bg)]"] {
+  background: transparent !important;
+}
+
+[data-library-knowledge-graph-editorial] #library-knowledge-graph main {
+  padding-top: 1.5rem !important;
+}
+
+/* The graph page masthead remains one editorial introduction. */
+[data-library-knowledge-graph-editorial] #library-knowledge-graph main header {
+  border-bottom: 1px solid var(--graph-rule) !important;
+  background: transparent !important;
+  padding-bottom: 1.5rem !important;
+}
+
+[data-library-knowledge-graph-editorial] #library-knowledge-graph main header > div:first-of-type > div:first-child:has(svg) {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  background: transparent !important;
+}
+
+/* Search and graph filters are one metadata toolbar, not independent cards. */
+[data-library-knowledge-graph-editorial] #library-knowledge-graph main section:has(input[placeholder="Search graph…"]) {
+  display: grid !important;
+  grid-template-columns: minmax(15rem, 1fr) minmax(10rem, 0.42fr) minmax(11rem, 0.5fr) auto !important;
+  gap: 1rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--graph-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0 1rem !important;
+  box-shadow: none !important;
+}
+
+/* Keep the actual topology canvas as the primary contained instrument. */
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] {
+  margin-top: 1.25rem !important;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 0.55rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] > div:first-child {
+  border-bottom: 1px solid var(--graph-rule) !important;
+}
+
+/* Topology inspector is a reading/inspection band beneath the canvas. */
+[data-library-knowledge-graph-editorial] section[aria-label="Topology inspector"],
+[data-library-knowledge-graph-editorial] main section:last-child {
+  border: 0 !important;
+  border-top: 1px solid var(--graph-rule) !important;
+  border-bottom: 1px solid var(--graph-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 1.5rem 0 !important;
+  box-shadow: none !important;
+}
+
+/* Persistent workspaces are secondary to the graph: compact them into a ledger. */
+[data-library-knowledge-graph-editorial] section[aria-label="Knowledge Graph persistent member workspace"],
+[data-library-knowledge-graph-editorial] section:has(input[placeholder="New workspace name"]),
+[data-library-knowledge-graph-editorial] section:has(input[placeholder="Name this investigation (optional)"]) {
+  border: 0 !important;
+  border-top: 1px solid var(--graph-rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] .graph-editorial-recovery {
+  border-top: 1px solid var(--graph-rule);
+  border-bottom: 1px solid var(--graph-rule);
+}
+
+@media (max-width: 800px) {
+  [data-library-knowledge-graph-editorial] .graph-editorial-provenance-copy {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  [data-library-knowledge-graph-editorial] #library-knowledge-graph main section:has(input[placeholder="Search graph…"]) {
+    grid-template-columns: 1fr !important;
+  }
+}
