@@ -28,9 +28,9 @@ This follows Stripe's marketplace guidance for platform-liable destination-charg
 
 ## Refund and chargeback money movement
 
-The canonical admin Library refund operation issues a full Stripe refund with both `reverse_transfer=true` and `refund_application_fee=true`. The webhook then verifies the destination economics before revoking entitlement.
+The canonical admin Library refund operation issues a full Stripe refund, then explicitly reconciles the Connect economics supported by the installed Stripe SDK: any remaining destination transfer is reversed and any remaining application fee is refunded. The same idempotent reconciliation helper is used by the refund webhook, so webhook races do not double-reverse funds.
 
-For any full `charge.refunded` event, including a refund initiated in Stripe Dashboard, Loombus reconciles the destination transfer and application fee idempotently. Any remaining destination transfer is reversed and any remaining application fee is refunded before the purchase becomes `refunded`.
+For any full `charge.refunded` event, including a refund initiated in Stripe Dashboard, Loombus reconciles the destination transfer and application fee idempotently before the purchase becomes `refunded`.
 
 A lost dispute receives the same destination-transfer/application-fee reconciliation before the purchase becomes `chargeback`. Stripe Tax reporting does not automatically reduce collected tax for an upheld cardholder dispute, so dispute-tax reporting remains a platform compliance/accounting concern and must be reviewed in Stripe Tax reports.
 
