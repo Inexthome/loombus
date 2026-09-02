@@ -15,7 +15,7 @@ android {
         applicationId "com.loombus.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
+        versionCode 13
         versionName "1.0.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -65,6 +65,7 @@ dependencies {
     implementation "androidx.credentials:credentials:1.6.0-beta02"
     implementation "androidx.credentials:credentials-play-services-auth:1.6.0-beta02"
     implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
