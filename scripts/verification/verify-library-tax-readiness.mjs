@@ -62,7 +62,7 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  "reconcileFullDestinationChargeLoss",
+  "reconcileLibraryDestinationChargeLoss",
   "transfer.amount - transfer.amount_reversed",
   "fee.amount - fee.amount_refunded",
   'reason: "refund" | "chargeback"',
@@ -72,11 +72,14 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  "reverse_transfer: true",
-  "refund_application_fee: true",
+  "stripeClient.refunds.create",
+  "reconcileLibraryDestinationChargeLoss(charge, purchase.id, \"refund\")",
   "loombus-library-full-refund-${purchase.id}",
 ]) {
   if (!adminRefund.includes(fragment)) throw new Error(`Missing canonical Library refund contract: ${fragment}`);
+}
+if (adminRefund.includes("reverse_transfer: true") || adminRefund.includes("refund_application_fee: true")) {
+  throw new Error("Library admin refund must use explicit Connect reconciliation supported by the installed Stripe SDK.");
 }
 
 for (const fragment of [
