@@ -203,7 +203,8 @@ export async function createLibraryCheckout(input: {
   origin: string;
 }) {
   const offer = await getLibrarySaleOffer(input.publicationId, input.buyerId);
-  const platformFeeCents = libraryPlatformFeeCents(offer.amountCents);
+  const platformFeeBps = getLibraryPlatformFeeBps();
+  const platformFeeCents = Math.floor((offer.amountCents * platformFeeBps) / 10_000);
   let reservation = await reserveCheckout({
     buyerId: input.buyerId,
     publicationId: offer.publicationId,
@@ -238,6 +239,7 @@ export async function createLibraryCheckout(input: {
     amount_cents: String(reservation.amount_cents),
     currency: reservation.currency,
     platform_fee_cents: String(reservation.platform_fee_cents),
+    platform_fee_bps: String(platformFeeBps),
   };
 
   const session = await stripe().checkout.sessions.create({
