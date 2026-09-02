@@ -13,10 +13,11 @@ if (!fs.existsSync(packagePath)) {
 let source = fs.readFileSync(packagePath, "utf8");
 
 if (!source.includes("GoogleSignIn-iOS")) {
-  const dependencyAnchor =
-    '        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.1"),';
+  const dependencyAnchorPattern =
+    /^\s*\.package\(url: "https:\/\/github\.com\/ionic-team\/capacitor-swift-pm\.git", exact: "[^"]+"\),\s*$/m;
+  const dependencyAnchor = source.match(dependencyAnchorPattern)?.[0];
 
-  if (!source.includes(dependencyAnchor)) {
+  if (!dependencyAnchor) {
     throw new Error("Unable to locate Capacitor Swift package dependency anchor.");
   }
 
@@ -27,10 +28,11 @@ if (!source.includes("GoogleSignIn-iOS")) {
 }
 
 if (!source.includes('.product(name: "GoogleSignIn", package: "GoogleSignIn-iOS")')) {
-  const productAnchor =
-    '                .product(name: "Capacitor", package: "capacitor-swift-pm"),';
+  const productAnchorPattern =
+    /^\s*\.product\(name: "Capacitor", package: "capacitor-swift-pm"\),\s*$/m;
+  const productAnchor = source.match(productAnchorPattern)?.[0];
 
-  if (!source.includes(productAnchor)) {
+  if (!productAnchor) {
     throw new Error("Unable to locate Capacitor Swift target dependency anchor.");
   }
 
