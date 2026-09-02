@@ -63,8 +63,8 @@ for (const fragment of [
   "reconcileFullDestinationChargeLoss",
   "transfer.amount - transfer.amount_reversed",
   "fee.amount - fee.amount_refunded",
-  "full_refund_reconciliation",
-  "full_chargeback_reconciliation",
+  'reason: "refund" | "chargeback"',
+  "full_${reason}_reconciliation",
 ]) {
   if (!commerceEvents.includes(fragment)) throw new Error(`Missing Library loss reconciliation contract: ${fragment}`);
 }
