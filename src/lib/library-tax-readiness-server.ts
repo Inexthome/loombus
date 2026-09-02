@@ -41,15 +41,17 @@ export function assertLibraryTaxCheckoutReady(): LibraryTaxCheckoutConfig {
     );
   }
 
-  if (mode === "platform_stripe_tax") {
-    if (!isLibraryTaxLedgerReady()) {
-      throw new LibraryCommerceError(
-        "Paid Library checkout is temporarily unavailable while the tax ledger migration is completed.",
-        503,
-        "library_tax_ledger_not_ready"
-      );
-    }
+  // Both modes write the tax posture into the purchase ledger. Keep checkout
+  // fail-closed until production has applied the tax-audit migration.
+  if (!isLibraryTaxLedgerReady()) {
+    throw new LibraryCommerceError(
+      "Paid Library checkout is temporarily unavailable while the tax ledger migration is completed.",
+      503,
+      "library_tax_ledger_not_ready"
+    );
+  }
 
+  if (mode === "platform_stripe_tax") {
     const productTaxCode = process.env.LOOMBUS_LIBRARY_STRIPE_TAX_CODE?.trim() || null;
     if (!productTaxCode) {
       throw new LibraryCommerceError(
