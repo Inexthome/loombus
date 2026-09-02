@@ -18,6 +18,7 @@ import {
 } from "@/lib/creator-supporter-billing";
 import { syncAdoptedCreatorPayoutAccountEvent } from "@/lib/creator-supporter-payout-adoption-server";
 import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
+import { fulfillLibraryCheckoutSession } from "@/lib/library-commerce-server";
 import { syncMemberPayoutAccountEvent } from "@/lib/member-payout-account-server";
 import { syncProfessionalBookingPaymentStripeEvent } from "@/lib/professional-booking-payment-server";
 import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
@@ -284,6 +285,9 @@ async function syncGeneralStripeSubscription(
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  if (await fulfillLibraryCheckoutSession(session)) {
+    return;
+  }
   if (isCreatorSupporterProduct(session)) {
     await fulfillCreatorSupporterCheckoutSession(session);
     return;
