@@ -182,6 +182,9 @@ if (hasCompleteStoreBaseline) {
   }
 }
 
+// Current store baselines supplied for this release train:
+// iOS: 1.0.6 (1) awaiting submission for review.
+// Android: 1.0.6 (13) awaiting publish.
 if (iosVersion !== "1.0.6" || iosBuild !== 2) {
   throw new Error(`Expected iOS release 1.0.6 (2), found ${iosVersion} (${iosBuild}).`);
 }
