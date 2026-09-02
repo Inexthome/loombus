@@ -2,6 +2,7 @@ import { LibraryEvidenceKnowledgeSurface } from "@/components/library/library-ev
 import { LibraryKnowledgePromotionBridge } from "@/components/library/library-knowledge-promotion-bridge";
 import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
 import "../library-research-editorial.css";
+import "../library-research-editorial-completion.css";
 
 export default function LibraryEvidenceKnowledgePage() {
   return (
