@@ -3,6 +3,7 @@ import { LibraryResearchEditorialNav } from "@/components/library/library-resear
 import { LibraryResearchPassageHandoff } from "@/components/library/library-research-passage-handoff";
 import { LibraryResearchSurface } from "@/components/library/library-research-surface";
 import "./library-research-editorial.css";
+import "./library-research-editorial-completion.css";
 
 export default function LibraryResearchPage() {
   return (

@@ -1,0 +1,193 @@
+/* Editorial completion layer for the Library Knowledge Graph.
+   The graph remains a visualization surface; surrounding controls and inspectors use Loombus Editorial hierarchy. */
+
+[data-library-knowledge-graph-editorial] {
+  min-height: 100vh;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav {
+  padding-top: max(4.75rem, calc(env(safe-area-inset-top) + 4rem));
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav-inner {
+  gap: 1.45rem;
+}
+
+[data-library-knowledge-graph-editorial] .research-editorial-route-nav a {
+  min-height: 3rem;
+  font-size: 0.73rem;
+  font-weight: 760;
+  letter-spacing: 0.015em;
+}
+
+[data-library-knowledge-graph-editorial] main {
+  min-height: auto !important;
+  padding-top: 1.15rem !important;
+}
+
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] {
+  max-width: 72rem !important;
+}
+
+[data-library-knowledge-graph-editorial] main header {
+  border-bottom: 1px solid var(--loombus-border) !important;
+  padding-bottom: 1.65rem !important;
+}
+
+[data-library-knowledge-graph-editorial] main header > a:first-child {
+  min-height: 2.5rem;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.76rem !important;
+  font-weight: 750 !important;
+}
+
+[data-library-knowledge-graph-editorial] main header > div {
+  margin-top: 1rem !important;
+  align-items: flex-start !important;
+}
+
+[data-library-knowledge-graph-editorial] main header > div > div:first-child:has(svg) {
+  width: 2rem !important;
+  height: 2rem !important;
+  margin-top: 0.15rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #CBAB5B !important;
+}
+
+[data-library-knowledge-graph-editorial] main h1 {
+  max-width: 48rem;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  font-weight: 820 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.02 !important;
+}
+
+[data-library-knowledge-graph-editorial] main header p {
+  max-width: 44rem !important;
+  margin-top: 0.5rem !important;
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+}
+
+/* Status and controls form a quiet utility band above the topology. */
+[data-library-knowledge-graph-editorial] div[aria-label="Knowledge Graph status"] {
+  margin-top: 1rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.75rem 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main section:has(input[placeholder="Search graph…"]) {
+  margin-top: 1.15rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0 1rem !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main input,
+[data-library-knowledge-graph-editorial] main select,
+[data-library-knowledge-graph-editorial] main textarea {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main input:focus,
+[data-library-knowledge-graph-editorial] main select:focus,
+[data-library-knowledge-graph-editorial] main textarea:focus {
+  border-bottom-color: #CBAB5B !important;
+  outline: none !important;
+}
+
+/* Keep the topology itself contained because spatial relationships need a stable canvas. */
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] {
+  margin-top: 1.35rem !important;
+  overflow: hidden;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 0.7rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] > div:first-child {
+  border-bottom: 1px solid var(--loombus-border) !important;
+  background: transparent !important;
+}
+
+[data-library-knowledge-graph-editorial] section[aria-label="Scalable visual Library knowledge topology"] button {
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Workspaces, inspectors, provenance context, and promotion context read as an evidence ledger below the canvas. */
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] > section:not([aria-label="Scalable visual Library knowledge topology"]),
+[data-library-knowledge-graph-editorial] main > div[class*="max-w-"] > div > section:not([aria-label="Scalable visual Library knowledge topology"]) {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main article,
+[data-library-knowledge-graph-editorial] main section:not([aria-label="Scalable visual Library knowledge topology"]) > div[class*="rounded"] {
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main button.rounded-full.border,
+[data-library-knowledge-graph-editorial] main a.rounded-full.border {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main button.rounded-full.border:hover,
+[data-library-knowledge-graph-editorial] main a.rounded-full.border:hover {
+  color: var(--loombus-text) !important;
+}
+
+[data-library-knowledge-graph-editorial] main button[class*="bg-[var(--loombus-gold)]"] {
+  border-radius: 999px !important;
+  background: #CBAB5B !important;
+  color: #17140c !important;
+  box-shadow: none !important;
+}
+
+[data-library-knowledge-graph-editorial] main .border-dashed {
+  border: 0 !important;
+  border-top: 1px solid var(--loombus-border) !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  [data-library-knowledge-graph-editorial] .research-editorial-route-nav {
+    padding-top: max(4.25rem, calc(env(safe-area-inset-top) + 3.65rem));
+  }
+
+  [data-library-knowledge-graph-editorial] main {
+    padding-inline: 1rem !important;
+    padding-bottom: max(6.5rem, calc(5rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  [data-library-knowledge-graph-editorial] main h1 {
+    font-size: clamp(1.85rem, 9vw, 2.35rem) !important;
+  }
+}

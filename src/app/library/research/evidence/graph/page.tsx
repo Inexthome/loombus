@@ -3,6 +3,7 @@ import { LibraryKnowledgeGraphV7Surface } from "@/components/library/library-kno
 import { LibraryResearchEditorialNav } from "@/components/library/library-research-editorial-nav";
 import "./library-knowledge-graph-editorial.css";
 import "./library-knowledge-graph-editorial-v6.css";
+import "./library-knowledge-graph-editorial-completion.css";
 
 export default function LibraryKnowledgeGraphPage() {
   return (
