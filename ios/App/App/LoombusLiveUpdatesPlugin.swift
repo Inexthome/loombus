@@ -15,8 +15,74 @@ public class LoombusLiveUpdatesPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "endAppointment", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endAllAppointments", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setNotificationBadgeCount", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setNotificationBadgeCount", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "haptic", returnType: CAPPluginReturnPromise)
     ]
+
+    @objc func share(_ call: CAPPluginCall) {
+        let title = call.getString("title")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let text = call.getString("text")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let urlString = call.getString("url")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        var items: [Any] = []
+        if !title.isEmpty { items.append(title) }
+        if !text.isEmpty { items.append(text) }
+        if !urlString.isEmpty, let url = URL(string: urlString) { items.append(url) }
+
+        guard !items.isEmpty else {
+            call.reject("Share requires a title, text, or URL.")
+            return
+        }
+
+        DispatchQueue.main.async {
+            guard let viewController = self.bridge?.viewController else {
+                call.reject("Unable to present the iOS share sheet.")
+                return
+            }
+
+            let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+            if let popover = controller.popoverPresentationController {
+                popover.sourceView = viewController.view
+                popover.sourceRect = CGRect(
+                    x: viewController.view.bounds.midX,
+                    y: viewController.view.bounds.midY,
+                    width: 1,
+                    height: 1
+                )
+                popover.permittedArrowDirections = []
+            }
+            controller.completionWithItemsHandler = { _, completed, _, error in
+                if let error {
+                    call.reject("Unable to share from Loombus: \(error.localizedDescription)")
+                    return
+                }
+                call.resolve(["completed": completed])
+            }
+            viewController.present(controller, animated: true)
+        }
+    }
+
+    @objc func haptic(_ call: CAPPluginCall) {
+        let style = call.getString("style") ?? "light"
+        DispatchQueue.main.async {
+            switch style {
+            case "success":
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            case "warning":
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            case "error":
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            case "medium":
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            case "heavy":
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            default:
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+            call.resolve()
+        }
+    }
 
     @objc func setNotificationBadgeCount(_ call: CAPPluginCall) {
         let count = max(0, call.getInt("count") ?? 0)

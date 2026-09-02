@@ -17,7 +17,7 @@ export function GET() {
     return Response.json(
       {
         error:
-          "Android credential association is not configured. Set LOOMBUS_ANDROID_APP_SIGNING_SHA256 to the Google Play app-signing SHA-256 fingerprint.",
+          "Android app association is not configured. Set LOOMBUS_ANDROID_APP_SIGNING_SHA256 to the Google Play app-signing SHA-256 fingerprint.",
       },
       {
         status: 503,
@@ -29,7 +29,10 @@ export function GET() {
   return Response.json(
     [
       {
-        relation: ["delegate_permission/common.get_login_creds"],
+        relation: [
+          "delegate_permission/common.handle_all_urls",
+          "delegate_permission/common.get_login_creds",
+        ],
         target: {
           namespace: "android_app",
           package_name: ANDROID_PACKAGE_NAME,

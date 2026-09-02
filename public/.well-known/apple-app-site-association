@@ -1,4 +1,19 @@
 {
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "AA9H676YU8.com.loombus.mobile"
+        ],
+        "components": [
+          {
+            "/": "/*",
+            "comment": "Open Loombus web routes in the installed iOS app."
+          }
+        ]
+      }
+    ]
+  },
   "webcredentials": {
     "apps": [
       "AA9H676YU8.com.loombus.mobile"

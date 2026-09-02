@@ -10,6 +10,7 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:loombus.com</string>
 		<string>webcredentials:loombus.com</string>
 	</array>
 </dict>
