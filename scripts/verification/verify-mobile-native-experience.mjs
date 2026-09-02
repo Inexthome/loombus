@@ -37,7 +37,7 @@ const [
 ]);
 
 for (const expected of [
-  "versionCode 13",
+  "versionCode 14",
   'versionName "1.0.6"',
   "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0",
 ]) {
@@ -133,5 +133,5 @@ for (const source of [iosInfo, iosWidgetInfo]) {
 }
 
 console.log(
-  "Native Experience verification passed: Android 1.0.6 (13), iOS 1.0.6 (2), pull-to-refresh, tactile feedback, verified web links, native sharing, and Android Back navigation are wired."
+  "Native Experience verification passed: Android 1.0.6 (14), iOS 1.0.6 (2), pull-to-refresh, tactile feedback, verified web links, native sharing, and Android Back navigation are wired."
 );
