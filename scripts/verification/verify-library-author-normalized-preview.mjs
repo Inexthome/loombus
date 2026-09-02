@@ -43,11 +43,12 @@ for (const fragment of [
 
 for (const fragment of [
   'LibraryAuthorNormalizedPreview',
-  'ready={source?.ingestion_status === "ready"}',
+  'ready={sourceReady}',
   'published={published}',
+  'LibraryAuthorProofingPreflight',
 ]) {
   if (!upload.includes(fragment)) {
-    throw new Error(`Missing EPUB-panel preview wiring: ${fragment}`);
+    throw new Error(`Missing EPUB-panel preview/proofing wiring: ${fragment}`);
   }
 }
 

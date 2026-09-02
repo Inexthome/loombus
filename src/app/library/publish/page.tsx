@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BookOpen, Loader2, Send, Sparkles, Trash2 } from "lucide-react";
 import { LibraryAuthorCommerceEditor } from "@/components/library/library-author-commerce-editor";
 import { LibraryAuthorEpubUpload } from "@/components/library/library-author-epub-upload";
+import { LibraryBibliographicMetadataEditor } from "@/components/library/library-bibliographic-metadata-editor";
 import { supabase } from "@/lib/supabase/client";
 
 type SubmissionStatus = "draft" | "submitted" | "changes_requested" | "approved" | "rejected";
@@ -216,6 +217,7 @@ export default function LibraryPublishPage() {
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+    if (selected) setContentReady(false);
   }
 
   async function saveDraft() {
@@ -247,7 +249,8 @@ export default function LibraryPublishPage() {
         setSaving(false);
         return;
       }
-      setMessage("Draft saved.");
+      setContentReady(false);
+      setMessage("Draft saved. Reconfirm final proofing after submit-relevant changes.");
     }
 
     await loadWorkspace();
@@ -257,7 +260,7 @@ export default function LibraryPublishPage() {
   async function submitForReview() {
     if (!selected || !editable) return;
     if (!contentReady) {
-      setError("Upload and process an EPUB before submitting this publication for review.");
+      setError("Upload and process an EPUB before submitting, then review the current Reader proof and complete final preflight.");
       return;
     }
 
@@ -279,7 +282,7 @@ export default function LibraryPublishPage() {
       p_publication_id: selected.publication_id,
     });
     if (submitResult.error) {
-      setError("Unable to submit this publication for review. Confirm its EPUB is processed and ready.");
+      setError("Unable to submit this publication for review. Confirm its current EPUB proof and final preflight are complete.");
       setSaving(false);
       return;
     }
@@ -380,9 +383,7 @@ export default function LibraryPublishPage() {
         <header className="library-publish-header">
           <p className="library-publish-eyebrow">Author Publishing</p>
           <h1>Prepare work for the Loombus Library.</h1>
-          <p>
-            Create and refine publication metadata, upload its EPUB, choose free or paid access, then submit the processed work for review. Drafts remain private; authors cannot directly publish or approve their own work.
-          </p>
+          <p>Create and refine publication metadata, upload its EPUB, choose free or paid access, proof the exact Reader edition, then submit it for review. Drafts remain private; authors cannot directly publish or approve their own work.</p>
         </header>
 
         {error ? <div role="alert" className="library-publish-feedback library-publish-feedback-error">{error}</div> : null}
@@ -391,32 +392,15 @@ export default function LibraryPublishPage() {
         <div className="library-publish-workspace">
           <aside className="library-publish-rail" aria-labelledby="library-publish-list-heading">
             <div className="library-publish-rail-heading">
-              <div>
-                <p className="library-publish-eyebrow">Your work</p>
-                <h2 id="library-publish-list-heading">Publications</h2>
-              </div>
+              <div><p className="library-publish-eyebrow">Your work</p><h2 id="library-publish-list-heading">Publications</h2></div>
               {loading ? <Loader2 className="library-publish-spinner" aria-label="Loading publications" /> : null}
             </div>
-
-            {!loading && !rows.length ? (
-              <p className="library-publish-empty">No author publications yet. Create your first private draft.</p>
-            ) : null}
-
+            {!loading && !rows.length ? <p className="library-publish-empty">No author publications yet. Create your first private draft.</p> : null}
             <div className="library-publish-list" role="list">
               {rows.map((row) => (
-                <button
-                  key={row.publication_id}
-                  type="button"
-                  role="listitem"
-                  data-active={selectedId === row.publication_id}
-                  onClick={() => choosePublication(row)}
-                  className="library-publish-publication"
-                >
+                <button key={row.publication_id} type="button" role="listitem" data-active={selectedId === row.publication_id} onClick={() => choosePublication(row)} className="library-publish-publication">
                   <span className="library-publish-publication-title">{row.publication.title}</span>
-                  <span className="library-publish-publication-meta">
-                    <span className="library-publish-status">{authorStatusLabel(row)}</span>
-                    <span className="library-publish-type">{row.publication.publication_type}</span>
-                  </span>
+                  <span className="library-publish-publication-meta"><span className="library-publish-status">{authorStatusLabel(row)}</span><span className="library-publish-type">{row.publication.publication_type}</span></span>
                 </button>
               ))}
             </div>
@@ -424,126 +408,42 @@ export default function LibraryPublishPage() {
 
           <article className="library-publish-editor">
             <header className="library-publish-editor-header">
-              <div>
-                <p className="library-publish-eyebrow">{selected ? authorStatusLabel(selected) : "New draft"}</p>
-                <h2>Publication details</h2>
-              </div>
-              {selected?.publication.status === "published" ? (
-                <span className="library-publish-state">Published to Library</span>
-              ) : selected?.publication.status === "archived" ? (
-                <span className="library-publish-state">Unpublished · history preserved</span>
-              ) : selected?.submission_status === "approved" ? (
-                <span className="library-publish-state">Approved for controlled publishing</span>
-              ) : null}
+              <div><p className="library-publish-eyebrow">{selected ? authorStatusLabel(selected) : "New draft"}</p><h2>Publication details</h2></div>
+              {selected?.publication.status === "published" ? <span className="library-publish-state">Published to Library</span> : selected?.publication.status === "archived" ? <span className="library-publish-state">Unpublished · history preserved</span> : selected?.submission_status === "approved" ? <span className="library-publish-state">Approved for controlled publishing</span> : null}
             </header>
 
-            {selected?.review_note ? (
-              <aside className="library-publish-review-note" aria-label="Review note">
-                <p className="library-publish-eyebrow">Review note</p>
-                <p>{selected.review_note}</p>
-              </aside>
-            ) : null}
+            {selected?.review_note ? <aside className="library-publish-review-note" aria-label="Review note"><p className="library-publish-eyebrow">Review note</p><p>{selected.review_note}</p></aside> : null}
 
             <fieldset disabled={!editable || saving} className="library-publish-fields">
-              <label className="library-publish-field">
-                <span className="library-publish-field-label">Title</span>
-                <input value={form.title} onChange={(event) => updateField("title", event.target.value)} maxLength={200} />
-              </label>
-
-              <label className="library-publish-field">
-                <span className="library-publish-field-label">Subtitle <span>Optional</span></span>
-                <input value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} />
-              </label>
-
-              <label className="library-publish-field">
-                <span className="library-publish-field-label">Description <span>Optional</span></span>
-                <textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={5} />
-              </label>
-
+              <label className="library-publish-field"><span className="library-publish-field-label">Title</span><input value={form.title} onChange={(event) => updateField("title", event.target.value)} maxLength={200} /></label>
+              <label className="library-publish-field"><span className="library-publish-field-label">Subtitle <span>Optional</span></span><input value={form.subtitle} onChange={(event) => updateField("subtitle", event.target.value)} /></label>
+              <label className="library-publish-field"><span className="library-publish-field-label">Description <span>Optional</span></span><textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={5} /></label>
               <div className="library-publish-field-grid">
-                <label className="library-publish-field">
-                  <span className="library-publish-field-label">Type</span>
-                  <select value={form.publicationType} onChange={(event) => updateField("publicationType", event.target.value)}>
-                    {publicationTypes.map((type) => <option key={type} value={type}>{type}</option>)}
-                  </select>
-                </label>
-                <label className="library-publish-field">
-                  <span className="library-publish-field-label">Language</span>
-                  <input value={form.languageCode} onChange={(event) => updateField("languageCode", event.target.value)} maxLength={12} />
-                </label>
+                <label className="library-publish-field"><span className="library-publish-field-label">Type</span><select value={form.publicationType} onChange={(event) => updateField("publicationType", event.target.value)}>{publicationTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                <label className="library-publish-field"><span className="library-publish-field-label">Language</span><input value={form.languageCode} onChange={(event) => updateField("languageCode", event.target.value)} maxLength={12} /></label>
               </div>
-
               <div className="library-publish-field-grid">
-                <label className="library-publish-field">
-                  <span className="library-publish-field-label">Author name <span>Optional</span></span>
-                  <input value={form.authorName} onChange={(event) => updateField("authorName", event.target.value)} />
-                </label>
-                <label className="library-publish-field">
-                  <span className="library-publish-field-label">Publisher <span>Optional</span></span>
-                  <input value={form.publisherName} onChange={(event) => updateField("publisherName", event.target.value)} />
-                </label>
+                <label className="library-publish-field"><span className="library-publish-field-label">Author name <span>Optional</span></span><input value={form.authorName} onChange={(event) => updateField("authorName", event.target.value)} /></label>
+                <label className="library-publish-field"><span className="library-publish-field-label">Publisher <span>Optional</span></span><input value={form.publisherName} onChange={(event) => updateField("publisherName", event.target.value)} /></label>
               </div>
-
-              <label className="library-publish-field">
-                <span className="library-publish-field-label">ISBN <span>Optional</span></span>
-                <input value={form.isbn} onChange={(event) => updateField("isbn", event.target.value)} />
-              </label>
+              <label className="library-publish-field"><span className="library-publish-field-label">ISBN <span>Optional</span></span><input value={form.isbn} onChange={(event) => updateField("isbn", event.target.value)} /></label>
             </fieldset>
 
-            <LibraryAuthorCommerceEditor
-              publicationId={selected?.publication_id ?? null}
-              editable={Boolean(selected && editable)}
-              isFree={selected?.publication.is_free ?? true}
-              priceCents={selected?.publication.price_cents ?? null}
-              currency={selected?.publication.currency ?? null}
-              onSaved={loadWorkspace}
-            />
+            <LibraryBibliographicMetadataEditor mode="publication" publicationId={selected?.publication_id ?? null} editable={Boolean(selected && editable)} />
 
-            <LibraryAuthorEpubUpload
-              publicationId={selected?.publication_id ?? null}
-              editable={Boolean(selected && editable)}
-              published={selected?.publication.status === "published"}
-              onReadyChange={setContentReady}
-            />
+            <LibraryAuthorCommerceEditor publicationId={selected?.publication_id ?? null} editable={Boolean(selected && editable)} isFree={selected?.publication.is_free ?? true} priceCents={selected?.publication.price_cents ?? null} currency={selected?.publication.currency ?? null} onSaved={loadWorkspace} />
 
-            {selected && !editable ? (
-              <p className="library-publish-lock-note">
-                {selected.publication.status === "published"
-                  ? "This publication is published in the Loombus Library and is locked from author-side draft editing."
-                  : selected.publication.status === "archived"
-                    ? "This publication is currently unpublished. You may remove it from your publishing workspace; Loombus will preserve historical references so prior Library activity does not break."
-                    : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}
-              </p>
-            ) : null}
+            <LibraryAuthorEpubUpload publicationId={selected?.publication_id ?? null} editable={Boolean(selected && editable)} published={selected?.publication.status === "published"} onReadyChange={setContentReady} />
+
+            {selected && !editable ? <p className="library-publish-lock-note">{selected.publication.status === "published" ? "This publication is published in the Loombus Library and is locked from author-side draft editing." : selected.publication.status === "archived" ? "This publication is currently unpublished. You may remove it from your publishing workspace; Loombus will preserve historical references so prior Library activity does not break." : "This publication is locked while it is in its current review state. Loombus review controls approval and publishing."}</p> : null}
 
             <footer className="library-publish-actions">
               <div className="library-publish-secondary-actions">
-                {editable ? (
-                  <button type="button" disabled={saving} onClick={() => void saveDraft()} className="library-publish-secondary">
-                    {saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <BookOpen aria-hidden="true" />}
-                    Save draft
-                  </button>
-                ) : null}
-                {selected && deletable ? (
-                  <button type="button" disabled={saving} onClick={() => void deletePublication()} className="library-publish-destructive">
-                    <Trash2 aria-hidden="true" />
-                    Delete publication
-                  </button>
-                ) : null}
-                {selected && retirable ? (
-                  <button type="button" disabled={saving} onClick={() => void retirePublication()} className="library-publish-destructive">
-                    <Trash2 aria-hidden="true" />
-                    Delete publication
-                  </button>
-                ) : null}
+                {editable ? <button type="button" disabled={saving} onClick={() => void saveDraft()} className="library-publish-secondary">{saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <BookOpen aria-hidden="true" />}Save draft</button> : null}
+                {selected && deletable ? <button type="button" disabled={saving} onClick={() => void deletePublication()} className="library-publish-destructive"><Trash2 aria-hidden="true" />Delete publication</button> : null}
+                {selected && retirable ? <button type="button" disabled={saving} onClick={() => void retirePublication()} className="library-publish-destructive"><Trash2 aria-hidden="true" />Delete publication</button> : null}
               </div>
-
-              {selected && editable ? (
-                <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="library-publish-primary">
-                  <Send aria-hidden="true" />
-                  Submit for review
-                </button>
-              ) : null}
+              {selected && editable ? <button type="button" disabled={saving || !contentReady} onClick={() => void submitForReview()} className="library-publish-primary"><Send aria-hidden="true" />Submit for review</button> : null}
             </footer>
           </article>
         </div>

@@ -49,9 +49,10 @@ for (const fragment of [
   'fetch("/api/library/author/ingest-epub"',
   "MAX_EPUB_BYTES",
   "onReadyChange",
-  "Ready for review",
+  "Ready to proof",
+  "LibraryAuthorProofingPreflight",
 ]) {
-  if (!upload.includes(fragment)) throw new Error(`Missing author EPUB upload contract: ${fragment}`);
+  if (!upload.includes(fragment)) throw new Error(`Missing author EPUB upload/proofing contract: ${fragment}`);
 }
 
 for (const fragment of [
@@ -60,7 +61,7 @@ for (const fragment of [
   "Upload and process an EPUB before submitting",
   "disabled={saving || !contentReady}",
 ]) {
-  if (!page.includes(fragment)) throw new Error(`Missing author publishing ready-content gate: ${fragment}`);
+  if (!page.includes(fragment)) throw new Error(`Missing author publishing proofing gate: ${fragment}`);
 }
 
 if (!env.includes("LIBRARY_INGESTION_ROUTE_TOKEN=your_library_ingestion_route_token")) {
@@ -81,4 +82,4 @@ if (route.includes("NEXT_PUBLIC_LIBRARY_INGESTION_ROUTE_TOKEN") || upload.includ
   throw new Error("Library ingestion route capability must remain server-only.");
 }
 
-console.log("Library author EPUB upload runtime verification passed.");
+console.log("Library author EPUB upload runtime verification passed with source processing feeding the author proofing/preflight gate.");
