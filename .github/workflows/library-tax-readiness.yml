@@ -1,0 +1,38 @@
+name: Verify Library tax readiness
+
+on:
+  pull_request:
+    paths:
+      - ".env.example"
+      - "docs/library-tax-readiness.md"
+      - "src/app/api/library/checkout/route.ts"
+      - "src/lib/library-tax-readiness-server.ts"
+      - "src/lib/library-commerce-server.ts"
+      - "src/lib/library-commerce-events-server.ts"
+      - "scripts/verification/verify-library-tax-readiness.mjs"
+      - ".github/workflows/library-tax-readiness.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".env.example"
+      - "docs/library-tax-readiness.md"
+      - "src/app/api/library/checkout/route.ts"
+      - "src/lib/library-tax-readiness-server.ts"
+      - "src/lib/library-commerce-server.ts"
+      - "src/lib/library-commerce-events-server.ts"
+      - "scripts/verification/verify-library-tax-readiness.mjs"
+      - ".github/workflows/library-tax-readiness.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library tax readiness
+        run: node scripts/verification/verify-library-tax-readiness.mjs
