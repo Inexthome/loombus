@@ -55,7 +55,9 @@ for (const fragment of [
   'library_current_user_can_access_publication',
   "publication.status = 'published'",
   'publication.is_free is true',
-  'profiles.is_admin is true',
+  'from public.profiles profile',
+  'profile.id = auth.uid()',
+  'profile.is_admin is true',
 ]) {
   if (!commerceMigration.toLowerCase().includes(fragment.toLowerCase())) {
     throw new Error(`Missing paid-content access-hardening contract: ${fragment}`);
