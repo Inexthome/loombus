@@ -31,10 +31,11 @@ function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function appointmentStatus(value: unknown) {
+function appointmentStatus(value: unknown, proposedStart: unknown) {
   const status = text(value);
   if (status === "accepted") return "confirmed";
   if (status === "reschedule_proposed") return "time proposed";
+  if (status === "pending" && text(proposedStart)) return "reschedule requested";
   return status || "pending";
 }
 
@@ -128,7 +129,7 @@ export async function GET(request: NextRequest) {
         startsAt,
         endsAt: endsAt || null,
         timezone: text(row.timezone) || "UTC",
-        status: appointmentStatus(row.status),
+        status: appointmentStatus(row.status, row.proposed_start),
         location: null,
         href:
           sourceHref ||
