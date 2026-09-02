@@ -1,0 +1,28 @@
+name: Library author proofing preflight
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260902230000_add_library_author_proofing_preflight.sql"
+      - "supabase/migrations/20260902230100_invalidate_library_proofing_on_metadata_change.sql"
+      - "src/components/library/library-author-proofing-preflight.tsx"
+      - "src/components/library/library-author-epub-upload.tsx"
+      - "src/components/library/library-author-commerce-editor.tsx"
+      - "src/app/library/publish/revisions/page.tsx"
+      - "src/app/library/publish/library-publish-proofing.css"
+      - "src/app/library/publish/layout.tsx"
+      - "scripts/verification/verify-library-author-proofing-preflight.mjs"
+      - ".github/workflows/library-author-proofing-preflight.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author proofing preflight
+        run: node scripts/verification/verify-library-author-proofing-preflight.mjs
