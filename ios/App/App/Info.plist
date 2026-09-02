@@ -44,7 +44,7 @@
 	<key>GIDServerClientID</key>
 	<string>307099574717-0c27u2j9rpgjvlonncq345f7bvf4m3pi.apps.googleusercontent.com</string>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>2</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.loombus.mobile.background.refresh</string>
