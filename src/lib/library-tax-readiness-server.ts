@@ -5,7 +5,7 @@ import { LibraryCommerceError } from "@/lib/library-commerce-server";
 export type LibraryTaxMode = "external_acknowledged" | "platform_stripe_tax";
 
 export function getLibraryTaxMode(): LibraryTaxMode | null {
-  const raw = process.env.LOombus_LIBRARY_TAX_MODE ?? process.env.LOOBMUS_LIBRARY_TAX_MODE;
+  const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const value = raw?.trim().toLowerCase();
   if (!value) return null;
   if (value === "external_acknowledged" || value === "platform_stripe_tax") return value;
@@ -13,7 +13,7 @@ export function getLibraryTaxMode(): LibraryTaxMode | null {
 }
 
 export function assertLibraryTaxCheckoutReady() {
-  const raw = process.env.LOombus_LIBRARY_TAX_MODE ?? process.env.LOOBMUS_LIBRARY_TAX_MODE;
+  const raw = process.env.LOOMBUS_LIBRARY_TAX_MODE;
   const mode = getLibraryTaxMode();
 
   if (!raw?.trim()) {
