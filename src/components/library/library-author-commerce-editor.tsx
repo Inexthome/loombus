@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -12,6 +12,11 @@ type Props = {
   priceCents: number | null;
   currency: string | null;
   onSaved: () => void | Promise<void>;
+};
+
+type PendingCommerce = {
+  accessMode: "free" | "paid";
+  price: string;
 };
 
 function priceInputFromCents(value: number | null) {
@@ -42,8 +47,61 @@ export function LibraryAuthorCommerceEditor({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const previousPublicationId = useRef<string | null>(publicationId);
+  const pendingCommerce = useRef<PendingCommerce | null>(null);
 
   useEffect(() => {
+    const previousId = previousPublicationId.current;
+    previousPublicationId.current = publicationId;
+
+    if (previousId && !publicationId) {
+      pendingCommerce.current = null;
+      setAccessMode("free");
+      setPrice("");
+      setIsPublished(false);
+      setMessage(null);
+      setError(null);
+      return;
+    }
+
+    const pending = pendingCommerce.current;
+    if (!previousId && publicationId && pending && editable && !published) {
+      const pendingPriceCents = pending.accessMode === "paid" ? centsFromPriceInput(pending.price) : null;
+      if (pending.accessMode === "paid" && pendingPriceCents === null) {
+        setAccessMode(pending.accessMode);
+        setPrice(pending.price);
+        setError("Draft created. Choose a price between $1.00 and $1,000.00, then save the selling settings.");
+        pendingCommerce.current = null;
+        return;
+      }
+
+      pendingCommerce.current = null;
+      setSaving(true);
+      setMessage(null);
+      setError(null);
+      void supabase.rpc("update_library_author_draft_commerce", {
+        p_publication_id: publicationId,
+        p_is_free: pending.accessMode === "free",
+        p_price_cents: pending.accessMode === "paid" ? pendingPriceCents : null,
+        p_currency: pending.accessMode === "paid" ? "USD" : null,
+      }).then(async (result) => {
+        if (result.error) {
+          console.error("Unable to save initial Library commerce settings.", result.error);
+          setAccessMode(pending.accessMode);
+          setPrice(pending.price);
+          setError("Draft created, but its selling settings could not be saved. Review them and save again.");
+          setSaving(false);
+          return;
+        }
+        setAccessMode(pending.accessMode);
+        setPrice(pending.price);
+        setMessage(pending.accessMode === "free" ? "Draft created as free to read." : `Draft created with a $${pending.price} price.`);
+        await onSaved();
+        setSaving(false);
+      });
+      return;
+    }
+
     setAccessMode(isFree ? "free" : "paid");
     setPrice(priceInputFromCents(priceCents));
     setIsPublished(published);
@@ -61,7 +119,7 @@ export function LibraryAuthorCommerceEditor({
         if (!cancelled) setIsPublished(data?.status === "published");
       });
     return () => { cancelled = true; };
-  }, [publicationId, isFree, priceCents, currency, published]);
+  }, [publicationId, isFree, priceCents, currency, published, editable, onSaved]);
 
   const paidPriceCents = useMemo(
     () => (accessMode === "paid" ? centsFromPriceInput(price) : null),
@@ -69,6 +127,21 @@ export function LibraryAuthorCommerceEditor({
   );
   const canEditDraftCommerce = Boolean(publicationId && editable && !isPublished);
   const canEditPublishedPrice = Boolean(publicationId && isPublished && !isFree);
+  const canConfigureNewDraft = Boolean(!publicationId && !isPublished);
+
+  function chooseAccessMode(next: "free" | "paid") {
+    setAccessMode(next);
+    setMessage(null);
+    setError(null);
+    if (!publicationId) pendingCommerce.current = { accessMode: next, price };
+  }
+
+  function updatePrice(next: string) {
+    setPrice(next);
+    setMessage(null);
+    setError(null);
+    if (!publicationId) pendingCommerce.current = { accessMode, price: next };
+  }
 
   async function saveCommerce() {
     if (!publicationId || saving) return;
@@ -137,16 +210,18 @@ export function LibraryAuthorCommerceEditor({
           ? isFree
             ? "This publication is already published as free. Changing its access mode requires a controlled publishing transition so reader access is not silently revoked."
             : "This paid publication is live. You can change its one-time USD price without unpublishing it. Existing purchases keep the amount and Loombus fee recorded at the time of sale."
-          : "Free publications are readable by Library members. Paid publications use verified Stripe checkout and unlock permanent access on the buyer’s Loombus account."}
+          : canConfigureNewDraft
+            ? "Choose free or paid access now. Your selection will be saved automatically when you create the draft; paid checkout remains controlled separately by Loombus commerce readiness."
+            : "Free publications are readable by Library members. Paid publications use verified Stripe checkout and unlock permanent access on the buyer’s Loombus account."}
       </p>
 
-      <fieldset disabled={saving || !publicationId || isPublished} className="library-publish-commerce-fields">
+      <fieldset disabled={saving || isPublished || (!publicationId && !canConfigureNewDraft)} className="library-publish-commerce-fields">
         <label className="library-publish-commerce-option">
-          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "free"} onChange={() => setAccessMode("free")} />
+          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "free"} onChange={() => chooseAccessMode("free")} />
           <span><strong>Free</strong><small>Readers can access the complete publication at no cost.</small></span>
         </label>
         <label className="library-publish-commerce-option">
-          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "paid"} onChange={() => setAccessMode("paid")} />
+          <input type="radio" name={`library-access-${publicationId ?? "new"}`} checked={accessMode === "paid"} onChange={() => chooseAccessMode("paid")} />
           <span><strong>Paid</strong><small>Set the one-time price for permanent access.</small></span>
         </label>
       </fieldset>
@@ -159,10 +234,10 @@ export function LibraryAuthorCommerceEditor({
             <input
               inputMode="decimal"
               value={price}
-              onChange={(event) => setPrice(event.target.value)}
+              onChange={(event) => updatePrice(event.target.value)}
               placeholder="9.99"
               aria-label="Publication price in US dollars"
-              disabled={saving || !publicationId || (isPublished && isFree) || (!isPublished && !editable)}
+              disabled={saving || (isPublished && isFree) || (!isPublished && publicationId !== null && !editable)}
             />
           </span>
         </label>
