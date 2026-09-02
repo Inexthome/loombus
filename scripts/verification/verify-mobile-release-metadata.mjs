@@ -44,14 +44,21 @@ function positiveInteger(value, label) {
   return Number(value);
 }
 
-const [androidBuild, androidVariables, androidManifest, iosProject, iosInfo] =
-  await Promise.all([
-    read("android/app/build.gradle"),
-    read("android/variables.gradle"),
-    read("android/app/src/main/AndroidManifest.xml"),
-    read("ios/App/App.xcodeproj/project.pbxproj"),
-    read("ios/App/App/Info.plist"),
-  ]);
+const [
+  androidBuild,
+  androidVariables,
+  androidManifest,
+  iosProject,
+  iosInfo,
+  iosWidgetInfo,
+] = await Promise.all([
+  read("android/app/build.gradle"),
+  read("android/variables.gradle"),
+  read("android/app/src/main/AndroidManifest.xml"),
+  read("ios/App/App.xcodeproj/project.pbxproj"),
+  read("ios/App/App/Info.plist"),
+  read("ios/App/LiveActivities/Info.plist"),
+]);
 
 const androidVersionCode = positiveInteger(
   requireMatch(androidBuild, /versionCode\s+(\d+)/, "Android versionCode"),
@@ -96,20 +103,33 @@ for (const permission of [
 const iosVersions = [
   ...iosProject.matchAll(/MARKETING_VERSION = ([^;]+);/g),
 ].map((match) => match[1].replaceAll('"', "").trim());
-const iosBuilds = [
-  ...iosProject.matchAll(/CURRENT_PROJECT_VERSION = ([^;]+);/g),
-].map((match) => match[1].replaceAll('"', "").trim());
 
 if (!iosVersions.length || new Set(iosVersions).size !== 1) {
   throw new Error("The iOS app and Live Activities extension versions are not aligned.");
 }
-if (!iosBuilds.length || new Set(iosBuilds).size !== 1) {
-  throw new Error("The iOS app and Live Activities extension build numbers are not aligned.");
-}
 
 const iosVersion = iosVersions[0];
-const iosBuild = positiveInteger(iosBuilds[0], "iOS build number");
 versionParts(iosVersion);
+
+const iosAppBuild = positiveInteger(
+  requireMatch(iosInfo, /<key>CFBundleVersion<\/key>\s*<string>(\d+)<\/string>/, "iOS app build number"),
+  "iOS app build number"
+);
+const iosWidgetBuild = positiveInteger(
+  requireMatch(
+    iosWidgetInfo,
+    /<key>CFBundleVersion<\/key>\s*<string>(\d+)<\/string>/,
+    "iOS Live Activities build number"
+  ),
+  "iOS Live Activities build number"
+);
+
+if (iosAppBuild !== iosWidgetBuild) {
+  throw new Error(
+    `The iOS app and Live Activities extension build numbers are not aligned: ${iosAppBuild} vs ${iosWidgetBuild}.`
+  );
+}
+const iosBuild = iosAppBuild;
 
 for (const bundleId of [
   "PRODUCT_BUNDLE_IDENTIFIER = com.loombus.mobile;",
@@ -162,12 +182,12 @@ if (hasCompleteStoreBaseline) {
   }
 }
 
-if (iosVersion !== "1.0.6" || iosBuild !== 1) {
-  throw new Error(`Expected iOS release 1.0.6 (1), found ${iosVersion} (${iosBuild}).`);
+if (iosVersion !== "1.0.6" || iosBuild !== 2) {
+  throw new Error(`Expected iOS release 1.0.6 (2), found ${iosVersion} (${iosBuild}).`);
 }
-if (androidVersionName !== "1.0.6" || androidVersionCode !== 12) {
+if (androidVersionName !== "1.0.6" || androidVersionCode !== 13) {
   throw new Error(
-    `Expected Android release 1.0.6 (12), found ${androidVersionName} (${androidVersionCode}).`
+    `Expected Android release 1.0.6 (13), found ${androidVersionName} (${androidVersionCode}).`
   );
 }
 
