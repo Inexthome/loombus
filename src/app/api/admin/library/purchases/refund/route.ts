@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getBillingSupabaseAdmin } from "@/lib/billing-entitlements";
+import { reconcileLibraryDestinationChargeLoss } from "@/lib/library-commerce-events-server";
 import { createMemberPrivacyServiceClient, isAdmin, requireMemberUser } from "@/lib/member-privacy-server";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -47,14 +48,16 @@ export async function POST(request: NextRequest) {
       expand: ["latest_charge"],
     });
     const latestCharge = intent.latest_charge;
-    const chargeId = typeof latestCharge === "string" ? latestCharge : latestCharge?.id ?? null;
-    if (!chargeId) return jsonError("Stripe charge could not be resolved.", 409, "charge_missing");
+    const charge = typeof latestCharge === "string"
+      ? await stripeClient.charges.retrieve(latestCharge)
+      : latestCharge && !latestCharge.deleted
+        ? latestCharge
+        : null;
+    if (!charge) return jsonError("Stripe charge could not be resolved.", 409, "charge_missing");
 
     const refund = await stripeClient.refunds.create(
       {
-        charge: chargeId,
-        reverse_transfer: true,
-        refund_application_fee: true,
+        charge: charge.id,
         metadata: {
           product: "loombus_library_book",
           purchase_id: purchase.id,
@@ -63,6 +66,11 @@ export async function POST(request: NextRequest) {
       },
       { idempotencyKey: `loombus-library-full-refund-${purchase.id}` }
     );
+
+    // RefundCreateParams in the current Stripe SDK does not expose Connect
+    // transfer/application-fee reversal flags. Reconcile both explicitly using
+    // the same idempotent helper the refund webhook uses, so webhook races are safe.
+    await reconcileLibraryDestinationChargeLoss(charge, purchase.id, "refund");
 
     return NextResponse.json(
       { refundId: refund.id, status: refund.status },
