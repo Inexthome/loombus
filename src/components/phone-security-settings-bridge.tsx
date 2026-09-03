@@ -29,6 +29,25 @@ const DEFAULT_PREFERENCES: Preferences = {
   securitySmsEnabled: false,
 };
 
+function getUsNationalDigits(value: string) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.length > 10 && digits.startsWith("1")) digits = digits.slice(1);
+  return digits.slice(0, 10);
+}
+
+function formatUsPhone(value: string) {
+  const digits = getUsNationalDigits(value);
+  if (!digits) return "";
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function normalizeUsPhone(value: string) {
+  const digits = getUsNationalDigits(value);
+  return digits.length === 10 ? `+1${digits}` : null;
+}
+
 async function getToken() {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? "";
@@ -79,6 +98,7 @@ export function PhoneSecuritySettingsBridge() {
     securitySmsDelivery: false,
   });
   const [newPhone, setNewPhone] = useState("");
+  const [verificationPhone, setVerificationPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [awaitingOtp, setAwaitingOtp] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -114,9 +134,9 @@ export function PhoneSecuritySettingsBridge() {
   }, []);
 
   async function sendPhoneVerification() {
-    const normalized = newPhone.trim().replace(/[()\s.-]/g, "");
-    if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
-      setMessage("Enter a mobile number in international format, for example +19045551234.");
+    const normalized = normalizeUsPhone(newPhone);
+    if (!normalized) {
+      setMessage("Enter a valid 10-digit U.S. mobile number.");
       return;
     }
 
@@ -129,7 +149,7 @@ export function PhoneSecuritySettingsBridge() {
       return;
     }
 
-    setNewPhone(normalized);
+    setVerificationPhone(normalized);
     setAwaitingOtp(true);
     setMessage("Verification code sent by SMS.");
     setWorking(false);
@@ -144,7 +164,7 @@ export function PhoneSecuritySettingsBridge() {
     setWorking(true);
     setMessage("");
     const { error } = await supabase.auth.verifyOtp({
-      phone: newPhone,
+      phone: verificationPhone,
       token: otp.trim(),
       type: "phone_change",
     });
@@ -158,6 +178,7 @@ export function PhoneSecuritySettingsBridge() {
     setAwaitingOtp(false);
     setOtp("");
     setNewPhone("");
+    setVerificationPhone("");
     setMessage("Mobile number verified.");
     setWorking(false);
     await load();
@@ -218,20 +239,28 @@ export function PhoneSecuritySettingsBridge() {
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-          <input
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={newPhone}
-            disabled={working || awaitingOtp}
-            onChange={(event) => setNewPhone(event.target.value)}
-            placeholder="+19045551234"
-            aria-label="Mobile number in international format"
-            className="min-w-0 rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-3 py-2 text-[color:var(--loombus-text)]"
-          />
+          <div>
+            <div className="flex overflow-hidden rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] focus-within:ring-2 focus-within:ring-[color:var(--loombus-border)]">
+              <span className="flex items-center gap-2 border-r border-[color:var(--loombus-border)] px-3 text-sm font-semibold" aria-hidden="true">
+                <span>🇺🇸</span><span>+1</span>
+              </span>
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                value={newPhone}
+                disabled={working || awaitingOtp}
+                onChange={(event) => setNewPhone(formatUsPhone(event.target.value))}
+                placeholder="(904) 555-1234"
+                aria-label="U.S. mobile number"
+                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[color:var(--loombus-text)] outline-none"
+              />
+            </div>
+            <p className="mt-2 text-xs text-[color:var(--loombus-text-muted)]">U.S. numbers use +1 automatically.</p>
+          </div>
           <button
             type="button"
-            className="settings-v2-secondary-action"
+            className="settings-v2-secondary-action self-start"
             disabled={working || awaitingOtp}
             onClick={() => void sendPhoneVerification()}
           >
