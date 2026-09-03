@@ -104,6 +104,12 @@ export default function PhoneLoginPage() {
                 className="w-full rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)]"
               />
             </label>
+            <p className="text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+              By requesting a code, you consent to receive a transactional SMS from Loombus for authentication. Message frequency varies based on your requests. Message and data rates may apply. No marketing messages are sent through this program. See the{" "}
+              <Link href="/terms#sms-authentication" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
+              and{" "}
+              <Link href="/privacy#mobile-sms-auth" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
+            </p>
             <button
               type="submit"
               disabled={working}
