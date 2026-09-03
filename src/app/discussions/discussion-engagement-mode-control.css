@@ -1,0 +1,76 @@
+[data-discussions-engagement-tab-mount="true"] {
+  display: none !important;
+}
+
+[data-discussion-engagement-mode-control="true"] {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+}
+
+.discussion-engagement-mode-control {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  height: 100%;
+}
+
+.discussion-engagement-mode-button {
+  position: relative;
+  display: inline-flex;
+  width: 3rem;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--loombus-text-muted);
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.discussion-engagement-mode-button:hover {
+  color: var(--loombus-text);
+  border-bottom-color: color-mix(in srgb, var(--loombus-gold) 48%, var(--loombus-border));
+}
+
+.discussion-engagement-mode-button[data-selected="true"] {
+  color: var(--loombus-gold);
+  border-bottom-color: var(--loombus-gold);
+}
+
+.discussion-engagement-mode-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--loombus-gold) 48%, transparent);
+  outline-offset: 3px;
+}
+
+.discussion-engagement-weave-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.discussion-engagement-weave-icon.is-active-weave {
+  width: 1.65rem;
+}
+
+@media (max-width: 639px) {
+  .discussion-engagement-mode-button {
+    width: 2.75rem;
+    min-height: 3.25rem;
+  }
+
+  .discussion-engagement-weave-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .discussion-engagement-weave-icon.is-active-weave {
+    width: 1.5rem;
+  }
+}
