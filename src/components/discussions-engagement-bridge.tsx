@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowRight, Clock3, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { supabase } from "@/lib/supabase/client";
 import { normalizePublicText } from "@/lib/public-text";
+import { supabase } from "@/lib/supabase/client";
 
 type EngagementMode = "for_you" | "active" | null;
 
@@ -49,7 +49,7 @@ type EngagementSnapshot = {
   activeOrder: string[];
 };
 
-const TAB_LABELS = new Set([
+const ORIGINAL_TAB_LABELS = new Set([
   "All",
   "Following",
   "Research Questions",
@@ -58,10 +58,15 @@ const TAB_LABELS = new Set([
   "Saved",
 ]);
 
+const MODE_REQUEST_EVENT = "loombus:discussion-engagement-mode-request";
+const MODE_STATE_EVENT = "loombus:discussion-engagement-mode-state";
+
 function findDiscussionsFeedRoot() {
-  return Array.from(
-    document.querySelectorAll<HTMLElement>(".discussion-feed-route main")
-  ).find((main) => main.querySelector("h1")?.textContent?.trim() === "Discussions") ?? null;
+  return (
+    Array.from(
+      document.querySelectorAll<HTMLElement>(".discussion-feed-route main")
+    ).find((main) => main.querySelector("h1")?.textContent?.trim() === "Discussions") ?? null
+  );
 }
 
 function findHeadingBlock(root: HTMLElement) {
@@ -77,6 +82,7 @@ function findOriginalTabRow(root: HTMLElement) {
   );
   const parent = allButton?.parentElement ?? null;
   if (!parent) return null;
+
   const labels = Array.from(parent.querySelectorAll("button")).map((button) =>
     button.textContent?.trim()
   );
@@ -85,15 +91,15 @@ function findOriginalTabRow(root: HTMLElement) {
 
 function getDiscussionIdFromArticle(article: HTMLElement) {
   const link = article.querySelector<HTMLAnchorElement>('a[href^="/discussions/"]');
-  const href = link?.getAttribute("href") ?? "";
-  const match = href.match(/^\/discussions\/([^/?#]+)/);
+  const match = (link?.getAttribute("href") ?? "").match(/^\/discussions\/([^/?#]+)/);
   return match?.[1] ?? null;
 }
 
 function findDiscussionList(root: HTMLElement) {
-  const articles = Array.from(root.querySelectorAll<HTMLElement>("article"));
-  const feedArticle = articles.find((article) => Boolean(getDiscussionIdFromArticle(article)));
-  return feedArticle?.parentElement ?? null;
+  const article = Array.from(root.querySelectorAll<HTMLElement>("article")).find((candidate) =>
+    Boolean(getDiscussionIdFromArticle(candidate))
+  );
+  return article?.parentElement ?? null;
 }
 
 function freshnessScore(value: string | null, nowMs: number) {
@@ -115,12 +121,12 @@ function EngagementPanel({ snapshot }: { snapshot: EngagementSnapshot | null }) 
   if (!snapshot) {
     return (
       <section className="border-y border-[color:var(--loombus-border)] py-5" aria-label="Discussion updates">
-        <p className="text-sm text-[color:var(--loombus-text-muted)]">Preparing your discussion updates…</p>
+        <p className="text-sm text-[color:var(--loombus-text-muted)]">
+          Preparing your discussion updates…
+        </p>
       </section>
     );
   }
-
-  const hasPreviousVisit = Boolean(snapshot.previousVisitAt);
 
   return (
     <section className="border-y border-[color:var(--loombus-border)] py-5" aria-label="Discussion updates">
@@ -132,6 +138,7 @@ function EngagementPanel({ snapshot }: { snapshot: EngagementSnapshot | null }) 
               Continue the conversation
             </h2>
           </div>
+
           {snapshot.continueItems.length > 0 ? (
             <div className="mt-3 divide-y divide-[color:var(--loombus-border-muted)]">
               {snapshot.continueItems.slice(0, 3).map((item) => (
@@ -148,7 +155,10 @@ function EngagementPanel({ snapshot }: { snapshot: EngagementSnapshot | null }) 
                       {item.detail}
                     </span>
                   </span>
-                  <ArrowRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-[color:var(--loombus-text-muted)] group-hover:text-[#CBAB5B]" />
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="mt-1 h-4 w-4 shrink-0 text-[color:var(--loombus-text-muted)] group-hover:text-[#CBAB5B]"
+                  />
                 </Link>
               ))}
             </div>
@@ -166,7 +176,8 @@ function EngagementPanel({ snapshot }: { snapshot: EngagementSnapshot | null }) 
               New since your last visit
             </h2>
           </div>
-          {!hasPreviousVisit ? (
+
+          {!snapshot.previousVisitAt ? (
             <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
               This visit establishes your baseline. On your next return, Loombus will show what meaningfully changed.
             </p>
@@ -231,6 +242,7 @@ function EngagementTabs({
           For You
         </span>
       </button>
+
       <button
         type="button"
         onClick={() => onMode("active")}
@@ -254,46 +266,76 @@ function EngagementTabs({
 function DiscussionsEngagementController() {
   const [mode, setMode] = useState<EngagementMode>("for_you");
   const [snapshot, setSnapshot] = useState<EngagementSnapshot | null>(null);
+  const snapshotRef = useRef<EngagementSnapshot | null>(null);
   const suppressOriginalClick = useRef(false);
 
-  const applyFeedMode = useCallback(
-    (nextMode: EngagementMode, nextSnapshot: EngagementSnapshot | null = snapshot) => {
-      const root = findDiscussionsFeedRoot();
-      const list = root ? findDiscussionList(root) : null;
-      if (!root || !list) return;
+  const publishModeState = useCallback((nextMode: EngagementMode) => {
+    window.dispatchEvent(
+      new CustomEvent(MODE_STATE_EVENT, { detail: { mode: nextMode } })
+    );
+  }, []);
 
-      const articles = Array.from(list.children).filter(
-        (node): node is HTMLElement =>
-          node instanceof HTMLElement && Boolean(getDiscussionIdFromArticle(node))
-      );
+  const applyFeedMode = useCallback((nextMode: EngagementMode) => {
+    const nextSnapshot = snapshotRef.current;
+    const root = findDiscussionsFeedRoot();
+    const list = root ? findDiscussionList(root) : null;
+    if (!root || !list) return;
 
-      list.style.display = "flex";
-      list.style.flexDirection = "column";
-      list.style.gap = "1.25rem";
+    const articles = Array.from(list.children).filter(
+      (node): node is HTMLElement =>
+        node instanceof HTMLElement && Boolean(getDiscussionIdFromArticle(node))
+    );
 
-      if (!nextSnapshot || nextMode === null) {
-        for (const article of articles) {
-          article.style.removeProperty("order");
-          article.style.removeProperty("display");
-        }
-        list.style.removeProperty("display");
-        list.style.removeProperty("flex-direction");
-        list.style.removeProperty("gap");
-        return;
-      }
-
-      const order = nextMode === "active" ? nextSnapshot.activeOrder : nextSnapshot.forYouOrder;
-      const orderMap = new Map(order.map((id, index) => [id, index]));
-
+    if (!nextSnapshot || nextMode === null) {
       for (const article of articles) {
-        const discussionId = getDiscussionIdFromArticle(article);
-        if (!discussionId) continue;
-        article.style.order = String(orderMap.get(discussionId) ?? order.length + 100);
-        article.style.display =
-          nextMode === "active" && !nextSnapshot.activeIds.has(discussionId) ? "none" : "";
+        article.style.removeProperty("order");
+        article.style.removeProperty("display");
       }
+      list.style.removeProperty("display");
+      list.style.removeProperty("flex-direction");
+      list.style.removeProperty("gap");
+      return;
+    }
+
+    list.style.display = "flex";
+    list.style.flexDirection = "column";
+    list.style.gap = "1.25rem";
+
+    const order = nextMode === "active" ? nextSnapshot.activeOrder : nextSnapshot.forYouOrder;
+    const orderMap = new Map(order.map((id, index) => [id, index]));
+
+    for (const article of articles) {
+      const discussionId = getDiscussionIdFromArticle(article);
+      if (!discussionId) continue;
+      article.style.order = String(orderMap.get(discussionId) ?? order.length + 100);
+      article.style.display =
+        nextMode === "active" && !nextSnapshot.activeIds.has(discussionId) ? "none" : "";
+    }
+  }, []);
+
+  const selectMode = useCallback(
+    (nextMode: Exclude<EngagementMode, null>) => {
+      const root = findDiscussionsFeedRoot();
+      const originalTabRow = root ? findOriginalTabRow(root) : null;
+      const allButton = originalTabRow
+        ? Array.from(originalTabRow.querySelectorAll<HTMLButtonElement>("button")).find(
+            (button) => button.textContent?.trim() === "All"
+          )
+        : null;
+
+      if (allButton) {
+        suppressOriginalClick.current = true;
+        allButton.click();
+        window.setTimeout(() => {
+          suppressOriginalClick.current = false;
+        }, 0);
+      }
+
+      setMode(nextMode);
+      publishModeState(nextMode);
+      requestAnimationFrame(() => applyFeedMode(nextMode));
     },
-    [snapshot]
+    [applyFeedMode, publishModeState]
   );
 
   useEffect(() => {
@@ -321,7 +363,9 @@ function DiscussionsEngagementController() {
       if (!mounted || discussionResult.error || !discussionResult.data) return;
 
       const qotwIds = new Set(
-        (qotwResult.data ?? []).map((row) => String(row.discussion_id ?? "")).filter(Boolean)
+        (qotwResult.data ?? [])
+          .map((row) => String(row.discussion_id ?? ""))
+          .filter(Boolean)
       );
       const hiddenProfileIds = new Set<string>();
       const followingIds = new Set<string>();
@@ -338,10 +382,14 @@ function DiscussionsEngagementController() {
         ]);
 
         for (const block of (blockResult.data ?? []) as BlockRow[]) {
-          hiddenProfileIds.add(block.blocker_id === viewerId ? block.blocked_id : block.blocker_id);
+          hiddenProfileIds.add(
+            block.blocker_id === viewerId ? block.blocked_id : block.blocker_id
+          );
         }
         for (const follow of followResult.data ?? []) {
-          if (typeof follow.following_id === "string") followingIds.add(follow.following_id);
+          if (typeof follow.following_id === "string") {
+            followingIds.add(follow.following_id);
+          }
         }
 
         const visitRows = (visitResult.data ?? []) as Array<{
@@ -355,13 +403,20 @@ function DiscussionsEngagementController() {
         (discussion) =>
           !qotwIds.has(discussion.id) && !hiddenProfileIds.has(discussion.user_id)
       );
-      const discussionById = new Map(discussions.map((discussion) => [discussion.id, discussion]));
+      const discussionById = new Map(
+        discussions.map((discussion) => [discussion.id, discussion])
+      );
       const replies = (replyResult.data ?? []) as ReplyRow[];
       const bookmarks = (bookmarkResult.data ?? []) as BookmarkRow[];
       const repliesByDiscussion = new Map<string, ReplyRow[]>();
 
       for (const reply of replies) {
-        if (!discussionById.has(reply.discussion_id) || hiddenProfileIds.has(reply.user_id)) continue;
+        if (
+          !discussionById.has(reply.discussion_id) ||
+          hiddenProfileIds.has(reply.user_id)
+        ) {
+          continue;
+        }
         const bucket = repliesByDiscussion.get(reply.discussion_id) ?? [];
         bucket.push(reply);
         repliesByDiscussion.set(reply.discussion_id, bucket);
@@ -375,7 +430,9 @@ function DiscussionsEngagementController() {
           bookmark.discussion_id,
           (bookmarkCounts.get(bookmark.discussion_id) ?? 0) + 1
         );
-        if (viewerId && bookmark.user_id === viewerId) savedIds.add(bookmark.discussion_id);
+        if (viewerId && bookmark.user_id === viewerId) {
+          savedIds.add(bookmark.discussion_id);
+        }
       }
 
       const participatedIds = new Set<string>();
@@ -388,19 +445,24 @@ function DiscussionsEngagementController() {
 
       for (const discussion of discussions) {
         const discussionReplies = (repliesByDiscussion.get(discussion.id) ?? []).sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         const latestReply = discussionReplies.at(-1)?.created_at ?? null;
         const latestActivity =
-          latestReply && new Date(latestReply).getTime() > new Date(discussion.created_at).getTime()
+          latestReply &&
+          new Date(latestReply).getTime() > new Date(discussion.created_at).getTime()
             ? latestReply
             : discussion.created_at;
         activityAt.set(discussion.id, latestActivity);
 
         const recentReplies = discussionReplies.filter(
-          (reply) => now - new Date(reply.created_at).getTime() <= 7 * 24 * 3_600_000
+          (reply) =>
+            now - new Date(reply.created_at).getTime() <= 7 * 24 * 3_600_000
         );
-        const recentContributors = new Set(recentReplies.map((reply) => reply.user_id)).size;
+        const recentContributors = new Set(
+          recentReplies.map((reply) => reply.user_id)
+        ).size;
         const activeScore =
           recentReplies.length * 8 +
           recentContributors * 6 +
@@ -409,11 +471,14 @@ function DiscussionsEngagementController() {
         activeScores.set(discussion.id, activeScore);
 
         if (viewerId) {
-          const viewerReplies = discussionReplies.filter((reply) => reply.user_id === viewerId);
+          const viewerReplies = discussionReplies.filter(
+            (reply) => reply.user_id === viewerId
+          );
           const latestViewerReply = viewerReplies.at(-1) ?? null;
           if (latestViewerReply) {
             participatedIds.add(discussion.id);
             if (discussion.topic) preferredTopics.add(discussion.topic);
+
             const responsesAfter = discussionReplies.filter(
               (reply) =>
                 reply.user_id !== viewerId &&
@@ -424,7 +489,9 @@ function DiscussionsEngagementController() {
               continueItems.push({
                 discussionId: discussion.id,
                 title: discussion.title,
-                detail: `${responsesAfter.length} ${responsesAfter.length === 1 ? "reply" : "replies"} since your latest contribution`,
+                detail: `${responsesAfter.length} ${
+                  responsesAfter.length === 1 ? "reply" : "replies"
+                } since your latest contribution`,
                 sortAt: new Date(responsesAfter.at(-1)!.created_at).getTime(),
               });
             }
@@ -433,14 +500,19 @@ function DiscussionsEngagementController() {
       }
 
       for (const discussion of discussions) {
-        if (savedIds.has(discussion.id) && discussion.topic) preferredTopics.add(discussion.topic);
-        if (followingIds.has(discussion.user_id) && discussion.topic) preferredTopics.add(discussion.topic);
+        if (savedIds.has(discussion.id) && discussion.topic) {
+          preferredTopics.add(discussion.topic);
+        }
+        if (followingIds.has(discussion.user_id) && discussion.topic) {
+          preferredTopics.add(discussion.topic);
+        }
       }
 
       for (const discussion of discussions) {
         const latestActivity = activityAt.get(discussion.id) ?? discussion.created_at;
         const discussionReplies = repliesByDiscussion.get(discussion.id) ?? [];
         let score = activeScores.get(discussion.id) ?? 0;
+
         if (followingIds.has(discussion.user_id)) score += 70;
         if (savedIds.has(discussion.id)) score += 55;
         if (participatedIds.has(discussion.id)) score += 65;
@@ -448,9 +520,14 @@ function DiscussionsEngagementController() {
         score += Math.min(24, discussionReplies.length * 2);
         forYouScores.set(discussion.id, score);
 
-        if (previousVisitAt && new Date(latestActivity).getTime() > new Date(previousVisitAt).getTime()) {
+        if (
+          previousVisitAt &&
+          new Date(latestActivity).getTime() > new Date(previousVisitAt).getTime()
+        ) {
           const repliesSince = discussionReplies.filter(
-            (reply) => new Date(reply.created_at).getTime() > new Date(previousVisitAt!).getTime()
+            (reply) =>
+              new Date(reply.created_at).getTime() >
+              new Date(previousVisitAt as string).getTime()
           ).length;
           newItems.push({
             discussionId: discussion.id,
@@ -472,7 +549,8 @@ function DiscussionsEngagementController() {
 
       const activeDiscussions = discussions.filter((discussion) => {
         const score = activeScores.get(discussion.id) ?? 0;
-        const createdRecently = now - new Date(discussion.created_at).getTime() <= 72 * 3_600_000;
+        const createdRecently =
+          now - new Date(discussion.created_at).getTime() <= 72 * 3_600_000;
         return score >= 18 || createdRecently;
       });
       const activeOrder = activeDiscussions
@@ -495,8 +573,9 @@ function DiscussionsEngagementController() {
       };
 
       if (mounted) {
+        snapshotRef.current = nextSnapshot;
         setSnapshot(nextSnapshot);
-        requestAnimationFrame(() => applyFeedMode("for_you", nextSnapshot));
+        requestAnimationFrame(() => applyFeedMode("for_you"));
       }
     }
 
@@ -506,55 +585,47 @@ function DiscussionsEngagementController() {
     };
   }, [applyFeedMode]);
 
-  const selectMode = useCallback(
-    (nextMode: Exclude<EngagementMode, null>) => {
-      const root = findDiscussionsFeedRoot();
-      const originalTabRow = root ? findOriginalTabRow(root) : null;
-      const allButton = originalTabRow
-        ? Array.from(originalTabRow.querySelectorAll<HTMLButtonElement>("button")).find(
-            (button) => button.textContent?.trim() === "All"
-          )
-        : null;
-
-      if (allButton) {
-        suppressOriginalClick.current = true;
-        allButton.click();
-        queueMicrotask(() => {
-          suppressOriginalClick.current = false;
-        });
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const requestedMode = (event as CustomEvent<{ mode?: EngagementMode }>).detail?.mode;
+      if (requestedMode === "for_you" || requestedMode === "active") {
+        selectMode(requestedMode);
       }
-
-      setMode(nextMode);
-      requestAnimationFrame(() => applyFeedMode(nextMode));
-    },
-    [applyFeedMode]
-  );
+    };
+    window.addEventListener(MODE_REQUEST_EVENT, handler);
+    return () => window.removeEventListener(MODE_REQUEST_EVENT, handler);
+  }, [selectMode]);
 
   useEffect(() => {
     const root = findDiscussionsFeedRoot();
-    if (!root) return;
-    const tabRow = findOriginalTabRow(root);
+    const tabRow = root ? findOriginalTabRow(root) : null;
     if (!tabRow) return;
 
-    const buttons = Array.from(tabRow.querySelectorAll<HTMLButtonElement>("button")).filter((button) =>
-      TAB_LABELS.has(button.textContent?.trim() ?? "")
+    const buttons = Array.from(tabRow.querySelectorAll<HTMLButtonElement>("button")).filter(
+      (button) => ORIGINAL_TAB_LABELS.has(button.textContent?.trim() ?? "")
     );
 
     const onOriginalTab = () => {
       if (suppressOriginalClick.current) return;
       setMode(null);
+      publishModeState(null);
       requestAnimationFrame(() => applyFeedMode(null));
     };
 
-    for (const button of buttons) button.addEventListener("click", onOriginalTab);
+    for (const button of buttons) {
+      button.addEventListener("click", onOriginalTab);
+    }
     return () => {
-      for (const button of buttons) button.removeEventListener("click", onOriginalTab);
+      for (const button of buttons) {
+        button.removeEventListener("click", onOriginalTab);
+      }
     };
-  }, [applyFeedMode]);
+  }, [applyFeedMode, publishModeState]);
 
   useEffect(() => {
     const root = findDiscussionsFeedRoot();
     if (!root) return;
+
     const observer = new MutationObserver(() => {
       if (mode) requestAnimationFrame(() => applyFeedMode(mode));
     });
@@ -562,16 +633,14 @@ function DiscussionsEngagementController() {
     return () => observer.disconnect();
   }, [mode, applyFeedMode]);
 
-  const tabPortalTarget = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    return findOriginalTabRow(findDiscussionsFeedRoot() ?? document.body as HTMLElement);
-  }, []);
-
   useEffect(() => {
-    if (!tabPortalTarget) return;
-    const allButton = Array.from(tabPortalTarget.querySelectorAll<HTMLButtonElement>("button")).find(
-      (button) => button.textContent?.trim() === "All"
-    );
+    const root = findDiscussionsFeedRoot();
+    const tabRow = root ? findOriginalTabRow(root) : null;
+    const allButton = tabRow
+      ? Array.from(tabRow.querySelectorAll<HTMLButtonElement>("button")).find(
+          (button) => button.textContent?.trim() === "All"
+        )
+      : null;
     if (!allButton) return;
 
     if (mode) {
@@ -581,20 +650,35 @@ function DiscussionsEngagementController() {
       allButton.style.removeProperty("border-color");
       allButton.style.removeProperty("background");
     }
+
     return () => {
       allButton.style.removeProperty("border-color");
       allButton.style.removeProperty("background");
     };
-  }, [mode, tabPortalTarget]);
+  }, [mode]);
 
-  return (
-    <>
-      <EngagementPanel snapshot={snapshot} />
-      <div data-discussions-engagement-tabs="true" className="hidden">
-        <EngagementTabs mode={mode} onMode={selectMode} />
-      </div>
-    </>
-  );
+  return <EngagementPanel snapshot={snapshot} />;
+}
+
+function EngagementTabController() {
+  const [mode, setMode] = useState<EngagementMode>("for_you");
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const nextMode = (event as CustomEvent<{ mode?: EngagementMode }>).detail?.mode;
+      setMode(nextMode === "for_you" || nextMode === "active" ? nextMode : null);
+    };
+    window.addEventListener(MODE_STATE_EVENT, handler);
+    return () => window.removeEventListener(MODE_STATE_EVENT, handler);
+  }, []);
+
+  function requestMode(nextMode: Exclude<EngagementMode, null>) {
+    window.dispatchEvent(
+      new CustomEvent(MODE_REQUEST_EVENT, { detail: { mode: nextMode } })
+    );
+  }
+
+  return <EngagementTabs mode={mode} onMode={requestMode} />;
 }
 
 export function DiscussionsEngagementBridge() {
@@ -608,6 +692,7 @@ export function DiscussionsEngagementBridge() {
     function ensureMounted() {
       const feedRoot = findDiscussionsFeedRoot();
       if (!feedRoot) return false;
+
       const headingBlock = findHeadingBlock(feedRoot);
       const tabRow = findOriginalTabRow(feedRoot);
       if (!headingBlock?.parentElement || !tabRow) return false;
@@ -616,9 +701,16 @@ export function DiscussionsEngagementBridge() {
         panelMount = document.createElement("div");
         panelMount.dataset.discussionsEngagementMount = "true";
         panelMount.className = "mb-6";
-        const qotwMount = feedRoot.querySelector<HTMLElement>('[data-question-of-the-week-mount="true"]');
-        if (qotwMount) qotwMount.insertAdjacentElement("afterend", panelMount);
-        else headingBlock.insertAdjacentElement("afterend", panelMount);
+
+        const qotwMount = feedRoot.querySelector<HTMLElement>(
+          '[data-question-of-the-week-mount="true"]'
+        );
+        if (qotwMount) {
+          qotwMount.insertAdjacentElement("afterend", panelMount);
+        } else {
+          headingBlock.insertAdjacentElement("afterend", panelMount);
+        }
+
         panelRoot = createRoot(panelMount);
         panelRoot.render(<DiscussionsEngagementController />);
       }
@@ -629,9 +721,7 @@ export function DiscussionsEngagementBridge() {
         tabsMount.style.display = "contents";
         tabRow.insertBefore(tabsMount, tabRow.firstChild);
         tabsRoot = createRoot(tabsMount);
-        tabsRoot.render(
-          <EngagementTabPortalController />
-        );
+        tabsRoot.render(<EngagementTabController />);
       }
 
       return true;
@@ -657,17 +747,4 @@ export function DiscussionsEngagementBridge() {
   }, []);
 
   return null;
-}
-
-function EngagementTabPortalController() {
-  const [mode, setMode] = useState<Exclude<EngagementMode, null>>("for_you");
-
-  function choose(nextMode: Exclude<EngagementMode, null>) {
-    setMode(nextMode);
-    window.dispatchEvent(
-      new CustomEvent("loombus:discussion-engagement-mode", { detail: { mode: nextMode } })
-    );
-  }
-
-  return <EngagementTabs mode={mode} onMode={choose} />;
 }
