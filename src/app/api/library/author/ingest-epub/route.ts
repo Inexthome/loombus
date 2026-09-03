@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { parseEpubBuffer } from "@/lib/library/epub-parser";
+import { sanitizeNormalizedEpubSection } from "@/lib/library/epub-section-sanitizer";
 import { sha256Hex } from "@/lib/library/epub-validation";
 
 export const runtime = "nodejs";
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       throw new Error("library_epub_source_sha256_mismatch");
     }
 
-    const sections = await parseEpubBuffer(buffer);
+    const sections = (await parseEpubBuffer(buffer)).map(sanitizeNormalizedEpubSection);
     const completionResult = await supabase.rpc("complete_library_author_epub_ingestion", {
       p_source_id: sourceId,
       p_route_token: routeToken,
