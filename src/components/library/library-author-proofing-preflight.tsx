@@ -60,6 +60,8 @@ export function LibraryAuthorProofingPreflight({
     [proof, source, sourceReady],
   );
 
+  const pendingLocalConfirmation = !currentConfirmation && previewConfirmed && rightsAttested;
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -163,7 +165,7 @@ export function LibraryAuthorProofingPreflight({
       return;
     }
 
-    setMessage("Preflight confirmed for the current EPUB. Replacing the EPUB will require a new proof review and rights attestation.");
+    setMessage("Preflight confirmed. Submit for review is now unlocked for this exact EPUB and metadata version.");
     await load();
     setSaving(false);
   }
@@ -175,7 +177,11 @@ export function LibraryAuthorProofingPreflight({
           <p className="library-publish-eyebrow">Author proof &amp; preflight</p>
           <h3 id={`library-proofing-${resolvedVersionId ?? publicationId}`}>Confirm the exact edition you intend to submit.</h3>
         </div>
-        {currentConfirmation ? <span className="library-publish-state">Preflight complete</span> : null}
+        {currentConfirmation ? (
+          <span className="library-publish-state">Preflight complete</span>
+        ) : pendingLocalConfirmation ? (
+          <span className="library-publish-state">Confirmation not saved</span>
+        ) : null}
       </div>
 
       <p className="library-publish-commerce-copy">
@@ -188,15 +194,27 @@ export function LibraryAuthorProofingPreflight({
           <strong>EPUB processed</strong>
           <small>The current source passed ingestion and has normalized Reader content.</small>
         </p>
-        <p data-complete={currentConfirmation || previewConfirmed}>
-          <span>{currentConfirmation || previewConfirmed ? <Check aria-hidden="true" /> : "2"}</span>
+        <p data-complete={currentConfirmation}>
+          <span>{currentConfirmation ? <Check aria-hidden="true" /> : "2"}</span>
           <strong>Reader proof reviewed</strong>
-          <small>Use the normalized preview above and verify the text, order, headings, and completeness.</small>
+          <small>
+            {currentConfirmation
+              ? "The proof review is saved for this exact EPUB."
+              : previewConfirmed
+                ? "Selected locally. Confirm proof & unlock submission below to save this review."
+                : "Use the normalized preview above and verify the text, order, headings, and completeness."}
+          </small>
         </p>
-        <p data-complete={currentConfirmation || rightsAttested}>
-          <span>{currentConfirmation || rightsAttested ? <Check aria-hidden="true" /> : "3"}</span>
+        <p data-complete={currentConfirmation}>
+          <span>{currentConfirmation ? <Check aria-hidden="true" /> : "3"}</span>
           <strong>Publishing rights confirmed</strong>
-          <small>Confirm that you own or control the rights necessary to publish this work through Loombus.</small>
+          <small>
+            {currentConfirmation
+              ? "The rights attestation is saved for this exact edition."
+              : rightsAttested
+                ? "Selected locally. Confirm proof & unlock submission below to save this attestation."
+                : "Confirm that you own or control the rights necessary to publish this work through Loombus."}
+          </small>
         </p>
       </div>
 
@@ -226,13 +244,18 @@ export function LibraryAuthorProofingPreflight({
           </label>
           <button
             type="button"
-            className="library-publish-secondary"
+            className="library-publish-primary"
             disabled={!previewConfirmed || !rightsAttested || saving}
             onClick={() => void confirmProofing()}
           >
             {saving ? <Loader2 className="library-publish-spinner" aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
-            Confirm final preflight
+            Confirm proof &amp; unlock submission
           </button>
+          {pendingLocalConfirmation ? (
+            <p className="library-publish-lock-note">
+              Both acknowledgements are selected but not saved yet. Use the button above to complete preflight and unlock Submit for review.
+            </p>
+          ) : null}
         </fieldset>
       ) : null}
 
@@ -241,7 +264,7 @@ export function LibraryAuthorProofingPreflight({
       ) : !editable && !currentConfirmation ? (
         <p className="library-publish-lock-note">This editorial state is locked and does not have a current author proofing confirmation.</p>
       ) : currentConfirmation ? (
-        <p className="library-publish-lock-note">The current EPUB, normalized proof, and rights attestation are aligned. This version is eligible for submission.</p>
+        <p className="library-publish-lock-note">The current EPUB, normalized proof, and rights attestation are aligned. Submit for review is unlocked for this version.</p>
       ) : null}
 
       {loading ? <p className="library-publish-commerce-copy"><Loader2 className="library-publish-spinner" aria-hidden="true" /> Checking current proofing state…</p> : null}
