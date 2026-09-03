@@ -14,7 +14,12 @@ type AttentionNotification = {
   created_at: string;
 };
 
-const DESTINATIONS: Record<string, (id: string) => string> = {
+type AttentionItemLink = {
+  id: string;
+  action_url: string;
+};
+
+const LEGACY_DESTINATIONS: Record<string, (id: string) => string> = {
   admin_report: (id) => `/admin/reports?report=${encodeURIComponent(id)}`,
   admin_support_request: (id) => `/admin/support?request=${encodeURIComponent(id)}`,
   admin_labs_request: (id) => `/admin/labs?request=${encodeURIComponent(id)}`,
@@ -25,19 +30,21 @@ const DESTINATIONS: Record<string, (id: string) => string> = {
   admin_trust_safety_case: (id) => `/admin/legal-operations?trust_safety_case=${encodeURIComponent(id)}`,
 };
 
-export function getAdminAttentionNotificationHref(targetType: string, targetId: string | null) {
+export function getLegacyAdminAttentionNotificationHref(targetType: string, targetId: string | null) {
   if (!targetId) return null;
-  return DESTINATIONS[targetType]?.(targetId) ?? null;
+  return LEGACY_DESTINATIONS[targetType]?.(targetId) ?? null;
 }
 
 export default function AdminAttentionNotifications() {
   const [items, setItems] = useState<AttentionNotification[]>([]);
+  const [attentionLinks, setAttentionLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let alive = true;
     async function load() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
+
       const { data, error } = await supabase
         .from("notifications")
         .select("id,target_type,target_id,message,read_at,created_at")
@@ -45,18 +52,48 @@ export default function AdminAttentionNotifications() {
         .eq("type", "admin_attention")
         .order("created_at", { ascending: false })
         .limit(25);
-      if (!error && alive) setItems((data ?? []) as AttentionNotification[]);
+
+      if (error || !alive) return;
+
+      const notifications = (data ?? []) as AttentionNotification[];
+      setItems(notifications);
+
+      const targetIds = Array.from(
+        new Set(notifications.map((item) => item.target_id).filter((id): id is string => Boolean(id))),
+      );
+      if (targetIds.length === 0) {
+        setAttentionLinks({});
+        return;
+      }
+
+      const { data: attentionData, error: attentionError } = await supabase
+        .from("admin_attention_items")
+        .select("id,action_url")
+        .in("id", targetIds);
+
+      if (!attentionError && alive) {
+        const links = Object.fromEntries(
+          ((attentionData ?? []) as AttentionItemLink[]).map((item) => [item.id, item.action_url]),
+        );
+        setAttentionLinks(links);
+      }
     }
+
     void load();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const linked = useMemo(
-    () => items.flatMap((item) => {
-      const href = getAdminAttentionNotificationHref(item.target_type, item.target_id);
-      return href ? [{ ...item, href }] : [];
-    }),
-    [items],
+    () =>
+      items.flatMap((item) => {
+        const href = item.target_id
+          ? attentionLinks[item.target_id] ?? getLegacyAdminAttentionNotificationHref(item.target_type, item.target_id)
+          : null;
+        return href ? [{ ...item, href }] : [];
+      }),
+    [attentionLinks, items],
   );
 
   if (linked.length === 0) return null;

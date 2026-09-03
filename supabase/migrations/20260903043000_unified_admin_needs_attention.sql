@@ -121,7 +121,7 @@ begin
     if should_notify then
       notification_message := left(coalesce(nullif(trim(p_title), ''), 'Admin action required'), 500);
       insert into public.notifications (user_id, type, target_type, target_id, message)
-      select p.id, 'admin_attention', p_source_type, p_source_id, notification_message
+      select p.id, 'admin_attention', p_source_type, item_id, notification_message
       from public.profiles p
       where p.is_admin = true;
     end if;
