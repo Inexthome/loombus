@@ -94,13 +94,18 @@ export default function AdminCommunicationsClient() {
         setMessage(error instanceof Error ? error.message : "Unable to load Admin Communications.");
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [load]);
 
   const progress = useMemo(() => {
     const campaign = state?.campaign;
     if (!campaign || campaign.eligible_count === 0) return 0;
-    return Math.min(100, Math.round(((campaign.sent_count + campaign.failed_count) / campaign.eligible_count) * 100));
+    return Math.min(
+      100,
+      Math.round(((campaign.sent_count + campaign.failed_count) / campaign.eligible_count) * 100)
+    );
   }, [state?.campaign]);
 
   async function prepare() {
@@ -129,7 +134,9 @@ export default function AdminCommunicationsClient() {
       }
       setMessage("Campaign processing is complete. Review the delivery totals below.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Campaign sending stopped. You can resume safely.");
+      setMessage(
+        error instanceof Error ? error.message : "Campaign sending stopped. You can resume safely."
+      );
       await load().catch(() => undefined);
     } finally {
       setBusy(false);
@@ -137,15 +144,36 @@ export default function AdminCommunicationsClient() {
   }
 
   if (access === "checking") {
-    return <main className="min-h-screen bg-neutral-950 p-8 text-neutral-100"><div className="mx-auto max-w-5xl">Verifying Admin access…</div></main>;
+    return (
+      <section className="communications-editorial-state" aria-live="polite">
+        <p className="communications-editorial-kicker">Access</p>
+        <h2>Verifying Admin access…</h2>
+        <p>Checking the current account role before campaign data is loaded.</p>
+      </section>
+    );
   }
 
   if (access === "denied") {
-    return <main className="min-h-screen bg-neutral-950 p-8 text-neutral-100"><div className="mx-auto max-w-3xl rounded-3xl border border-neutral-800 bg-neutral-900 p-8"><h1 className="text-3xl font-semibold">Admin access is required.</h1><Link href="/discussions" className="mt-6 inline-block text-[#CBAB5B]">Return to Loombus</Link></div></main>;
+    return (
+      <section className="communications-editorial-state">
+        <p className="communications-editorial-kicker">Restricted</p>
+        <h2>Admin access is required.</h2>
+        <p>This communications workspace is limited to the existing Loombus Admin role.</p>
+        <Link href="/discussions" className="communications-editorial-text-link">
+          Return to Loombus
+        </Link>
+      </section>
+    );
   }
 
   if (access === "error" || !state) {
-    return <main className="min-h-screen bg-neutral-950 p-8 text-neutral-100"><div className="mx-auto max-w-3xl rounded-3xl border border-neutral-800 bg-neutral-900 p-8"><h1 className="text-3xl font-semibold">Communications could not be loaded.</h1><p className="mt-4 text-neutral-300">{message}</p></div></main>;
+    return (
+      <section className="communications-editorial-state">
+        <p className="communications-editorial-kicker">Unavailable</p>
+        <h2>Communications could not be loaded.</h2>
+        <p>{message}</p>
+      </section>
+    );
   }
 
   const campaign = state.campaign;
@@ -153,68 +181,108 @@ export default function AdminCommunicationsClient() {
   const canSend = Boolean(campaign && campaign.status !== "sent" && state.providerConfigured);
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-5 py-10 text-neutral-100">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="flex flex-wrap items-start justify-between gap-4">
+    <main className="communications-editorial-page">
+      <section className="communications-editorial-index" aria-label="Campaign readiness">
+        <article>
+          <span>Accounts</span>
+          <strong>{state.preview.totalAccounts}</strong>
+        </article>
+        <article>
+          <span>Eligible</span>
+          <strong>{state.preview.eligibleCount}</strong>
+        </article>
+        <article>
+          <span>Opted out</span>
+          <strong>{state.preview.optedOutCount}</strong>
+        </article>
+        <article>
+          <span>Provider</span>
+          <strong>{state.providerConfigured ? "Ready" : "Not configured"}</strong>
+        </article>
+      </section>
+
+      <section className="communications-editorial-campaign">
+        <header className="communications-editorial-section-heading">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#CBAB5B]">Loombus Admin</p>
-            <h1 className="mt-2 text-4xl font-semibold">Member Communications</h1>
-            <p className="mt-3 max-w-2xl text-neutral-400">Prepare, send, and audit member email campaigns. Every recipient is sent individually and suppression is checked again immediately before delivery.</p>
+            <p className="communications-editorial-kicker">Approved campaign</p>
+            <h2>{state.preview.subject}</h2>
+            <p>From {state.preview.sender}</p>
           </div>
-          <Link href="/admin" className="rounded-full border border-neutral-700 px-5 py-3 font-semibold">Back to Admin</Link>
+          <span className="communications-editorial-status">{campaign?.status || "not prepared"}</span>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-4">
-          {[
-            ["Accounts", state.preview.totalAccounts],
-            ["Eligible", state.preview.eligibleCount],
-            ["Opted out", state.preview.optedOutCount],
-            ["Provider", state.providerConfigured ? "Ready" : "Not configured"],
-          ].map(([label, value]) => (
-            <div key={String(label)} className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
-              <p className="text-sm text-neutral-500">{label}</p>
-              <p className="mt-2 text-2xl font-semibold">{value}</p>
+        <div className="communications-editorial-message-preview">
+          <p>We&apos;ve missed having you on Loombus.</p>
+          <p>
+            A lot has been happening since your last visit—new discussions, new ideas, and new ways to
+            discover what&apos;s worth paying attention to.
+          </p>
+          <p>Come back and see what you&apos;ve been missing.</p>
+          <p>Loombus is built for thoughtful conversations, useful perspectives, and signal over noise.</p>
+          <p>We&apos;d love to have you back.</p>
+          <p>— The Loombus Team</p>
+          <span className="communications-editorial-cta-preview">See What&apos;s New</span>
+        </div>
+
+        {campaign ? (
+          <section className="communications-editorial-progress" aria-label="Delivery progress">
+            <div className="communications-editorial-progress-heading">
+              <span>Delivery progress</span>
+              <strong>{progress}%</strong>
             </div>
-          ))}
-        </section>
-
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm text-neutral-500">Approved campaign</p>
-              <h2 className="mt-1 text-2xl font-semibold">{state.preview.subject}</h2>
-              <p className="mt-2 text-sm text-neutral-400">From: {state.preview.sender}</p>
+            <div className="communications-editorial-progress-track" aria-hidden="true">
+              <div style={{ width: `${progress}%` }} />
             </div>
-            <span className="rounded-full border border-neutral-700 px-3 py-1 text-sm capitalize">{campaign?.status || "not prepared"}</span>
-          </div>
+            <dl>
+              <div>
+                <dt>Sent</dt>
+                <dd>{campaign.sent_count}</dd>
+              </div>
+              <div>
+                <dt>Failed</dt>
+                <dd>{campaign.failed_count}</dd>
+              </div>
+              <div>
+                <dt>Snapshotted</dt>
+                <dd>{campaign.eligible_count}</dd>
+              </div>
+            </dl>
+          </section>
+        ) : null}
 
-          <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-6 leading-7 text-neutral-300">
-            <p>We've missed having you on Loombus.</p>
-            <p className="mt-4">A lot has been happening since your last visit—new discussions, new ideas, and new ways to discover what's worth paying attention to.</p>
-            <p className="mt-4">Come back and see what you've been missing.</p>
-            <p className="mt-4">Loombus is built for thoughtful conversations, useful perspectives, and signal over noise.</p>
-            <p className="mt-4">We'd love to have you back.</p>
-            <p className="mt-4">— The Loombus Team</p>
-            <span className="mt-6 inline-block rounded-full bg-[#CBAB5B] px-5 py-2 font-semibold text-neutral-950">See What's New</span>
-          </div>
+        {!state.providerConfigured ? (
+          <p className="communications-editorial-notice">
+            RESEND_API_KEY is not available to this deployment. Sending remains disabled until the existing
+            Loombus email provider is configured.
+          </p>
+        ) : null}
 
-          {campaign ? (
-            <div className="mt-6">
-              <div className="mb-2 flex justify-between text-sm text-neutral-400"><span>Delivery progress</span><span>{progress}%</span></div>
-              <div className="h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full bg-[#CBAB5B]" style={{ width: `${progress}%` }} /></div>
-              <div className="mt-3 flex gap-5 text-sm text-neutral-400"><span>{campaign.sent_count} sent</span><span>{campaign.failed_count} failed</span><span>{campaign.eligible_count} snapshotted</span></div>
-            </div>
-          ) : null}
+        {message ? (
+          <p className="communications-editorial-feedback" aria-live="polite">
+            {message}
+          </p>
+        ) : null}
 
-          {!state.providerConfigured ? <p className="mt-5 rounded-xl border border-amber-900/60 bg-amber-950/30 p-4 text-sm text-amber-200">RESEND_API_KEY is not available to this deployment. Sending remains disabled until the existing Loombus email provider is configured.</p> : null}
-          {message ? <p className="mt-5 text-sm text-neutral-300" aria-live="polite">{message}</p> : null}
-
-          <div className="mt-7 flex flex-wrap gap-3">
-            <button type="button" onClick={() => void prepare()} disabled={!canPrepare || busy} className="rounded-full border border-neutral-700 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-40">{campaign ? "Recipients prepared" : busy ? "Preparing…" : "Prepare recipients"}</button>
-            <button type="button" onClick={() => void send()} disabled={!canSend || busy} className="rounded-full bg-[#CBAB5B] px-5 py-3 font-semibold text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Working…" : campaign?.status === "sent" ? "Campaign sent" : campaign?.status === "sending" || campaign?.status === "failed" ? "Resume sending" : "Send campaign"}</button>
-          </div>
-        </section>
-      </div>
+        <div className="communications-editorial-actions">
+          <button type="button" onClick={() => void prepare()} disabled={!canPrepare || busy}>
+            {campaign ? "Recipients prepared" : busy ? "Preparing…" : "Prepare recipients"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void send()}
+            disabled={!canSend || busy}
+            className="is-primary"
+          >
+            {busy
+              ? "Working…"
+              : campaign?.status === "sent"
+                ? "Campaign sent"
+                : campaign?.status === "sending" || campaign?.status === "failed"
+                  ? "Resume sending"
+                  : "Send campaign"}
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
