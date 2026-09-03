@@ -46,8 +46,8 @@ if (/DEFAULT_FROM\s*=\s*["'][^"']+@loombus\.com/i.test(broadcastRoute)) {
   throw new Error("Member broadcast cannot use a root @loombus.com From address.");
 }
 
-if (!digestDelivery.includes("DIGEST_FROM_EMAIL")) {
-  throw new Error("Room digest delivery must use the standardized digest sender configuration.");
+if (!digestDelivery.includes("from: args.digestFromEmail")) {
+  throw new Error("Room digest delivery must use its supplied standardized digest sender.");
 }
 
 if (!agents.includes("All application-generated outbound email must use the verified `mail.loombus.com` sending domain")) {
