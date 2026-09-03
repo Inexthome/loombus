@@ -37,8 +37,8 @@ const [
 ]);
 
 for (const expected of [
-  "versionCode 14",
-  'versionName "1.0.6"',
+  "versionCode 15",
+  'versionName "1.0.7"',
   "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0",
 ]) {
   requireText(androidBuild, expected, `Android native release is missing ${expected}.`);
@@ -133,5 +133,5 @@ for (const source of [iosInfo, iosWidgetInfo]) {
 }
 
 console.log(
-  "Native Experience verification passed: Android 1.0.6 (14) after store build 13; iOS 1.0.6 (2) after store build 1; pull-to-refresh, tactile feedback, verified web links, native sharing, and Android Back navigation are wired."
+  "Native Experience verification passed: Android 1.0.7 (15) after store build 14; iOS 1.0.6 (2) after store build 1; pull-to-refresh, tactile feedback, verified web links, native sharing, and Android Back navigation are wired."
 );

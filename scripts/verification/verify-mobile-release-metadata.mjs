@@ -184,13 +184,13 @@ if (hasCompleteStoreBaseline) {
 
 // Current store baselines supplied for this release train:
 // iOS: 1.0.6 (1) awaiting submission for review.
-// Android: 1.0.6 (13) awaiting publish.
+// Android: 1.0.6 (14) distributed; 1.0.7 (15) is the crash-fix candidate.
 if (iosVersion !== "1.0.6" || iosBuild !== 2) {
   throw new Error(`Expected iOS release 1.0.6 (2), found ${iosVersion} (${iosBuild}).`);
 }
-if (androidVersionName !== "1.0.6" || androidVersionCode !== 14) {
+if (androidVersionName !== "1.0.7" || androidVersionCode !== 15) {
   throw new Error(
-    `Expected Android release 1.0.6 (14), found ${androidVersionName} (${androidVersionCode}).`
+    `Expected Android release 1.0.7 (15), found ${androidVersionName} (${androidVersionCode}).`
   );
 }
 
