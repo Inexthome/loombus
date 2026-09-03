@@ -176,7 +176,7 @@ begin
       source_status := record_json->>'status';
       actionable := tg_op <> 'DELETE' and source_status in ('new', 'reviewing');
       title_text := 'Member report needs review';
-      summary_text := coalesce(record_json->>'reason', record_json->>'details');
+      summary_text := record_json->>'reason';
       action_url_text := '/admin/reports?report=' || source_id;
       priority_text := 'high';
     when 'support_requests' then
@@ -308,7 +308,7 @@ for each row execute function public.sync_admin_attention_from_source();
 -- becomes the durable queue without producing duplicate rows.
 select public.sync_admin_attention_item(
   'admin_report', id::text, true, status,
-  'Member report needs review', coalesce(reason, details),
+  'Member report needs review', reason,
   '/admin/reports?report=' || id::text, 'high', created_at
 ) from public.reports where status in ('new', 'reviewing');
 
