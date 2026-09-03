@@ -32,7 +32,7 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --no-audit
 
       - name: Lint
         run: npm run lint
@@ -65,11 +65,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install locked dependencies
-        run: npm ci
-
       - name: Audit production dependency vulnerabilities
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --package-lock-only --omit=dev --audit-level=high
 
   migrations-reset:
     name: supabase db reset (migrations replay from empty)
