@@ -28,6 +28,18 @@ type BroadcastState = {
   providerConfigured: boolean;
 };
 
+type DeliveryDiagnostics = {
+  retryableCount: number;
+  exhaustedCount: number;
+  failureReasons: Array<{ message: string; count: number }>;
+  configuredSenders: {
+    campaign?: string | null;
+    broadcast: string | null;
+    product: string | null;
+    digest: string | null;
+  };
+};
+
 type AccessState = "checking" | "allowed" | "denied" | "error";
 
 async function getAccessToken() {
@@ -38,9 +50,9 @@ async function getAccessToken() {
   return token;
 }
 
-async function callBroadcastApi(method: "GET" | "POST", body?: unknown) {
+async function callApi(path: string, method: "GET" | "POST", body?: unknown) {
   const token = await getAccessToken();
-  const response = await fetch("/api/admin/member-email", {
+  const response = await fetch(path, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -56,12 +68,17 @@ async function callBroadcastApi(method: "GET" | "POST", body?: unknown) {
 export default function AdminCommunicationsClient() {
   const [access, setAccess] = useState<AccessState>("checking");
   const [state, setState] = useState<BroadcastState | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DeliveryDiagnostics | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
-    const payload = await callBroadcastApi("GET");
-    setState(payload as BroadcastState);
+    const [broadcastPayload, diagnosticPayload] = await Promise.all([
+      callApi("/api/admin/member-email", "GET"),
+      callApi("/api/admin/member-email/diagnostics", "GET"),
+    ]);
+    setState(broadcastPayload as BroadcastState);
+    setDiagnostics(diagnosticPayload as DeliveryDiagnostics);
   }, []);
 
   useEffect(() => {
@@ -99,7 +116,7 @@ export default function AdminCommunicationsClient() {
     };
   }, [load]);
 
-  const progress = useMemo(() => {
+  const processedProgress = useMemo(() => {
     const campaign = state?.campaign;
     if (!campaign || campaign.eligible_count === 0) return 0;
     return Math.min(
@@ -112,7 +129,7 @@ export default function AdminCommunicationsClient() {
     setBusy(true);
     setMessage("");
     try {
-      await callBroadcastApi("POST", { action: "prepare" });
+      await callApi("/api/admin/member-email", "POST", { action: "prepare" });
       await load();
       setMessage("Campaign recipient snapshot prepared. No email has been sent yet.");
     } catch (error) {
@@ -124,20 +141,28 @@ export default function AdminCommunicationsClient() {
 
   async function send() {
     setBusy(true);
-    setMessage("Sending individual member emails…");
+    setMessage("Sending the next delivery batch…");
     try {
-      let done = false;
-      while (!done) {
-        const payload = await callBroadcastApi("POST", { action: "send_batch" });
-        done = Boolean(payload.done);
-        await load();
-      }
-      setMessage("Campaign processing is complete. Review the delivery totals below.");
+      await callApi("/api/admin/member-email", "POST", { action: "send_batch" });
+      await load();
+      setMessage("Batch processed. Review the delivery result before continuing.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Campaign sending stopped. You can resume safely."
-      );
+      setMessage(error instanceof Error ? error.message : "Campaign sending stopped.");
       await load().catch(() => undefined);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetFailed() {
+    setBusy(true);
+    setMessage("");
+    try {
+      await callApi("/api/admin/member-email/diagnostics", "POST", { action: "reset_failed" });
+      await load();
+      setMessage("Failed recipients were reset. Only retry after the provider or sender problem is corrected.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to reset failed recipients.");
     } finally {
       setBusy(false);
     }
@@ -178,27 +203,23 @@ export default function AdminCommunicationsClient() {
 
   const campaign = state.campaign;
   const canPrepare = !campaign;
-  const canSend = Boolean(campaign && campaign.status !== "sent" && state.providerConfigured);
+  const retryable = diagnostics?.retryableCount ?? 0;
+  const exhausted = diagnostics?.exhaustedCount ?? 0;
+  const hasFailures = Boolean(campaign && campaign.failed_count > 0);
+  const canSend = Boolean(
+    campaign &&
+      campaign.status !== "sent" &&
+      state.providerConfigured &&
+      (!hasFailures || retryable > 0)
+  );
 
   return (
     <main className="communications-editorial-page">
       <section className="communications-editorial-index" aria-label="Campaign readiness">
-        <article>
-          <span>Accounts</span>
-          <strong>{state.preview.totalAccounts}</strong>
-        </article>
-        <article>
-          <span>Eligible</span>
-          <strong>{state.preview.eligibleCount}</strong>
-        </article>
-        <article>
-          <span>Opted out</span>
-          <strong>{state.preview.optedOutCount}</strong>
-        </article>
-        <article>
-          <span>Provider</span>
-          <strong>{state.providerConfigured ? "Ready" : "Not configured"}</strong>
-        </article>
+        <article><span>Accounts</span><strong>{state.preview.totalAccounts}</strong></article>
+        <article><span>Eligible</span><strong>{state.preview.eligibleCount}</strong></article>
+        <article><span>Opted out</span><strong>{state.preview.optedOutCount}</strong></article>
+        <article><span>Provider</span><strong>{state.providerConfigured ? "Configured" : "Not configured"}</strong></article>
       </section>
 
       <section className="communications-editorial-campaign">
@@ -213,10 +234,7 @@ export default function AdminCommunicationsClient() {
 
         <div className="communications-editorial-message-preview">
           <p>We&apos;ve missed having you on Loombus.</p>
-          <p>
-            A lot has been happening since your last visit—new discussions, new ideas, and new ways to
-            discover what&apos;s worth paying attention to.
-          </p>
+          <p>A lot has been happening since your last visit—new discussions, new ideas, and new ways to discover what&apos;s worth paying attention to.</p>
           <p>Come back and see what you&apos;ve been missing.</p>
           <p>Loombus is built for thoughtful conversations, useful perspectives, and signal over noise.</p>
           <p>We&apos;d love to have you back.</p>
@@ -225,62 +243,54 @@ export default function AdminCommunicationsClient() {
         </div>
 
         {campaign ? (
-          <section className="communications-editorial-progress" aria-label="Delivery progress">
+          <section className="communications-editorial-progress" aria-label="Processing progress">
             <div className="communications-editorial-progress-heading">
-              <span>Delivery progress</span>
-              <strong>{progress}%</strong>
+              <span>Processing progress</span>
+              <strong>{processedProgress}%</strong>
             </div>
             <div className="communications-editorial-progress-track" aria-hidden="true">
-              <div style={{ width: `${progress}%` }} />
+              <div style={{ width: `${processedProgress}%` }} />
             </div>
             <dl>
-              <div>
-                <dt>Sent</dt>
-                <dd>{campaign.sent_count}</dd>
-              </div>
-              <div>
-                <dt>Failed</dt>
-                <dd>{campaign.failed_count}</dd>
-              </div>
-              <div>
-                <dt>Snapshotted</dt>
-                <dd>{campaign.eligible_count}</dd>
-              </div>
+              <div><dt>Delivered to provider</dt><dd>{campaign.sent_count}</dd></div>
+              <div><dt>Failed</dt><dd>{campaign.failed_count}</dd></div>
+              <div><dt>Snapshotted</dt><dd>{campaign.eligible_count}</dd></div>
             </dl>
           </section>
         ) : null}
 
-        {!state.providerConfigured ? (
-          <p className="communications-editorial-notice">
-            RESEND_API_KEY is not available to this deployment. Sending remains disabled until the existing
-            Loombus email provider is configured.
-          </p>
+        {hasFailures && diagnostics ? (
+          <section className="communications-editorial-notice" aria-live="polite">
+            <strong>Delivery problem detected.</strong>
+            <p>{campaign?.sent_count ?? 0} messages were accepted by the provider; {campaign?.failed_count ?? 0} failed.</p>
+            {diagnostics.failureReasons.map((reason) => (
+              <p key={reason.message}><strong>{reason.count}×</strong> {reason.message}</p>
+            ))}
+            <p>Retryable now: {retryable}. Retry limit reached: {exhausted}.</p>
+            {diagnostics.configuredSenders.product && diagnostics.configuredSenders.product !== diagnostics.configuredSenders.campaign ? (
+              <p>Existing product email sender: {diagnostics.configuredSenders.product}. Campaign sender: {diagnostics.configuredSenders.campaign}.</p>
+            ) : null}
+          </section>
         ) : null}
 
-        {message ? (
-          <p className="communications-editorial-feedback" aria-live="polite">
-            {message}
-          </p>
+        {!state.providerConfigured ? (
+          <p className="communications-editorial-notice">RESEND_API_KEY is not available to this deployment. Sending remains disabled until the existing Loombus email provider is configured.</p>
         ) : null}
+
+        {message ? <p className="communications-editorial-feedback" aria-live="polite">{message}</p> : null}
 
         <div className="communications-editorial-actions">
           <button type="button" onClick={() => void prepare()} disabled={!canPrepare || busy}>
             {campaign ? "Recipients prepared" : busy ? "Preparing…" : "Prepare recipients"}
           </button>
-          <button
-            type="button"
-            onClick={() => void send()}
-            disabled={!canSend || busy}
-            className="is-primary"
-          >
-            {busy
-              ? "Working…"
-              : campaign?.status === "sent"
-                ? "Campaign sent"
-                : campaign?.status === "sending" || campaign?.status === "failed"
-                  ? "Resume sending"
-                  : "Send campaign"}
+          <button type="button" onClick={() => void send()} disabled={!canSend || busy} className="is-primary">
+            {busy ? "Working…" : campaign?.status === "sent" ? "Campaign sent" : hasFailures ? "Retry next batch" : "Send next batch"}
           </button>
+          {exhausted > 0 ? (
+            <button type="button" onClick={() => void resetFailed()} disabled={busy}>
+              Reset failed recipients
+            </button>
+          ) : null}
         </div>
       </section>
     </main>
