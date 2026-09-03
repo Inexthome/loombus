@@ -1,15 +1,42 @@
 import { sha256Hex } from "@/lib/library/epub-validation";
 import type { NormalizedEpubSection } from "@/lib/library/epub-manifest";
 
-const LEADING_MACHINE_FILENAME = /^[\s\u00a0]*(?:[^\s<>]+\/)*[^\s<>/]+\.(?:xhtml|html?)[\s\u00a0]+/i;
-const LEADING_MACHINE_FILENAME_HTML = /^(\s*<p\b[^>]*>)[\s\u00a0]*(?:[^\s<>]+\/)*[^\s<>/]+\.(?:xhtml|html?)[\s\u00a0]+/i;
+function isWhitespace(value: string) {
+  return /\s|\u00a0/u.test(value);
+}
+
+function machineFilenamePrefixLength(value: string): number {
+  let cursor = 0;
+  while (cursor < value.length && isWhitespace(value[cursor])) cursor += 1;
+  const tokenStart = cursor;
+  while (cursor < value.length && !isWhitespace(value[cursor])) cursor += 1;
+  if (cursor === tokenStart || cursor >= value.length) return 0;
+
+  const token = value.slice(tokenStart, cursor);
+  const basename = token.split("/").at(-1)?.toLowerCase() ?? "";
+  const machineFilename = basename.endsWith(".xhtml") || basename.endsWith(".html") || basename.endsWith(".htm");
+  if (!machineFilename || basename.startsWith(".")) return 0;
+
+  while (cursor < value.length && isWhitespace(value[cursor])) cursor += 1;
+  return cursor;
+}
 
 export function stripLeadingEpubMachineFilename(value: string): string {
-  return value.replace(LEADING_MACHINE_FILENAME, "");
+  const prefixLength = machineFilenamePrefixLength(value);
+  return prefixLength ? value.slice(prefixLength) : value;
 }
 
 function stripLeadingEpubMachineFilenameFromHtml(value: string): string {
-  return value.replace(LEADING_MACHINE_FILENAME_HTML, "$1");
+  const leadingTrimmed = value.trimStart();
+  if (!leadingTrimmed.toLowerCase().startsWith("<p")) return value;
+  const paragraphStart = value.length - leadingTrimmed.length;
+  const openingTagEnd = value.indexOf(">", paragraphStart);
+  if (openingTagEnd < 0) return value;
+
+  const bodyStart = openingTagEnd + 1;
+  const prefixLength = machineFilenamePrefixLength(value.slice(bodyStart));
+  if (!prefixLength) return value;
+  return `${value.slice(0, bodyStart)}${value.slice(bodyStart + prefixLength)}`;
 }
 
 export function sanitizeNormalizedEpubSection(section: NormalizedEpubSection): NormalizedEpubSection {
