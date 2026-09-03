@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DiscussionAutoLinker } from "@/components/discussion-auto-linker";
 import { DiscussionFeedRefinements } from "@/components/discussion-feed-refinements";
+import { DiscussionFollowUpdatesBridge } from "@/components/discussion-follow-updates-bridge";
 import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
 import { DiscussionViewModeControl } from "@/components/discussion-view-mode-control";
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
@@ -54,6 +55,7 @@ export default function DiscussionsLayout({ children }: Readonly<{ children: Rea
       <QuestionOfTheWeekBridge />
       <DiscussionsEngagementBridge />
       <DiscussionsEngagementLayoutBridge />
+      <DiscussionFollowUpdatesBridge />
       {children}
     </div>
   );
