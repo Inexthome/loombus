@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 const footerLinks = [
+  { href: "/phone-login", label: "Phone sign in" },
   { href: "/forgot-password", label: "Forgot password" },
   { href: "/about", label: "About" },
   { href: "/guidelines", label: "Guidelines" },
@@ -29,6 +30,15 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)]">
       {children}
+
+      <div className="border-t border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-6 py-5 text-center">
+        <Link
+          href="/phone-login"
+          className="inline-flex rounded-lg border border-[color:var(--loombus-border)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--loombus-page-bg)]"
+        >
+          Sign in with phone number
+        </Link>
+      </div>
 
       <footer className="border-t border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-6 py-8 text-sm text-[color:var(--loombus-text-muted)] sm:px-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 md:flex-row">
