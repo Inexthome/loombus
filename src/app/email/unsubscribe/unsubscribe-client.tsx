@@ -13,6 +13,7 @@ export default function EmailUnsubscribeClient() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     const scope = params.get("scope") || undefined;
+    const campaign = params.get("campaign") || undefined;
 
     if (!token) {
       setState("error");
@@ -23,7 +24,7 @@ export default function EmailUnsubscribeClient() {
     fetch("/api/email/unsubscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, scope }),
+      body: JSON.stringify({ token, scope, campaign }),
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));

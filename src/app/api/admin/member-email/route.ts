@@ -10,12 +10,26 @@ type AuthUser = {
   id: string;
   email?: string;
   email_confirmed_at?: string;
+  user_metadata?: Record<string, unknown>;
 };
 
 type MarketingPreference = {
   user_id: string;
   enabled: boolean;
   unsubscribe_token: string;
+  unsubscribed_at: string | null;
+  unsubscribe_source: string | null;
+  unsubscribed_campaign_id: string | null;
+};
+
+type DeliverySuppression = {
+  user_id: string | null;
+  email: string;
+  kind: "bounce" | "complaint" | "provider_suppression";
+  source: string;
+  detail: string | null;
+  occurred_at: string;
+  campaign_id: string | null;
 };
 
 type Campaign = {
@@ -73,9 +87,7 @@ async function requireAdmin(request: NextRequest) {
 
   const requestClient = getRequestClient(request, env.supabaseUrl, env.anonKey);
   const { data: userData, error: userError } = await requestClient.auth.getUser();
-  if (userError || !userData.user) {
-    return { error: jsonError("Unauthorized.", 401) } as const;
-  }
+  if (userError || !userData.user) return { error: jsonError("Unauthorized.", 401) } as const;
 
   const service = getServiceClient(env.supabaseUrl, env.serviceRoleKey);
   const { data: profile, error: profileError } = await service
@@ -83,7 +95,6 @@ async function requireAdmin(request: NextRequest) {
     .select("is_admin")
     .eq("id", userData.user.id)
     .maybeSingle();
-
   if (profileError) return { error: jsonError("Unable to verify Admin access.", 500) } as const;
   if (!profile?.is_admin) return { error: jsonError("Admin access required.", 403) } as const;
 
@@ -94,7 +105,6 @@ async function listAllAuthUsers(service: SupabaseClient): Promise<AuthUser[]> {
   const users: AuthUser[] = [];
   let page = 1;
   const perPage = 1000;
-
   while (true) {
     const { data, error } = await service.auth.admin.listUsers({ page, perPage });
     if (error) throw error;
@@ -103,7 +113,6 @@ async function listAllAuthUsers(service: SupabaseClient): Promise<AuthUser[]> {
     if (batch.length < perPage) break;
     page += 1;
   }
-
   return users;
 }
 
@@ -113,29 +122,46 @@ async function ensurePreferences(service: SupabaseClient, users: AuthUser[]) {
 
   const existing = new Map<string, MarketingPreference>();
   for (let start = 0; start < userIds.length; start += 500) {
-    const ids = userIds.slice(start, start + 500);
     const { data, error } = await service
       .from("marketing_email_preferences")
-      .select("user_id, enabled, unsubscribe_token")
-      .in("user_id", ids);
+      .select("user_id,enabled,unsubscribe_token,unsubscribed_at,unsubscribe_source,unsubscribed_campaign_id")
+      .in("user_id", userIds.slice(start, start + 500));
     if (error) throw error;
     for (const row of (data ?? []) as MarketingPreference[]) existing.set(row.user_id, row);
   }
 
-  const missing = users
-    .filter((user) => !existing.has(user.id))
-    .map((user) => ({ user_id: user.id }));
-
+  const missing = users.filter((user) => !existing.has(user.id)).map((user) => ({ user_id: user.id }));
   if (missing.length > 0) {
     const { data, error } = await service
       .from("marketing_email_preferences")
       .insert(missing)
-      .select("user_id, enabled, unsubscribe_token");
+      .select("user_id,enabled,unsubscribe_token,unsubscribed_at,unsubscribe_source,unsubscribed_campaign_id");
     if (error) throw error;
     for (const row of (data ?? []) as MarketingPreference[]) existing.set(row.user_id, row);
   }
-
   return existing;
+}
+
+async function loadActiveSuppressions(service: SupabaseClient) {
+  const { data, error } = await service
+    .from("email_delivery_suppressions")
+    .select("user_id,email,kind,source,detail,occurred_at,campaign_id")
+    .eq("active", true)
+    .order("occurred_at", { ascending: false });
+  if (error) throw error;
+
+  const byEmail = new Map<string, DeliverySuppression>();
+  for (const row of (data ?? []) as DeliverySuppression[]) {
+    const key = row.email.trim().toLowerCase();
+    if (!byEmail.has(key)) byEmail.set(key, row);
+  }
+  return byEmail;
+}
+
+function displayName(user: AuthUser) {
+  const metadata = user.user_metadata || {};
+  const candidate = metadata.full_name ?? metadata.name ?? metadata.username;
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
 }
 
 function escapeHtml(value: string) {
@@ -147,9 +173,9 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-function buildCampaignEmail(siteUrl: string, unsubscribeToken: string) {
+function buildCampaignEmail(siteUrl: string, unsubscribeToken: string, campaignId: string) {
   const openUrl = `${siteUrl}/discussions`;
-  const unsubscribeUrl = `${siteUrl}/email/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}&scope=marketing`;
+  const unsubscribeUrl = `${siteUrl}/email/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}&scope=marketing&campaign=${encodeURIComponent(campaignId)}`;
   const safeOpenUrl = escapeHtml(openUrl);
   const safeUnsubscribeUrl = escapeHtml(unsubscribeUrl);
 
@@ -179,28 +205,19 @@ function buildCampaignEmail(siteUrl: string, unsubscribeToken: string) {
         <p style="font-size:16px;line-height:1.7;color:#ddd;">Come back and see what you've been missing.</p>
         <p style="font-size:16px;line-height:1.7;color:#ddd;">Loombus is built for thoughtful conversations, useful perspectives, and signal over noise.</p>
         <p style="font-size:16px;line-height:1.7;color:#ddd;">We'd love to have you back.</p>
-        <p style="margin:28px 0;">
-          <a href="${safeOpenUrl}" style="display:inline-block;background:#CBAB5B;color:#111;padding:13px 22px;border-radius:999px;text-decoration:none;font-weight:700;">See What's New</a>
-        </p>
+        <p style="margin:28px 0;"><a href="${safeOpenUrl}" style="display:inline-block;background:#CBAB5B;color:#111;padding:13px 22px;border-radius:999px;text-decoration:none;font-weight:700;">See What's New</a></p>
         <p style="font-size:14px;line-height:1.6;color:#aaa;margin-bottom:28px;">— The Loombus Team</p>
         <div style="border-top:1px solid #292929;padding-top:18px;font-size:12px;line-height:1.6;color:#777;">
-          This is a Loombus member update from service@loombus.com.<br />
+          This is a Loombus member update.<br />
           <a href="${safeUnsubscribeUrl}" style="color:#aaa;">Unsubscribe from member emails</a>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 
   return { html, text };
 }
 
-async function sendWithResend(args: {
-  apiKey: string;
-  from: string;
-  to: string;
-  html: string;
-  text: string;
-}) {
+async function sendWithResend(args: { apiKey: string; from: string; to: string; html: string; text: string }) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${args.apiKey}`, "Content-Type": "application/json" },
@@ -213,23 +230,18 @@ async function sendWithResend(args: {
       text: args.text,
     }),
   });
-
   const result = await response.json().catch(() => ({}));
   return {
     ok: response.ok,
     id: typeof result?.id === "string" ? result.id : null,
-    error: response.ok
-      ? null
-      : typeof result?.message === "string"
-        ? result.message
-        : `Resend returned HTTP ${response.status}.`,
+    error: response.ok ? null : typeof result?.message === "string" ? result.message : `Resend returned HTTP ${response.status}.`,
   };
 }
 
 async function loadCampaign(service: SupabaseClient) {
   const { data, error } = await service
     .from("member_email_campaigns")
-    .select("id, campaign_key, subject, status, sender_email, eligible_count, sent_count, failed_count, created_at, started_at, completed_at")
+    .select("id,campaign_key,subject,status,sender_email,eligible_count,sent_count,failed_count,created_at,started_at,completed_at")
     .eq("campaign_key", CAMPAIGN_KEY)
     .maybeSingle<Campaign>();
   if (error) throw error;
@@ -242,13 +254,46 @@ export async function GET(request: NextRequest) {
 
   try {
     const users = await listAllAuthUsers(auth.service);
-    const preferences = await ensurePreferences(auth.service, users);
-    const eligibleCount = users.filter((user) => {
-      const preference = preferences.get(user.id);
-      return Boolean(user.email && user.email_confirmed_at && preference?.enabled !== false);
-    }).length;
-    const optedOutCount = users.filter((user) => preferences.get(user.id)?.enabled === false).length;
-    const campaign = await loadCampaign(auth.service);
+    const [preferences, suppressions, campaign] = await Promise.all([
+      ensurePreferences(auth.service, users),
+      loadActiveSuppressions(auth.service),
+      loadCampaign(auth.service),
+    ]);
+
+    const records = users
+      .filter((user) => Boolean(user.email))
+      .map((user) => {
+        const email = user.email!.trim().toLowerCase();
+        const preference = preferences.get(user.id);
+        const suppression = suppressions.get(email);
+        const status = suppression
+          ? suppression.kind
+          : preference?.enabled === false
+            ? "opted_out"
+            : "subscribed";
+        const changedAt = suppression?.occurred_at || preference?.unsubscribed_at || null;
+        const source = suppression?.source || preference?.unsubscribe_source || null;
+        const campaignId = suppression?.campaign_id || preference?.unsubscribed_campaign_id || null;
+        return {
+          userId: user.id,
+          name: displayName(user),
+          email: user.email,
+          status,
+          changedAt,
+          source,
+          campaignId,
+          detail: suppression?.detail || null,
+        };
+      })
+      .sort((a, b) => {
+        if (a.status === "subscribed" && b.status !== "subscribed") return 1;
+        if (a.status !== "subscribed" && b.status === "subscribed") return -1;
+        return (b.changedAt || "").localeCompare(a.changedAt || "");
+      });
+
+    const eligibleCount = records.filter((record) => record.status === "subscribed" && users.find((user) => user.id === record.userId)?.email_confirmed_at).length;
+    const optedOutCount = records.filter((record) => record.status === "opted_out").length;
+    const suppressedCount = records.filter((record) => record.status !== "subscribed" && record.status !== "opted_out").length;
 
     return NextResponse.json({
       campaign,
@@ -257,9 +302,12 @@ export async function GET(request: NextRequest) {
         sender: getBroadcastSender(),
         eligibleCount,
         optedOutCount,
+        suppressedCount,
         totalAccounts: users.length,
       },
+      emailPreferences: records,
       providerConfigured: Boolean(process.env.RESEND_API_KEY),
+      webhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
     });
   } catch (error) {
     console.error("Unable to load member-email broadcast state.", error);
@@ -270,7 +318,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireAdmin(request);
   if ("error" in auth) return auth.error;
-
   const body = await request.json().catch(() => null);
   const action = body?.action;
 
@@ -280,40 +327,30 @@ export async function POST(request: NextRequest) {
       if (existing) return NextResponse.json({ campaign: existing, alreadyPrepared: true });
 
       const users = await listAllAuthUsers(auth.service);
-      const preferences = await ensurePreferences(auth.service, users);
+      const [preferences, suppressions] = await Promise.all([
+        ensurePreferences(auth.service, users),
+        loadActiveSuppressions(auth.service),
+      ]);
       const eligible = users.filter((user) => {
+        if (!user.email || !user.email_confirmed_at) return false;
         const preference = preferences.get(user.id);
-        return Boolean(user.email && user.email_confirmed_at && preference?.enabled !== false);
+        return preference?.enabled !== false && !suppressions.has(user.email.trim().toLowerCase());
       });
       const sender = getBroadcastSender();
 
       const { data: campaign, error: campaignError } = await auth.service
         .from("member_email_campaigns")
-        .insert({
-          campaign_key: CAMPAIGN_KEY,
-          subject: CAMPAIGN_SUBJECT,
-          sender_email: sender,
-          created_by: auth.userId,
-          eligible_count: eligible.length,
-        })
-        .select("id, campaign_key, subject, status, sender_email, eligible_count, sent_count, failed_count, created_at, started_at, completed_at")
+        .insert({ campaign_key: CAMPAIGN_KEY, subject: CAMPAIGN_SUBJECT, sender_email: sender, created_by: auth.userId, eligible_count: eligible.length })
+        .select("id,campaign_key,subject,status,sender_email,eligible_count,sent_count,failed_count,created_at,started_at,completed_at")
         .single<Campaign>();
       if (campaignError) throw campaignError;
 
-      if (eligible.length > 0) {
-        const rows = eligible.map((user) => ({
-          campaign_id: campaign.id,
-          user_id: user.id,
-          email: user.email!,
-        }));
-        for (let start = 0; start < rows.length; start += 500) {
-          const { error } = await auth.service
-            .from("member_email_campaign_recipients")
-            .insert(rows.slice(start, start + 500));
-          if (error) throw error;
-        }
+      for (let start = 0; start < eligible.length; start += 500) {
+        const rows = eligible.slice(start, start + 500).map((user) => ({ campaign_id: campaign.id, user_id: user.id, email: user.email! }));
+        if (rows.length === 0) continue;
+        const { error } = await auth.service.from("member_email_campaign_recipients").insert(rows);
+        if (error) throw error;
       }
-
       return NextResponse.json({ campaign, alreadyPrepared: false });
     }
 
@@ -327,25 +364,19 @@ export async function POST(request: NextRequest) {
 
       const sender = getBroadcastSender();
       if (campaign.sender_email !== sender) {
-        const { error: senderUpdateError } = await auth.service
-          .from("member_email_campaigns")
-          .update({ sender_email: sender, updated_at: new Date().toISOString() })
-          .eq("id", campaign.id);
-        if (senderUpdateError) throw senderUpdateError;
+        const { error } = await auth.service.from("member_email_campaigns").update({ sender_email: sender, updated_at: new Date().toISOString() }).eq("id", campaign.id);
+        if (error) throw error;
         campaign.sender_email = sender;
       }
 
       const now = new Date().toISOString();
       if (campaign.status === "prepared") {
-        await auth.service
-          .from("member_email_campaigns")
-          .update({ status: "sending", started_at: now, updated_at: now })
-          .eq("id", campaign.id);
+        await auth.service.from("member_email_campaigns").update({ status: "sending", started_at: now, updated_at: now }).eq("id", campaign.id);
       }
 
       const { data: recipients, error: recipientsError } = await auth.service
         .from("member_email_campaign_recipients")
-        .select("user_id, email, attempt_count")
+        .select("user_id,email,attempt_count")
         .eq("campaign_id", campaign.id)
         .in("status", ["pending", "failed"])
         .lt("attempt_count", 3)
@@ -355,17 +386,28 @@ export async function POST(request: NextRequest) {
 
       let processed = 0;
       for (const recipient of recipients ?? []) {
-        const { data: preference, error: preferenceError } = await auth.service
-          .from("marketing_email_preferences")
-          .select("enabled, unsubscribe_token")
-          .eq("user_id", recipient.user_id)
-          .maybeSingle<Pick<MarketingPreference, "enabled" | "unsubscribe_token">>();
+        const [{ data: preference, error: preferenceError }, { data: suppression, error: suppressionError }] = await Promise.all([
+          auth.service
+            .from("marketing_email_preferences")
+            .select("enabled,unsubscribe_token")
+            .eq("user_id", recipient.user_id)
+            .maybeSingle<Pick<MarketingPreference, "enabled" | "unsubscribe_token">>(),
+          auth.service
+            .from("email_delivery_suppressions")
+            .select("kind,detail")
+            .eq("active", true)
+            .ilike("email", recipient.email)
+            .order("occurred_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
         if (preferenceError) throw preferenceError;
+        if (suppressionError) throw suppressionError;
 
-        if (!preference?.enabled) {
+        if (!preference?.enabled || suppression) {
           await auth.service
             .from("member_email_campaign_recipients")
-            .update({ status: "suppressed", updated_at: new Date().toISOString() })
+            .update({ status: "suppressed", error_message: suppression?.detail || "Member opted out of promotional email.", updated_at: new Date().toISOString() })
             .eq("campaign_id", campaign.id)
             .eq("user_id", recipient.user_id);
           processed += 1;
@@ -380,14 +422,8 @@ export async function POST(request: NextRequest) {
           .eq("user_id", recipient.user_id);
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://loombus.com";
-        const email = buildCampaignEmail(siteUrl, preference.unsubscribe_token);
-        const result = await sendWithResend({
-          apiKey,
-          from: sender,
-          to: recipient.email,
-          html: email.html,
-          text: email.text,
-        });
+        const email = buildCampaignEmail(siteUrl, preference.unsubscribe_token, campaign.id);
+        const result = await sendWithResend({ apiKey, from: sender, to: recipient.email, html: email.html, text: email.text });
 
         await auth.service
           .from("member_email_campaign_recipients")
@@ -404,47 +440,46 @@ export async function POST(request: NextRequest) {
         processed += 1;
       }
 
-      const { count: sentCount } = await auth.service
-        .from("member_email_campaign_recipients")
-        .select("user_id", { count: "exact", head: true })
-        .eq("campaign_id", campaign.id)
-        .eq("status", "sent");
-      const { count: failedCount } = await auth.service
-        .from("member_email_campaign_recipients")
-        .select("user_id", { count: "exact", head: true })
-        .eq("campaign_id", campaign.id)
-        .eq("status", "failed");
-      const { count: remainingCount } = await auth.service
+      const countStatus = async (status: string) => {
+        const { count, error } = await auth.service
+          .from("member_email_campaign_recipients")
+          .select("user_id", { count: "exact", head: true })
+          .eq("campaign_id", campaign.id)
+          .eq("status", status);
+        if (error) throw error;
+        return count ?? 0;
+      };
+      const [sentCount, failedCount] = await Promise.all([countStatus("sent"), countStatus("failed")]);
+      const { count: remainingCount, error: remainingError } = await auth.service
         .from("member_email_campaign_recipients")
         .select("user_id", { count: "exact", head: true })
         .eq("campaign_id", campaign.id)
         .in("status", ["pending", "sending"]);
-      const { count: retryableFailedCount } = await auth.service
+      if (remainingError) throw remainingError;
+      const { count: retryableFailedCount, error: retryableError } = await auth.service
         .from("member_email_campaign_recipients")
         .select("user_id", { count: "exact", head: true })
         .eq("campaign_id", campaign.id)
         .eq("status", "failed")
         .lt("attempt_count", 3);
+      if (retryableError) throw retryableError;
 
       const done = (remainingCount ?? 0) === 0 && (retryableFailedCount ?? 0) === 0;
-      const completedAt = done ? new Date().toISOString() : null;
-      const finalStatus = done ? ((failedCount ?? 0) > 0 ? "failed" : "sent") : "sending";
-
+      const finalStatus = done ? (failedCount > 0 ? "failed" : "sent") : "sending";
       const { data: updatedCampaign, error: updateError } = await auth.service
         .from("member_email_campaigns")
         .update({
           status: finalStatus,
           sender_email: sender,
-          sent_count: sentCount ?? 0,
-          failed_count: failedCount ?? 0,
-          completed_at: completedAt,
+          sent_count: sentCount,
+          failed_count: failedCount,
+          completed_at: done ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", campaign.id)
-        .select("id, campaign_key, subject, status, sender_email, eligible_count, sent_count, failed_count, created_at, started_at, completed_at")
+        .select("id,campaign_key,subject,status,sender_email,eligible_count,sent_count,failed_count,created_at,started_at,completed_at")
         .single<Campaign>();
       if (updateError) throw updateError;
-
       return NextResponse.json({ campaign: updatedCampaign, done, processed });
     }
 
