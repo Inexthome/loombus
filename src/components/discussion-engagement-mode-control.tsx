@@ -45,14 +45,16 @@ export function DiscussionEngagementModeControl() {
     function locateFilter() {
       if (cancelled) return;
       const filterSlot = document.querySelector<HTMLElement>('[data-discussions-filter-slot="true"]');
-      if (!filterSlot?.parentElement) {
+      if (!filterSlot) {
         timer = window.setTimeout(locateFilter, 100);
         return;
       }
 
       mount = document.createElement("div");
       mount.dataset.discussionEngagementModeControl = "true";
-      filterSlot.insertAdjacentElement("afterend", mount);
+      // Keep Filter, For You, and Active in one flex formatting context so their
+      // icon centers and underline baselines cannot drift independently.
+      filterSlot.append(mount);
       setHost(mount);
     }
 
