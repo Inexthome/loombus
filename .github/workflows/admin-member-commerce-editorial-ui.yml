@@ -5,6 +5,7 @@ on:
     paths:
       - "src/app/admin/users/**"
       - "src/app/admin/support/**"
+      - "src/app/admin/communications/**"
       - "src/app/admin/ai-access/**"
       - "src/app/admin/billing/**"
       - "src/app/admin/professional-booking/payments/**"
