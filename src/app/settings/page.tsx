@@ -1,6 +1,7 @@
 import { DiscussionAudienceSettingsBridge } from "@/components/discussion-audience-settings-bridge";
 import { MemberPrivacySettingsMount } from "@/components/member-privacy-settings-mount";
 import { PhoneSecuritySettingsBridge } from "@/components/phone-security-settings-bridge";
+import { SettingsEditorialExpansion } from "@/components/settings-editorial-expansion";
 import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";
 import { SettingsWorkspaceController } from "@/components/settings-workspace-controller";
 import { SubscriptionSettingsBridge } from "@/components/subscription-settings-bridge";
@@ -12,6 +13,7 @@ import "./settings-editorial-ui.css";
 import "./settings-editorial-mobile.css";
 import "./settings-mobile-section-select.css";
 import "./settings-loombus-background.css";
+import "./settings-editorial-expansion.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,6 +28,7 @@ export default function SettingsPage() {
       <MemberPrivacySettingsMount />
       <PhoneSecuritySettingsBridge />
       <SubscriptionSettingsBridge />
+      <SettingsEditorialExpansion />
     </>
   );
 }
