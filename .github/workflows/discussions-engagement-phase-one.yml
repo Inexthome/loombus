@@ -1,0 +1,23 @@
+name: Discussions Engagement Phase 1
+
+on:
+  pull_request:
+    paths:
+      - "src/app/discussions/**"
+      - "src/components/discussions-engagement-bridge.tsx"
+      - "supabase/migrations/**"
+      - "scripts/verify-discussions-engagement-phase-one.mjs"
+      - ".github/workflows/discussions-engagement-phase-one.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Discussions engagement contract
+        run: node scripts/verify-discussions-engagement-phase-one.mjs
