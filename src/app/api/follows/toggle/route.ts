@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNotification } from "@/lib/notifications";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
 import {
   createMemberPrivacyServiceClient,
   getMemberPrivacy,
@@ -12,6 +13,7 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  identity_verification_status: string | null;
 };
 
 const ACTION_COOLDOWN_SECONDS = 5;
@@ -21,6 +23,10 @@ const UUID_PATTERN =
 
 function jsonError(message: string, status: number, extras: Record<string, unknown> = {}) {
   return NextResponse.json({ error: message, ...extras }, { status });
+}
+
+function isVerified(status: string | null | undefined) {
+  return status === "verified" || status === "approved";
 }
 
 export async function POST(request: NextRequest) {
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await service
       .from("profiles")
-      .select("account_status, enforcement_reason, suspended_until")
+      .select("account_status, enforcement_reason, suspended_until, identity_verification_status")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -120,8 +126,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ following: false, requested: false });
     }
 
-    const targetPrivacy = await getMemberPrivacy(service, targetUserId);
-    if (targetPrivacy.private_account) {
+    const [targetPrivacy, targetSettings] = await Promise.all([
+      getMemberPrivacy(service, targetUserId),
+      getMemberSettingsForUser(targetUserId, service),
+    ]);
+
+    if (targetSettings.followPermission === "nobody") {
+      return jsonError("This member is not accepting new followers.", 403, {
+        code: "follow_permission_denied",
+      });
+    }
+
+    if (
+      targetSettings.followPermission === "verified" &&
+      !isVerified((profile as ProfileAccess | null)?.identity_verification_status)
+    ) {
+      return jsonError("This member only accepts follows from verified members.", 403, {
+        code: "verified_follow_required",
+      });
+    }
+
+    const requiresApproval =
+      targetPrivacy.private_account || targetSettings.followPermission === "approval";
+
+    if (requiresApproval) {
       if (pendingRequest) {
         const { error: cancelError } = await service
           .from("follow_requests")
