@@ -37,6 +37,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Verify outbound email sender policy
+        run: node scripts/verify-email-sender-policy.mjs
+
       - name: Build
         run: npm run build
 
