@@ -1,5 +1,5 @@
 import { LibraryBookClubDiscussion } from "@/components/library/library-book-club-discussion";
-import "../../../../library-publication-workflows-editorial.css";
+import "../../../../../library-publication-workflows-editorial.css";
 
 export default async function LibraryBookClubSessionDiscussionPage({
   params,
