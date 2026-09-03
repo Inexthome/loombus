@@ -11,6 +11,15 @@
   min-width: 0;
 }
 
+/* Filter + For You + Active share one local flex row so all three controls use
+ * the exact same top edge and underline baseline. */
+[data-discussions-filter-slot="true"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  height: 3.5rem;
+}
+
 [data-discussions-create-trigger-slot="true"]::before {
   content: "";
   position: absolute;
@@ -155,6 +164,10 @@
 
   [data-discussions-create-trigger-slot="true"] > button strong {
     font-size: 0.86rem !important;
+  }
+
+  [data-discussions-filter-slot="true"] {
+    height: 3.25rem;
   }
 
   [data-discussions-filter-slot="true"] > div > button {
