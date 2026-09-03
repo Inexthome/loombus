@@ -111,7 +111,7 @@ export function LibraryBookClubHub({ publicationId }: { publicationId: string })
     const result = await supabase.from("library_book_club_sessions").insert({
       hub_id: hub.id,
       title: `${publication.title} Book Club`,
-      description: "Read together, discuss the book in context, and carry the strongest ideas into Loombus discussions.",
+      description: "Read together and keep the conversation inside this Book Club session.",
       visibility: "public",
       status: "active",
       created_by: userId,
@@ -197,14 +197,14 @@ export function LibraryBookClubHub({ publicationId }: { publicationId: string })
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {session.visibility === "public" && membership?.role !== "host" ? <button type="button" disabled={working === session.id} onClick={() => void toggleMembership(session)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)] disabled:opacity-60">{working === session.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UsersRound className="h-4 w-4" />}{membership ? "Leave session" : "Join session"}</button> : null}
-                  <Link href={`/discussions/create?libraryPublicationId=${publicationId}&bookClubSessionId=${session.id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)]"><MessageCircleMore className="h-4 w-4 text-[var(--loombus-gold)]" />Discuss</Link>
+                  {membership ? <Link href={`/library/publication/${publicationId}/book-club/session/${session.id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)]"><MessageCircleMore className="h-4 w-4 text-[var(--loombus-gold)]" />Club Discussion</Link> : null}
                 </div>
               </article>;
             })}
           </div> : <div className="mt-6 border-y border-[var(--loombus-border)] py-10 text-sm text-[var(--loombus-text-muted)]">No sessions have been created beneath this Book Club Hub yet.</div>}
 
           <div className="mt-8 border-t border-[var(--loombus-border)] pt-6 text-sm leading-6 text-[var(--loombus-text-muted)]">
-            <strong className="font-semibold text-[var(--loombus-text)]">Private groups:</strong> Room-linked sessions use the same canonical hub and may remain private to their Room membership. They do not create another Book Club for the book.
+            <strong className="font-semibold text-[var(--loombus-text)]">Book Club discussions stay here:</strong> session conversation is contained inside the Book Club and does not publish to the public Discussions feed. Private Room-linked sessions remain scoped to their membership as well.
           </div>
         </section>
       </div>
