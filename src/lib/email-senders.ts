@@ -54,9 +54,7 @@ export function isAuthorizedLoombusSystemSender(value: string | undefined) {
 function verifiedOverride(value: string | undefined, fallback: string) {
   if (!value?.trim()) return fallback;
   if (isAuthorizedLoombusSystemSender(value)) return value.trim();
-  console.warn(
-    `Ignoring outbound sender outside verified mail.loombus.com domain: ${value}`
-  );
+  console.warn("Ignoring outbound sender outside verified mail.loombus.com domain.");
   return fallback;
 }
 
