@@ -97,8 +97,7 @@ begin
         case when p_priority in ('normal', 'high', 'urgent') then p_priority else 'normal' end,
         p_source_updated_at,
         now()
-      )
-      returning id into item_id;
+      ) returning id into item_id;
       should_notify := true;
     else
       item_id := existing_row.id;
@@ -126,17 +125,15 @@ begin
       from public.profiles p
       where p.is_admin = true;
     end if;
-  else
-    if found and existing_row.resolved_at is null then
+  elsif found then
+    item_id := existing_row.id;
+    if existing_row.resolved_at is null then
       update public.admin_attention_items
       set source_status = nullif(p_source_status, ''),
           source_updated_at = p_source_updated_at,
           resolved_at = now(),
           updated_at = now()
       where id = existing_row.id;
-      item_id := existing_row.id;
-    elsif found then
-      item_id := existing_row.id;
     end if;
   end if;
 
@@ -147,14 +144,17 @@ $$;
 revoke all on function public.sync_admin_attention_item(text, text, boolean, text, text, text, text, text, timestamptz) from public, anon, authenticated;
 grant execute on function public.sync_admin_attention_item(text, text, boolean, text, text, text, text, text, timestamptz) to service_role;
 
-create or replace function public.sync_admin_attention_from_source()
-returns trigger
+create or replace function public.sync_admin_attention_payload(
+  p_table_name text,
+  p_record jsonb,
+  p_deleted boolean default false
+)
+returns void
 language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
 declare
-  record_json jsonb := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;
   source_type text;
   source_id text;
   source_status text;
@@ -165,104 +165,138 @@ declare
   actionable boolean := false;
   source_updated timestamptz;
 begin
-  if tg_op = 'DELETE' then
-    source_id := coalesce(record_json->>'id', record_json->>'publication_id');
-  end if;
-
-  case tg_table_name
+  case p_table_name
     when 'reports' then
       source_type := 'admin_report';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE' and source_status in ('new', 'reviewing');
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted and source_status in ('new', 'reviewing');
       title_text := 'Member report needs review';
-      summary_text := record_json->>'reason';
+      summary_text := p_record->>'reason';
       action_url_text := '/admin/reports?report=' || source_id;
       priority_text := 'high';
+
     when 'support_requests' then
       source_type := 'admin_support_request';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE' and source_status in ('new', 'reviewing');
-      title_text := coalesce(nullif(record_json->>'subject', ''), 'Support request needs review');
-      summary_text := record_json->>'message';
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted and source_status in ('new', 'reviewing');
+      title_text := coalesce(nullif(p_record->>'subject', ''), 'Support request needs review');
+      summary_text := p_record->>'message';
       action_url_text := '/admin/support?request=' || source_id;
+
     when 'labs_feature_requests' then
       source_type := 'admin_labs_request';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE' and source_status in ('submitted', 'reviewing');
-      title_text := coalesce(nullif(record_json->>'title', ''), 'Labs request needs review');
-      summary_text := record_json->>'description';
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted and source_status in ('submitted', 'reviewing');
+      title_text := coalesce(nullif(p_record->>'title', ''), 'Labs request needs review');
+      summary_text := p_record->>'description';
       action_url_text := '/admin/labs?request=' || source_id;
+
     when 'library_author_publications' then
       source_type := 'admin_library_review';
-      source_id := coalesce(source_id, record_json->>'publication_id');
-      source_status := record_json->>'submission_status';
-      actionable := tg_op <> 'DELETE' and (
+      source_id := coalesce(p_record->>'publication_id', p_record->>'id');
+      source_status := p_record->>'submission_status';
+      actionable := not p_deleted and (
         source_status = 'submitted'
-        or (source_status = 'approved' and nullif(record_json->>'published_at', '') is null)
+        or (source_status = 'approved' and nullif(p_record->>'published_at', '') is null)
       );
       title_text := case when source_status = 'approved'
         then 'Approved Library publication is ready to publish'
         else 'Library publication needs review'
       end;
-      summary_text := record_json->>'review_note';
+      summary_text := p_record->>'review_note';
       action_url_text := '/admin/library-review?publication=' || source_id;
       priority_text := 'high';
+
     when 'professional_booking_payment_disputes' then
       source_type := 'admin_booking_dispute';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE' and nullif(record_json->>'resolved_at', '') is null;
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted and nullif(p_record->>'resolved_at', '') is null;
       title_text := 'Professional Booking dispute needs review';
-      summary_text := coalesce(record_json->>'reason', source_status);
+      summary_text := coalesce(p_record->>'reason', source_status);
       action_url_text := '/admin/professional-booking/payments?dispute=' || source_id;
-      priority_text := case when coalesce((record_json->>'evidence_past_due')::boolean, false) then 'urgent' else 'high' end;
+      priority_text := case when coalesce((p_record->>'evidence_past_due')::boolean, false) then 'urgent' else 'high' end;
+
     when 'account_deletion_requests' then
       source_type := 'admin_account_deletion';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE' and source_status in ('reviewing', 'blocked', 'failed');
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted and source_status in ('reviewing', 'blocked', 'failed');
       title_text := 'Account deletion request needs Admin review';
-      summary_text := record_json->>'last_error';
+      summary_text := p_record->>'last_error';
       action_url_text := '/admin/legal-operations?deletion_request=' || source_id;
       priority_text := 'high';
+
     when 'trust_safety_cases' then
       source_type := 'admin_trust_safety_case';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'status';
-      actionable := tg_op <> 'DELETE'
+      source_id := p_record->>'id';
+      source_status := p_record->>'status';
+      actionable := not p_deleted
         and source_status <> 'closed'
-        and coalesce(record_json->>'source_type', 'manual') <> 'manual';
-      title_text := coalesce(nullif(record_json->>'case_number', ''), 'Trust & Safety case') || ' needs review';
-      summary_text := record_json->>'summary';
+        and coalesce(p_record->>'source_type', 'manual') <> 'manual';
+      title_text := coalesce(nullif(p_record->>'case_number', ''), 'Trust & Safety case') || ' needs review';
+      summary_text := p_record->>'summary';
       action_url_text := '/admin/legal-operations?trust_safety_case=' || source_id;
-      priority_text := case record_json->>'severity' when 'S1' then 'urgent' when 'S2' then 'high' else 'normal' end;
+      priority_text := case p_record->>'severity' when 'S1' then 'urgent' when 'S2' then 'high' else 'normal' end;
+
     when 'profiles' then
       source_type := 'admin_identity_review';
-      source_id := coalesce(source_id, record_json->>'id');
-      source_status := record_json->>'identity_verification_status';
-      actionable := tg_op <> 'DELETE' and source_status = 'pending';
+      source_id := p_record->>'id';
+      source_status := p_record->>'identity_verification_status';
+      actionable := not p_deleted and source_status = 'pending';
       title_text := 'Identity verification needs Admin review';
-      summary_text := record_json->>'identity_restriction_reason';
+      summary_text := p_record->>'identity_restriction_reason';
       action_url_text := '/admin/users?member=' || source_id;
       priority_text := 'high';
+
     else
-      return case when tg_op = 'DELETE' then old else new end;
+      return;
   end case;
 
   begin
-    source_updated := nullif(coalesce(record_json->>'updated_at', record_json->>'reviewed_at', record_json->>'created_at'), '')::timestamptz;
+    source_updated := nullif(coalesce(
+      p_record->>'updated_at',
+      p_record->>'reviewed_at',
+      p_record->>'created_at',
+      p_record->>'requested_at',
+      p_record->>'submitted_at'
+    ), '')::timestamptz;
   exception when others then
     source_updated := null;
   end;
 
   perform public.sync_admin_attention_item(
-    source_type, source_id, actionable, source_status,
-    title_text, summary_text, action_url_text, priority_text, source_updated
+    source_type,
+    source_id,
+    actionable,
+    source_status,
+    title_text,
+    summary_text,
+    action_url_text,
+    priority_text,
+    source_updated
   );
+end;
+$$;
 
+revoke all on function public.sync_admin_attention_payload(text, jsonb, boolean) from public, anon, authenticated;
+grant execute on function public.sync_admin_attention_payload(text, jsonb, boolean) to service_role;
+
+create or replace function public.sync_admin_attention_from_source()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  perform public.sync_admin_attention_payload(
+    tg_table_name,
+    case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end,
+    tg_op = 'DELETE'
+  );
   return case when tg_op = 'DELETE' then old else new end;
 end;
 $$;
@@ -304,72 +338,63 @@ create trigger profiles_identity_sync_admin_attention
 after insert or update of identity_verification_status, identity_restriction_reason on public.profiles
 for each row execute function public.sync_admin_attention_from_source();
 
--- Backfill only currently actionable source records. Existing unresolved source state
--- becomes the durable queue without producing duplicate rows.
-select public.sync_admin_attention_item(
-  'admin_report', id::text, true, status,
-  'Member report needs review', reason,
-  '/admin/reports?report=' || id::text, 'high', created_at
-) from public.reports where status in ('new', 'reviewing');
+-- Backfill currently unresolved actionable sources using JSON payloads so replay remains
+-- resilient to source-specific timestamp/detail column differences.
+do $$
+declare
+  r record;
+begin
+  for r in select to_jsonb(t) as payload from public.reports t loop
+    if r.payload->>'status' in ('new', 'reviewing') then
+      perform public.sync_admin_attention_payload('reports', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_support_request', id::text, true, status,
-  coalesce(nullif(subject, ''), 'Support request needs review'), message,
-  '/admin/support?request=' || id::text, 'normal', updated_at
-) from public.support_requests where status in ('new', 'reviewing');
+  for r in select to_jsonb(t) as payload from public.support_requests t loop
+    if r.payload->>'status' in ('new', 'reviewing') then
+      perform public.sync_admin_attention_payload('support_requests', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_labs_request', id::text, true, status,
-  coalesce(nullif(title, ''), 'Labs request needs review'), description,
-  '/admin/labs?request=' || id::text, 'normal', updated_at
-) from public.labs_feature_requests where status in ('submitted', 'reviewing');
+  for r in select to_jsonb(t) as payload from public.labs_feature_requests t loop
+    if r.payload->>'status' in ('submitted', 'reviewing') then
+      perform public.sync_admin_attention_payload('labs_feature_requests', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_library_review', publication_id::text, true, submission_status,
-  case when submission_status = 'approved'
-    then 'Approved Library publication is ready to publish'
-    else 'Library publication needs review'
-  end,
-  review_note,
-  '/admin/library-review?publication=' || publication_id::text,
-  'high', coalesce(reviewed_at, submitted_at)
-) from public.library_author_publications
-where submission_status = 'submitted'
-   or (submission_status = 'approved' and published_at is null);
+  for r in select to_jsonb(t) as payload from public.library_author_publications t loop
+    if r.payload->>'submission_status' = 'submitted'
+       or (r.payload->>'submission_status' = 'approved' and nullif(r.payload->>'published_at', '') is null) then
+      perform public.sync_admin_attention_payload('library_author_publications', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_booking_dispute', id::text, true, status,
-  'Professional Booking dispute needs review', coalesce(reason, status),
-  '/admin/professional-booking/payments?dispute=' || id::text,
-  case when coalesce(evidence_past_due, false) then 'urgent' else 'high' end,
-  coalesce(last_synced_at, stripe_created_at)
-) from public.professional_booking_payment_disputes
-where resolved_at is null;
+  for r in select to_jsonb(t) as payload from public.professional_booking_payment_disputes t loop
+    if nullif(r.payload->>'resolved_at', '') is null then
+      perform public.sync_admin_attention_payload('professional_booking_payment_disputes', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_account_deletion', id::text, true, status,
-  'Account deletion request needs Admin review', last_error,
-  '/admin/legal-operations?deletion_request=' || id::text,
-  'high', created_at
-) from public.account_deletion_requests
-where status in ('reviewing', 'blocked', 'failed');
+  for r in select to_jsonb(t) as payload from public.account_deletion_requests t loop
+    if r.payload->>'status' in ('reviewing', 'blocked', 'failed') then
+      perform public.sync_admin_attention_payload('account_deletion_requests', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_trust_safety_case', id::text, true, status,
-  case_number || ' needs review', summary,
-  '/admin/legal-operations?trust_safety_case=' || id::text,
-  case severity when 'S1' then 'urgent' when 'S2' then 'high' else 'normal' end,
-  updated_at
-) from public.trust_safety_cases
-where status <> 'closed' and source_type <> 'manual';
+  for r in select to_jsonb(t) as payload from public.trust_safety_cases t loop
+    if r.payload->>'status' <> 'closed'
+       and coalesce(r.payload->>'source_type', 'manual') <> 'manual' then
+      perform public.sync_admin_attention_payload('trust_safety_cases', r.payload, false);
+    end if;
+  end loop;
 
-select public.sync_admin_attention_item(
-  'admin_identity_review', id::text, true, identity_verification_status,
-  'Identity verification needs Admin review', identity_restriction_reason,
-  '/admin/users?member=' || id::text,
-  'high', identity_verified_at
-) from public.profiles
-where identity_verification_status = 'pending';
+  for r in select to_jsonb(t) as payload from public.profiles t loop
+    if r.payload->>'identity_verification_status' = 'pending' then
+      perform public.sync_admin_attention_payload('profiles', r.payload, false);
+    end if;
+  end loop;
+end;
+$$;
 
 comment on table public.admin_attention_items is
   'Durable source-linked Admin Needs Attention queue. The source record is authoritative; unresolved items cannot be independently dismissed.';
