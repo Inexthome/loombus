@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getLoombusEmailIdentity } from "@/lib/email-senders";
 
 type WelcomeEmailEventRow = {
   user_id: string;
@@ -18,29 +19,17 @@ function getSupabaseForRequest(request: NextRequest) {
   }
 
   return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-    global: {
-      headers: authorization ? { Authorization: authorization } : {},
-    },
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: authorization ? { Authorization: authorization } : {} },
   });
 }
 
 function getSupabaseServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
-
+  if (!supabaseUrl || !serviceRoleKey) return null;
   return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
@@ -59,9 +48,7 @@ function escapeHtml(value: string) {
 
 function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
   const safeSiteUrl = escapeHtml(siteUrl);
-
   const subject = "Welcome to Loombus";
-
   const text = [
     "Welcome to Loombus.",
     "",
@@ -82,7 +69,6 @@ function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111; max-width: 640px; margin: 0 auto;">
       <h1 style="font-size: 28px; margin-bottom: 12px;">Welcome to Loombus.</h1>
       <p>Loombus is a signal-first platform where ideas move through structured discussion, evidence, understanding, connection, and action.</p>
-
       <div style="margin: 24px 0; padding: 18px; border: 1px solid #ddd; border-radius: 14px;">
         <p style="margin-top: 0;"><strong>Good first steps:</strong></p>
         <ul>
@@ -93,26 +79,17 @@ function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
           <li>Explore Library, Rooms, The Floor, and real-world discovery when they fit your goals.</li>
         </ul>
       </div>
-
-      <p>
-        <a href="${safeSiteUrl}/dashboard" style="display: inline-block; background: #111; color: #fff; padding: 12px 18px; border-radius: 999px; text-decoration: none;">
-          Open Loombus
-        </a>
-      </p>
-
-      <p style="font-size: 13px; color: #666;">
-        You can manage notification settings from your profile:
-        <a href="${safeSiteUrl}/profile">${safeSiteUrl}/profile</a>
-      </p>
+      <p><a href="${safeSiteUrl}/dashboard" style="display: inline-block; background: #111; color: #fff; padding: 12px 18px; border-radius: 999px; text-decoration: none;">Open Loombus</a></p>
+      <p style="font-size: 13px; color: #666;">You can manage notification settings from your profile: <a href="${safeSiteUrl}/profile">${safeSiteUrl}/profile</a></p>
     </div>
   `;
-
   return { subject, html, text };
 }
 
 async function sendEmailWithResend(args: {
   apiKey: string;
   from: string;
+  replyTo?: string;
   to: string;
   subject: string;
   html: string;
@@ -127,6 +104,7 @@ async function sendEmailWithResend(args: {
     body: JSON.stringify({
       from: args.from,
       to: args.to,
+      ...(args.replyTo ? { reply_to: args.replyTo } : {}),
       subject: args.subject,
       html: args.html,
       text: args.text,
@@ -134,7 +112,6 @@ async function sendEmailWithResend(args: {
   });
 
   const result = await response.json().catch(() => ({}));
-
   if (!response.ok) {
     return {
       ok: false,
@@ -145,7 +122,6 @@ async function sendEmailWithResend(args: {
           : `Resend returned HTTP ${response.status}.`,
     };
   }
-
   return {
     ok: true,
     id: typeof result?.id === "string" ? result.id : null,
@@ -155,86 +131,49 @@ async function sendEmailWithResend(args: {
 
 export async function POST(request: NextRequest) {
   let authSupabase;
-
   try {
     authSupabase = getSupabaseForRequest(request);
   } catch {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await authSupabase.auth.getUser();
-
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
-  }
-
-  if (!user.email) {
-    return jsonError("No deliverable email address.", 400);
-  }
+  const { data: { user }, error: userError } = await authSupabase.auth.getUser();
+  if (userError || !user) return jsonError("Unauthorized.", 401);
+  if (!user.email) return jsonError("No deliverable email address.", 400);
 
   const serviceSupabase = getSupabaseServiceClient();
-
-  if (!serviceSupabase) {
-    return jsonError("Welcome email service is not configured.", 503);
-  }
+  if (!serviceSupabase) return jsonError("Welcome email service is not configured.", 503);
 
   const { data: existingEvent, error: existingError } = await serviceSupabase
     .from("welcome_email_events")
     .select("user_id, status, sent_at, provider_message_id")
     .eq("user_id", user.id)
     .maybeSingle<WelcomeEmailEventRow>();
-
-  if (existingError) {
-    return jsonError("Unable to check welcome email status.", 500);
-  }
+  if (existingError) return jsonError("Unable to check welcome email status.", 500);
 
   if (existingEvent?.status === "sent" || existingEvent?.status === "skipped") {
-    return NextResponse.json({
-      sent: false,
-      skipped: true,
-      status: existingEvent.status,
-    });
+    return NextResponse.json({ sent: false, skipped: true, status: existingEvent.status });
   }
 
-  // A global auth-aware trigger may run for any signed-in member. Only create a
-  // first-time welcome-email event for a recently created account. Existing
-  // failed events remain retryable regardless of account age.
   if (!existingEvent) {
     const createdAtMs = Date.parse(user.created_at ?? "");
     const accountAgeMs = Date.now() - createdAtMs;
     const maxWelcomeAgeMs = 24 * 60 * 60 * 1000;
-
-    if (
-      !Number.isFinite(createdAtMs) ||
-      accountAgeMs < 0 ||
-      accountAgeMs > maxWelcomeAgeMs
-    ) {
-      return NextResponse.json({
-        sent: false,
-        skipped: true,
-        status: "skipped",
-      });
+    if (!Number.isFinite(createdAtMs) || accountAgeMs < 0 || accountAgeMs > maxWelcomeAgeMs) {
+      return NextResponse.json({ sent: false, skipped: true, status: "skipped" });
     }
   }
 
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.PRODUCT_FROM_EMAIL || process.env.DIGEST_FROM_EMAIL;
+  if (!resendApiKey) return jsonError("Welcome email provider is not configured.", 503);
 
-  if (!resendApiKey || !fromEmail) {
-    return jsonError("Welcome email provider is not configured.", 503);
-  }
-
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://loombus.com";
-
+  const identity = getLoombusEmailIdentity("product");
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://loombus.com";
   const email = buildWelcomeEmail({ siteUrl });
-
   const sendResult = await sendEmailWithResend({
     apiKey: resendApiKey,
-    from: fromEmail,
+    from: identity.from,
+    replyTo: identity.replyTo,
     to: user.email,
     subject: email.subject,
     html: email.html,
@@ -253,34 +192,23 @@ export async function POST(request: NextRequest) {
       },
       { onConflict: "user_id" }
     );
-
     return jsonError("Unable to send welcome email.", 502);
   }
 
   const sentAt = new Date().toISOString();
+  const { error: insertError } = await serviceSupabase.from("welcome_email_events").upsert(
+    {
+      user_id: user.id,
+      email: user.email,
+      status: "sent",
+      provider: "resend",
+      provider_message_id: sendResult.id,
+      error_message: null,
+      sent_at: sentAt,
+    },
+    { onConflict: "user_id" }
+  );
+  if (insertError) return jsonError("Welcome email sent, but delivery tracking failed.", 500);
 
-  const { error: insertError } = await serviceSupabase
-    .from("welcome_email_events")
-    .upsert(
-      {
-        user_id: user.id,
-        email: user.email,
-        status: "sent",
-        provider: "resend",
-        provider_message_id: sendResult.id,
-        error_message: null,
-        sent_at: sentAt,
-      },
-      { onConflict: "user_id" }
-    );
-
-  if (insertError) {
-    return jsonError("Welcome email sent, but delivery tracking failed.", 500);
-  }
-
-  return NextResponse.json({
-    sent: true,
-    skipped: false,
-    status: "sent",
-  });
+  return NextResponse.json({ sent: true, skipped: false, status: "sent" });
 }
