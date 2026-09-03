@@ -13,7 +13,7 @@ const route = fs.readFileSync(routePath, "utf8");
 const migration = fs.readFileSync(migrationPath, "utf8");
 
 for (const fragment of [
-  "LEADING_MACHINE_FILENAME",
+  "machineFilenamePrefixLength",
   "stripLeadingEpubMachineFilename",
   "sanitizeNormalizedEpubSection",
   "contentSha256: sha256Hex",
@@ -52,12 +52,18 @@ for (const forbidden of [
   }
 }
 
-const sample = "ch001.xhtml The Next Intelligence Revolution";
-const pattern = /^[\s\u00a0]*(?:[^\s<>]+\/)*[^\s<>/]+\.(?:xhtml|html?)[\s\u00a0]+/i;
-if (sample.replace(pattern, "") !== "The Next Intelligence Revolution") {
+function stripObservedMachinePrefix(value) {
+  const firstSpace = value.indexOf(" ");
+  if (firstSpace < 1) return value;
+  const token = value.slice(0, firstSpace).toLowerCase();
+  if (!token.endsWith(".xhtml") && !token.endsWith(".html") && !token.endsWith(".htm")) return value;
+  return value.slice(firstSpace + 1);
+}
+
+if (stripObservedMachinePrefix("ch001.xhtml The Next Intelligence Revolution") !== "The Next Intelligence Revolution") {
   throw new Error("Machine XHTML filename sanitizer does not remove the observed reader prefix.");
 }
-if ("Chapter 1 A New Kind of Change".replace(pattern, "") !== "Chapter 1 A New Kind of Change") {
+if (stripObservedMachinePrefix("Chapter 1 A New Kind of Change") !== "Chapter 1 A New Kind of Change") {
   throw new Error("Machine XHTML filename sanitizer removes legitimate reader content.");
 }
 
