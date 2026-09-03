@@ -1,6 +1,7 @@
 import FollowRequestActions from "./follow-request-actions";
 import NotificationsV2Client from "./notifications-v2-client";
 import TeenSafetyNotificationDestinations from "./teen-safety-notification-destinations";
+import AdminAttentionNotifications from "./admin-attention-notifications";
 import "./notifications-desktop-width.css";
 import "./notifications-editorial.css";
 
@@ -18,6 +19,7 @@ export default async function NotificationsPage({
 
   return (
     <>
+      {!roomId ? <AdminAttentionNotifications /> : null}
       <NotificationsV2Client roomId={roomId} />
       {!roomId ? <FollowRequestActions /> : null}
       {!roomId ? <TeenSafetyNotificationDestinations /> : null}
