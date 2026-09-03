@@ -1,0 +1,25 @@
+name: Discussion Follow Meaningful Updates
+
+on:
+  pull_request:
+    paths:
+      - "src/app/discussions/**"
+      - "src/components/discussion-follow-*.tsx"
+      - "src/app/notifications/**"
+      - "supabase/migrations/**"
+      - "scripts/verification/verify-discussion-follow-meaningful-updates.mjs"
+      - ".github/workflows/discussion-follow-meaningful-updates.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify discussion follow meaningful update contract
+        run: node scripts/verification/verify-discussion-follow-meaningful-updates.mjs
