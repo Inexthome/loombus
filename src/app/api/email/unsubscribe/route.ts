@@ -35,8 +35,50 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const token = body?.token;
+  const requestedScope = body?.scope;
   if (!isValidUuid(token)) {
     return jsonError("Invalid unsubscribe link.", 400);
+  }
+
+  if (requestedScope === "marketing") {
+    const { data: marketingPreference, error: marketingLookupError } = await supabase
+      .from("marketing_email_preferences")
+      .select("user_id, enabled")
+      .eq("unsubscribe_token", token)
+      .maybeSingle();
+
+    if (marketingLookupError) {
+      return jsonError("Unable to verify unsubscribe link.", 500);
+    }
+    if (!marketingPreference?.user_id) {
+      return jsonError("Unsubscribe link was not found.", 404);
+    }
+    if (marketingPreference.enabled === false) {
+      return NextResponse.json({
+        ok: true,
+        scope: "marketing",
+        unsubscribed: true,
+        alreadyUnsubscribed: true,
+        message: "Loombus member emails were already turned off.",
+      });
+    }
+
+    const now = new Date().toISOString();
+    const { error: marketingUpdateError } = await supabase
+      .from("marketing_email_preferences")
+      .update({ enabled: false, unsubscribed_at: now, updated_at: now })
+      .eq("unsubscribe_token", token);
+    if (marketingUpdateError) {
+      return jsonError("Unable to unsubscribe from Loombus member emails.", 500);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      scope: "marketing",
+      unsubscribed: true,
+      alreadyUnsubscribed: false,
+      message: "Loombus member emails are now turned off.",
+    });
   }
 
   const { data: accountPreference, error: accountLookupError } = await supabase
