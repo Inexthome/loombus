@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DiscussionAutoLinker } from "@/components/discussion-auto-linker";
+import { DiscussionEngagementModeControl } from "@/components/discussion-engagement-mode-control";
 import { DiscussionFeedRefinements } from "@/components/discussion-feed-refinements";
 import { DiscussionFollowUpdatesBridge } from "@/components/discussion-follow-updates-bridge";
 import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
@@ -20,6 +21,7 @@ import "./discussion-index-polish.css";
 import "./discussion-view-modes.css";
 import "./discussions-create-modal.css";
 import "./discussion-top-controls.css";
+import "./discussion-engagement-mode-control.css";
 import "./discussion-weave-feed.css";
 import "./discussion-weave-page-surface.css";
 import "./discussion-weave-density.css";
@@ -52,6 +54,7 @@ export default function DiscussionsLayout({ children }: Readonly<{ children: Rea
       <DiscussionsCreateComposerBridge />
       <DiscussionsLaunchPricingBridge />
       <DiscussionViewModeControl />
+      <DiscussionEngagementModeControl />
       <QuestionOfTheWeekBridge />
       <DiscussionsEngagementBridge />
       <DiscussionsEngagementLayoutBridge />
