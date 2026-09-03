@@ -3,6 +3,7 @@ import { AdminMemberCommerceEditorialFrame } from "../admin-member-commerce-edit
 import AdminCommunicationsClient from "./communications-client";
 import "../member-commerce-editorial.css";
 import "./communications-editorial.css";
+import "./communications-preferences.css";
 
 export const metadata: Metadata = {
   title: "Member Communications | Loombus Admin",
