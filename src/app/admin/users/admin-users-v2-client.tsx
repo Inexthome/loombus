@@ -188,10 +188,17 @@ function maskId(value: string | null | undefined) {
 }
 
 function toLocalDateTimeValue(value: string | null | undefined) {
-  const date = value ? new Date(value) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  if (!value) return "";
+  const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "";
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function defaultSuspensionEndValue() {
+  return toLocalDateTimeValue(
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  );
 }
 
 function buildMemberView(member: MemberRow): MemberView {
@@ -252,7 +259,7 @@ export default function AdminUsersV2Client() {
   const [identityReason, setIdentityReason] = useState("");
   const [enforcementReason, setEnforcementReason] = useState("");
   const [enforcementNote, setEnforcementNote] = useState("");
-  const [suspendedUntil, setSuspendedUntil] = useState(toLocalDateTimeValue(null));
+  const [suspendedUntil, setSuspendedUntil] = useState("");
 
   const loadMembers = useCallback(async (manualRefresh = false) => {
     if (manualRefresh) setRefreshing(true);
@@ -548,6 +555,12 @@ export default function AdminUsersV2Client() {
 
     if (action !== "restore_user" && !enforcementReason.trim()) {
       setMessage("Add an enforcement reason before continuing.");
+      return;
+    }
+
+    if (action === "suspend_user" && !suspendedUntil) {
+      setSuspendedUntil(defaultSuspensionEndValue());
+      setMessage("A 7-day suspension end has been prepared. Review it, then click Suspend member again to confirm.");
       return;
     }
 

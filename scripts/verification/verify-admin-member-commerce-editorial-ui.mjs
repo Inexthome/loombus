@@ -49,4 +49,24 @@ if (/rounded-3xl|bg-neutral-950|bg-neutral-900/.test(communicationsClient)) {
   throw new Error("Admin Communications must not regress to the standalone generic dashboard shell.");
 }
 
+const usersClient = fs.readFileSync("src/app/admin/users/admin-users-v2-client.tsx", "utf8");
+requireText(
+  usersClient,
+  'if (!value) return "";',
+  "Admin suspension datetime conversion must preserve a null suspension as an empty editor value."
+);
+requireText(
+  usersClient,
+  "function defaultSuspensionEndValue()",
+  "Admin member suspension must keep the 7-day default separate from persisted suspension data."
+);
+requireText(
+  usersClient,
+  'action === "suspend_user" && !suspendedUntil',
+  "Admin member suspension must initialize the default only when an Admin begins a suspension action."
+);
+if (/value \? new Date\(value\) : new Date\(Date\.now\(\) \+ 7/.test(usersClient)) {
+  throw new Error("Admin member suspension must not fabricate a future suspension date for null records.");
+}
+
 console.log("Admin member and commerce Editorial UI verification passed.");
