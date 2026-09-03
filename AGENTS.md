@@ -18,3 +18,17 @@ Before creating page-level layout or styling:
 6. A non-Editorial presentation requires an explicit product requirement. Absence of a design instruction is not permission to invent another visual system.
 
 For Admin member/support/commerce/communications work, start from `src/app/admin/admin-member-commerce-editorial-frame.tsx` and `src/app/admin/member-commerce-editorial.css` before adding route-specific CSS.
+
+## Loombus outbound email — mandatory domain policy
+
+All application-generated outbound email must use the verified `mail.loombus.com` sending domain. Root-domain `@loombus.com` addresses are monitored Microsoft 365 mailboxes and are for human/business correspondence or `Reply-To`, not application `From` headers.
+
+Use `src/lib/email-senders.ts` rather than hard-coding sender identities. Current channels are:
+
+- product/general: `Loombus <hello@mail.loombus.com>` → replies to `service@loombus.com`
+- notifications: `Loombus Notifications <notifications@mail.loombus.com>` → replies to `support@loombus.com`
+- billing: `Loombus Billing <billing@mail.loombus.com>` → replies to `billing@loombus.com`
+- security: `Loombus Security <security@mail.loombus.com>` → replies to `security@loombus.com`
+- no-reply: `Loombus <no-reply@mail.loombus.com>` with no monitored reply address unless a product requirement supplies one
+
+Do not introduce an application sender such as `service@loombus.com`, `support@loombus.com`, `billing@loombus.com`, or `security@loombus.com` in a Resend `from` field. Environment overrides must also remain under `@mail.loombus.com`.
