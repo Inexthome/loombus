@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { AdminMemberCommerceEditorialFrame } from "../admin-member-commerce-editorial-frame";
 import AdminCommunicationsClient from "./communications-client";
+import "../member-commerce-editorial.css";
 
 export const metadata: Metadata = {
   title: "Member Communications | Loombus Admin",
@@ -8,5 +10,13 @@ export const metadata: Metadata = {
 };
 
 export default function AdminCommunicationsPage() {
-  return <AdminCommunicationsClient />;
+  return (
+    <AdminMemberCommerceEditorialFrame
+      active="communications"
+      title="Member Communications"
+      description="Prepare, review, send, and audit member email campaigns from the same editorial operations system used across Loombus Admin."
+    >
+      <AdminCommunicationsClient />
+    </AdminMemberCommerceEditorialFrame>
+  );
 }
