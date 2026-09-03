@@ -114,21 +114,21 @@ export function PublicPolicyPage({
   eyebrow,
   title,
   description,
-  sections,
+  sections: providedSections,
   effectiveDate,
-  reviewedDate,
+  reviewedDate: providedReviewedDate,
   backHref = "/",
   backLabel = "Back to Loombus",
 }: PublicPolicyPageProps) {
   const smsAuthenticationSection = getSmsAuthenticationSection(title);
-  const renderedSections = smsAuthenticationSection
-    ? [...sections, smsAuthenticationSection]
-    : sections;
-  const renderedReviewedDate = smsAuthenticationSection
+  const sections = smsAuthenticationSection
+    ? [...providedSections, smsAuthenticationSection]
+    : providedSections;
+  const reviewedDate = smsAuthenticationSection
     ? "September 3, 2026"
-    : reviewedDate;
+    : providedReviewedDate;
 
-  const jumpSections = renderedSections.reduce<
+  const jumpSections = sections.reduce<
     Array<{ id: string; title: string; number: number }>
   >((items, section, index) => {
     if (!section.id) return items;
@@ -173,7 +173,7 @@ export function PublicPolicyPage({
         ) : null}
 
         <div className={styles.sections}>
-          {renderedSections.map((section, index) => (
+          {sections.map((section, index) => (
             <section
               key={`${section.id ?? "section"}-${index}`}
               data-policy-print-section
@@ -206,7 +206,7 @@ export function PublicPolicyPage({
             </section>
           ))}
 
-          {(effectiveDate || renderedReviewedDate) && (
+          {(effectiveDate || reviewedDate) && (
             <section
               data-policy-print-section
               className={`${styles.printSection} ${styles.section} ${styles.documentStatus}`}
@@ -217,7 +217,7 @@ export function PublicPolicyPage({
               </div>
               <div className={styles.sectionBody}>
                 {effectiveDate && <p>Effective date: {effectiveDate}</p>}
-                {renderedReviewedDate && <p>Last reviewed: {renderedReviewedDate}</p>}
+                {reviewedDate && <p>Last reviewed: {reviewedDate}</p>}
                 <p className={styles.statusNote}>
                   This public explanation describes the current Loombus service and may
                   be updated as features, operational practices, or legal requirements
