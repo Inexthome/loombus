@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { ContactRound, MessageSquareLock, Phone, Search } from "lucide-react";
@@ -237,6 +238,13 @@ export function PhoneSecuritySettingsBridge() {
             {phone.verified ? "Change number" : "Add & verify"}
           </button>
         </div>
+
+        <p className="mt-3 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+          By requesting a verification code, you consent to receive a transactional SMS from Loombus for authentication. Message frequency varies based on your requests. Message and data rates may apply. No marketing messages are sent through this program. See the{" "}
+          <Link href="/terms#sms-authentication" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
+          and{" "}
+          <Link href="/privacy#mobile-sms-auth" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
+        </p>
 
         {awaitingOtp ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
