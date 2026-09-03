@@ -1,0 +1,30 @@
+name: Library reader XHTML filename cleanup
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/lib/library/epub-section-sanitizer.ts"
+      - "src/app/api/library/author/ingest-epub/route.ts"
+      - "supabase/migrations/20260902235500_remove_epub_machine_filenames_from_reader_sections.sql"
+      - "scripts/verification/verify-library-reader-xhtml-filename-cleanup.mjs"
+      - ".github/workflows/library-reader-xhtml-filename-cleanup.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify Library reader XHTML filename cleanup
+        run: node scripts/verification/verify-library-reader-xhtml-filename-cleanup.mjs
