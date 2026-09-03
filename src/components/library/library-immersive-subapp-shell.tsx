@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
+  BookHeart,
   BookOpen,
   Compass,
   Ellipsis,
@@ -36,6 +38,7 @@ const LIBRARY_SEARCH_INPUT = 'input[aria-label="Search the Loombus Library"]';
 const SCROLL_HIDE_THRESHOLD = 20;
 
 const MORE_TARGETS: Array<{ label: string; view?: LibraryViewTarget; href?: string }> = [
+  { label: "Book Clubs", href: "/library/book-clubs" },
   { label: "Want to Read", view: "Want to Read" },
   { label: "Continue Reading", view: "Continue Reading" },
   { label: "Finished", view: "Finished" },
@@ -67,6 +70,7 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [appearance, setAppearance] = useState<AppearanceMode>("system");
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [desktopLibraryNav, setDesktopLibraryNav] = useState<HTMLElement | null>(null);
   const lastScrollYRef = useRef(0);
 
   useEffect(() => {
@@ -103,6 +107,22 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isReader, menuOpen, appearanceOpen]);
+
+  useEffect(() => {
+    setDesktopLibraryNav(null);
+    if (pathname !== "/library") return;
+
+    const timer = window.setTimeout(() => {
+      const nav = document.querySelector<HTMLElement>('nav[aria-label="Library navigation"]');
+      if (!nav) return;
+      const headings = Array.from(nav.querySelectorAll<HTMLElement>("p"));
+      const libraryHeading = headings.find((heading) => heading.textContent?.trim() === "Library");
+      const linksContainer = libraryHeading?.nextElementSibling;
+      if (linksContainer instanceof HTMLElement) setDesktopLibraryNav(linksContainer);
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -174,6 +194,14 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
 
   return (
     <div data-library-subapp className="relative min-h-screen bg-[var(--loombus-page-bg)] text-[var(--loombus-text)]">
+      {desktopLibraryNav ? createPortal(
+        <Link href="/library/book-clubs" className="flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
+          <BookHeart className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>Book Clubs</span>
+        </Link>,
+        desktopLibraryNav,
+      ) : null}
+
       <div
         data-library-subapp-controls
         data-library-chrome-visible={chromeVisible ? "true" : "false"}
@@ -231,9 +259,10 @@ export function LibraryImmersiveSubappShell({ children }: { children: ReactNode 
             <div className="grid grid-cols-2 gap-1.5">
               <button type="button" onClick={() => goToView("Home")} className="library-subapp-menu-item"><Home className="h-4 w-4" aria-hidden="true" /><span>Home</span></button>
               <button type="button" onClick={() => goToView("My Library")} className="library-subapp-menu-item"><LibraryBig className="h-4 w-4" aria-hidden="true" /><span>Library</span></button>
+              <Link href="/library/book-clubs" onClick={() => setMenuOpen(false)} className="library-subapp-menu-item"><BookHeart className="h-4 w-4" aria-hidden="true" /><span>Book Clubs</span></Link>
               <button type="button" onClick={() => goToView("Discover")} className="library-subapp-menu-item"><Compass className="h-4 w-4" aria-hidden="true" /><span>Discover</span></button>
               <button type="button" onClick={goToSearch} className="library-subapp-menu-item"><Search className="h-4 w-4" aria-hidden="true" /><span>Search</span></button>
-              <button type="button" onClick={() => setMoreOpen((open) => !open)} className="library-subapp-menu-item col-span-2" aria-expanded={moreOpen}><Ellipsis className="h-4 w-4" aria-hidden="true" /><span>More</span></button>
+              <button type="button" onClick={() => setMoreOpen((open) => !open)} className="library-subapp-menu-item" aria-expanded={moreOpen}><Ellipsis className="h-4 w-4" aria-hidden="true" /><span>More</span></button>
             </div>
 
             {moreOpen ? (
