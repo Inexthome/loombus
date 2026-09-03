@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 const SUITE_LINKS = [
   { href: "/admin/users", label: "Members", key: "users" },
   { href: "/admin/support", label: "Support", key: "support" },
+  { href: "/admin/communications", label: "Communications", key: "communications" },
   { href: "/admin/ai-access", label: "AI access", key: "ai-access" },
   { href: "/admin/billing", label: "Billing", key: "billing" },
   { href: "/admin/professional-booking/payments", label: "Booking payments", key: "booking-payments" },

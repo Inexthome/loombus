@@ -3,6 +3,7 @@ import fs from "node:fs";
 const routes = [
   ["users", "AdminUsersV2Client", 'active="users"'],
   ["support", "AdminSupportV2Client", 'active="support"'],
+  ["communications", "AdminCommunicationsClient", 'active="communications"'],
   ["ai-access", "AdminAiAccessV2Client", 'active="ai-access"'],
   ["billing", "AdminBillingV2Client", 'active="billing"'],
   ["professional-booking/payments", "ProfessionalBookingPaymentOperationsClient", 'active="booking-payments"'],
@@ -22,8 +23,9 @@ for (const [route, component, active] of routes) {
 
 const frame = fs.readFileSync("src/app/admin/admin-member-commerce-editorial-frame.tsx", "utf8");
 const css = fs.readFileSync("src/app/admin/member-commerce-editorial.css", "utf8");
+const communicationsCss = fs.readFileSync("src/app/admin/communications/communications-editorial.css", "utf8");
 
-for (const label of ["Members", "Support", "AI access", "Billing", "Booking payments"]) {
+for (const label of ["Members", "Support", "Communications", "AI access", "Billing", "Booking payments"]) {
   requireText(frame, label, `Editorial suite navigation must retain ${label}.`);
 }
 requireText(frame, 'aria-current={active === item.key ? "page" : undefined}', "Editorial navigation must expose active-route semantics.");
@@ -33,9 +35,18 @@ requireText(css, "border-bottom: 1px solid var(--loombus-border)", "Editorial st
 requireText(css, "#CBAB5B", "Editorial routes must retain restrained Loombus Gold.");
 requireText(css, "prefers-reduced-motion", "Editorial routes must preserve reduced-motion behavior.");
 requireText(css, "booking-payments", "Professional Booking payment operations must be covered by the shared Editorial layer.");
+requireText(communicationsCss, "var(--loombus-text)", "Communications must use Loombus appearance variables.");
+requireText(communicationsCss, "border-bottom: 1px solid var(--loombus-border)", "Communications must remain divider-led.");
+requireText(communicationsCss, "#CBAB5B", "Communications must retain restrained Loombus Gold.");
+requireText(communicationsCss, "prefers-reduced-motion", "Communications must preserve reduced-motion behavior.");
 
-if (/radial-gradient|linear-gradient/.test(css)) {
-  throw new Error("Shared member and commerce Editorial layer must not introduce decorative gradients.");
+if (/radial-gradient|linear-gradient/.test(`${css}\n${communicationsCss}`)) {
+  throw new Error("Admin member and commerce Editorial layers must not introduce decorative gradients.");
+}
+
+const communicationsClient = fs.readFileSync("src/app/admin/communications/communications-client.tsx", "utf8");
+if (/rounded-3xl|bg-neutral-950|bg-neutral-900/.test(communicationsClient)) {
+  throw new Error("Admin Communications must not regress to the standalone generic dashboard shell.");
 }
 
 console.log("Admin member and commerce Editorial UI verification passed.");
