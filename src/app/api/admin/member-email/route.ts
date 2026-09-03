@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const CAMPAIGN_KEY = "loombus-misses-you-2026-09";
 const CAMPAIGN_SUBJECT = "Loombus misses you";
-const DEFAULT_FROM = "Loombus <service@loombus.com>";
+const DEFAULT_FROM = "Loombus <hello@mail.loombus.com>";
 const BATCH_SIZE = 20;
 
 type AuthUser = {
@@ -34,6 +34,15 @@ type Campaign = {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function getBroadcastSender() {
+  return (
+    process.env.PRODUCT_FROM_EMAIL ||
+    process.env.DIGEST_FROM_EMAIL ||
+    process.env.BROADCAST_FROM_EMAIL ||
+    DEFAULT_FROM
+  );
 }
 
 function getEnv() {
@@ -245,7 +254,7 @@ export async function GET(request: NextRequest) {
       campaign,
       preview: {
         subject: CAMPAIGN_SUBJECT,
-        sender: process.env.BROADCAST_FROM_EMAIL || DEFAULT_FROM,
+        sender: getBroadcastSender(),
         eligibleCount,
         optedOutCount,
         totalAccounts: users.length,
@@ -276,7 +285,7 @@ export async function POST(request: NextRequest) {
         const preference = preferences.get(user.id);
         return Boolean(user.email && user.email_confirmed_at && preference?.enabled !== false);
       });
-      const sender = process.env.BROADCAST_FROM_EMAIL || DEFAULT_FROM;
+      const sender = getBroadcastSender();
 
       const { data: campaign, error: campaignError } = await auth.service
         .from("member_email_campaigns")
@@ -315,6 +324,16 @@ export async function POST(request: NextRequest) {
       const campaign = await loadCampaign(auth.service);
       if (!campaign) return jsonError("Prepare the campaign before sending.", 409);
       if (campaign.status === "sent") return NextResponse.json({ campaign, done: true, processed: 0 });
+
+      const sender = getBroadcastSender();
+      if (campaign.sender_email !== sender) {
+        const { error: senderUpdateError } = await auth.service
+          .from("member_email_campaigns")
+          .update({ sender_email: sender, updated_at: new Date().toISOString() })
+          .eq("id", campaign.id);
+        if (senderUpdateError) throw senderUpdateError;
+        campaign.sender_email = sender;
+      }
 
       const now = new Date().toISOString();
       if (campaign.status === "prepared") {
@@ -364,7 +383,7 @@ export async function POST(request: NextRequest) {
         const email = buildCampaignEmail(siteUrl, preference.unsubscribe_token);
         const result = await sendWithResend({
           apiKey,
-          from: campaign.sender_email,
+          from: sender,
           to: recipient.email,
           html: email.html,
           text: email.text,
@@ -415,6 +434,7 @@ export async function POST(request: NextRequest) {
         .from("member_email_campaigns")
         .update({
           status: finalStatus,
+          sender_email: sender,
           sent_count: sentCount ?? 0,
           failed_count: failedCount ?? 0,
           completed_at: completedAt,
