@@ -31,8 +31,9 @@ requireText(migration, "resolved_at = null", "Reopening must clear source resolu
 requireText(migration, "generation + 1", "Reopened items must advance generation.");
 requireText(migration, "insert into public.notifications", "Opening an item must generate normal admin notifications.");
 requireText(migration, "where p.is_admin = true", "Every Loombus admin must receive the notification.");
-requireText(migration, "source_type <> 'manual'", "Manual in-admin Trust & Safety records must not be treated as external intake.");
-requireText(migration, "where status in ('reviewing', 'blocked', 'failed')", "Account-deletion backfill must cover actual manual review states.");
+requireText(migration, "coalesce(p_record->>'source_type', 'manual') <> 'manual'", "Manual in-admin Trust & Safety records must not be treated as external intake.");
+requireText(migration, "r.payload->>'status' in ('reviewing', 'blocked', 'failed')", "Account-deletion backfill must cover actual manual review states.");
+requireText(migration, "perform public.sync_admin_attention_payload('account_deletion_requests', r.payload, false)", "Account-deletion backfill must use the source-linked synchronization path.");
 
 if (/dismiss.*admin_attention|delete.*admin_attention_items/i.test(admin)) {
   throw new Error("Admin UI must not provide independent dismissal of unresolved source-linked attention items.");
