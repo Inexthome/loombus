@@ -22,7 +22,7 @@ for (const source of [
   "admin_identity_review",
 ]) {
   requireText(migration, source, `Migration must synchronize ${source}.`);
-  requireText(notificationLinks, source, `Notifications must route ${source} directly.`);
+  requireText(notificationLinks, source, `Notifications must preserve routing compatibility for ${source}.`);
 }
 
 requireText(migration, "create table if not exists public.admin_attention_items", "Durable attention table is required.");
@@ -30,6 +30,10 @@ requireText(migration, "constraint admin_attention_items_source_unique unique (s
 requireText(migration, "resolved_at = null", "Reopening must clear source resolution state.");
 requireText(migration, "generation + 1", "Reopened items must advance generation.");
 requireText(migration, "insert into public.notifications", "Opening an item must generate normal admin notifications.");
+requireText(migration, "select p.id, 'admin_attention', p_source_type, item_id, notification_message", "Admin notifications must store the UUID attention item id in notifications.target_id.");
+if (migration.includes("select p.id, 'admin_attention', p_source_type, p_source_id, notification_message")) {
+  throw new Error("Text source ids must never be inserted into UUID notifications.target_id.");
+}
 requireText(migration, "where p.is_admin = true", "Every Loombus admin must receive the notification.");
 requireText(migration, "coalesce(p_record->>'source_type', 'manual') <> 'manual'", "Manual in-admin Trust & Safety records must not be treated as external intake.");
 requireText(migration, "r.payload->>'status' in ('reviewing', 'blocked', 'failed')", "Account-deletion backfill must cover actual manual review states.");
@@ -48,5 +52,7 @@ if (admin.includes("<strong>Recovery</strong>")) {
 requireText(api, ".is(\"resolved_at\", null)", "Attention API must return only unresolved items.");
 requireText(api, "access.profile.is_admin", "Attention API must require the Loombus Admin role.");
 requireText(notificationPage, "AdminAttentionNotifications", "Normal Notifications must expose direct Admin action links.");
+requireText(notificationLinks, '.from("admin_attention_items")', "Admin notifications must resolve their UUID target through the durable attention queue.");
+requireText(notificationLinks, '.select("id,action_url")', "Admin notification links must use the source-linked action_url stored on the attention item.");
 
 console.log("Unified Admin Needs Attention verification passed.");
