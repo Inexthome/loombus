@@ -39,7 +39,7 @@ requireText(webhookRoute, "MAX_WEBHOOK_AGE_SECONDS = 300", "Webhook replay prote
 requireText(webhookRoute, "RESEND_WEBHOOK_SECRET", "Webhook processing must fail closed without its signing secret.");
 
 requireText(adminClient, "Email preferences &amp; suppressions", "Admin Communications must expose preference/suppression history.");
-requireText(adminClient, 'preferenceFilter] = useState<PreferenceFilter>("excluded")', "Excluded recipients should be the default Admin roster view.");
+requireText(adminClient, 'useState<PreferenceFilter>("excluded")', "Excluded recipients should be the default Admin roster view.");
 requireText(adminClient, "Opted out", "Admin Communications must identify member opt-outs.");
 requireText(adminClient, "Bounced", "Admin Communications must distinguish bounced addresses.");
 requireText(adminClient, "Complained", "Admin Communications must distinguish spam complaints.");
