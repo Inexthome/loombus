@@ -11,9 +11,15 @@ function normalizePhone(value: string) {
 function getNextPath() {
   if (typeof window === "undefined") return "/discussions";
   const requested = new URLSearchParams(window.location.search).get("next");
-  return requested && requested.startsWith("/") && !requested.startsWith("//")
-    ? requested
-    : "/discussions";
+  if (!requested) return "/discussions";
+
+  try {
+    const resolved = new URL(requested, window.location.origin);
+    if (resolved.origin !== window.location.origin) return "/discussions";
+    return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  } catch {
+    return "/discussions";
+  }
 }
 
 export default function PhoneLoginPage() {
