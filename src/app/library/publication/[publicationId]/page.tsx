@@ -21,10 +21,10 @@ export default async function LibraryPublicationDetailPage({
           <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[var(--loombus-text)]">Book Club</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Open this book’s canonical Book Club Hub to join its active reading session or see other groups.</p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">Join this book’s canonical Book Club Hub to enter its active reading session or see other groups.</p>
             </div>
             <Link href={`/library/publication/${publicationId}/book-club`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-sm font-semibold text-[var(--loombus-text)] transition hover:border-[var(--loombus-gold)]">
-              <UsersRound className="h-4 w-4 text-[var(--loombus-gold)]" />Open Book Club
+              <UsersRound className="h-4 w-4 text-[var(--loombus-gold)]" />Join Book Club
             </Link>
           </div>
         </div>
