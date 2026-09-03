@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminMemberCommerceEditorialFrame } from "../admin-member-commerce-editorial-frame";
 import AdminCommunicationsClient from "./communications-client";
 import "../member-commerce-editorial.css";
+import "./communications-editorial.css";
 
 export const metadata: Metadata = {
   title: "Member Communications | Loombus Admin",
