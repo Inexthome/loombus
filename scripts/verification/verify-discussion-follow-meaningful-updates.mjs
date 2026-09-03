@@ -31,9 +31,9 @@ requireText(migration, "after insert on public.replies", "New replies must drive
 requireText(migration, "after update of discussion_status on public.discussions", "Resolution/reopen changes must drive followed discussion notifications.");
 requireText(migration, "user_id = auth.uid()", "Discussion follow preferences must remain member-private under RLS.");
 
-requireText(followBridge, '"Major updates only"', "Follow UI must default toward restrained notifications.");
-requireText(followBridge, '"All replies"', "Follow UI must offer explicit all-reply notifications.");
-requireText(followBridge, '"Status changes"', "Follow UI must expose resolution/reopen preferences.");
+requireText(followBridge, "Major updates only", "Follow UI must default toward restrained notifications.");
+requireText(followBridge, "All replies", "Follow UI must offer explicit all-reply notifications.");
+requireText(followBridge, "Status changes", "Follow UI must expose resolution/reopen preferences.");
 requireText(followBridge, '.from("discussion_follows")', "Follow UI must persist durable follow preferences.");
 requireText(detailLayout, "<DiscussionFollowBridge />", "Discussion detail must mount the follow control.");
 
