@@ -1,5 +1,6 @@
 import { DiscussionAudienceSettingsBridge } from "@/components/discussion-audience-settings-bridge";
 import { MemberPrivacySettingsMount } from "@/components/member-privacy-settings-mount";
+import { PhoneSecuritySettingsBridge } from "@/components/phone-security-settings-bridge";
 import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";
 import { SettingsWorkspaceController } from "@/components/settings-workspace-controller";
 import { SubscriptionSettingsBridge } from "@/components/subscription-settings-bridge";
@@ -23,6 +24,7 @@ export default function SettingsPage() {
       <SettingsMobileSectionSelect />
       <DiscussionAudienceSettingsBridge />
       <MemberPrivacySettingsMount />
+      <PhoneSecuritySettingsBridge />
       <SubscriptionSettingsBridge />
     </>
   );
