@@ -1,52 +1,133 @@
-/* Desktop-only labels for the primary /discussions controls.
+/* Desktop-only labels and alignment for the primary /discussions controls.
  * Phones and tablets keep the compact icon treatment. */
+.discussion-filter-all-quick {
+  display: none !important;
+}
+
 @media (min-width: 1024px) {
+  /* One shared 3.5rem control band: Create icon | Filter | All | Active | For You. */
   [data-discussions-create-trigger-slot="true"] > button,
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
+  .discussion-engagement-mode-button {
+    box-sizing: border-box !important;
+    height: 3.5rem !important;
+    min-height: 3.5rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    line-height: 1 !important;
+    vertical-align: top !important;
+  }
+
+  /* Create stays icon-only on desktop. */
+  [data-discussions-create-trigger-slot="true"] > button {
+    width: 3rem !important;
+    min-width: 3rem !important;
+    padding: 0 !important;
+    color: var(--loombus-gold) !important;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button > svg {
+    display: block !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* Filter becomes a text control; All is a dedicated quick reset beside it. */
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 0 0.85rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    color: var(--loombus-text-muted) !important;
+  }
+
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button:first-child > svg {
+    display: none !important;
+  }
+
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button:first-child::after {
+    content: "Filter";
+  }
+
+  .discussion-desktop-control-label {
+    display: none !important;
+  }
+
+  .discussion-filter-all-quick {
+    display: flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 0 0.85rem !important;
+  }
+
+  .discussion-filter-all-quick[data-selected="true"] {
+    color: var(--loombus-gold) !important;
+    border-bottom-color: var(--loombus-gold) !important;
+  }
+
+  /* Active and For You are text controls, with Active first on desktop. */
   .discussion-engagement-mode-button {
     width: auto !important;
     flex-basis: auto !important;
     min-width: 0 !important;
-    padding-left: 0.85rem !important;
-    padding-right: 0.85rem !important;
+    padding: 0 0.85rem !important;
     gap: 0 !important;
     font-size: 0.82rem !important;
     font-weight: 700 !important;
-    line-height: 1.2 !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
   }
 
-  [data-discussions-create-trigger-slot="true"] > button {
-    color: var(--loombus-gold) !important;
-  }
-
-  [data-discussions-create-trigger-slot="true"] > button > svg,
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button > svg,
   .discussion-engagement-mode-button > svg {
     display: none !important;
   }
 
-  [data-discussions-create-trigger-slot="true"] > button::after {
-    content: "Start a discussion";
+  .discussion-engagement-mode-button:nth-child(1) {
+    order: 2;
   }
 
   .discussion-engagement-mode-button:nth-child(1)::after {
     content: "For You";
   }
 
+  .discussion-engagement-mode-button:nth-child(2) {
+    order: 1;
+  }
+
   .discussion-engagement-mode-button:nth-child(2)::after {
     content: "Active";
   }
 
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button::after {
-    content: "Filter discussions";
+  [data-discussions-filter-slot="true"],
+  [data-discussion-engagement-mode-control="true"],
+  .discussion-engagement-mode-control,
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) {
+    height: 3.5rem !important;
+    min-height: 3.5rem !important;
+    align-items: flex-start !important;
   }
 
   [data-discussions-filter-slot="true"] {
-    gap: 0.35rem;
+    gap: 0.35rem !important;
   }
 
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]),
   .discussion-engagement-mode-control {
-    gap: 0.35rem;
+    display: flex !important;
+    gap: 0.35rem !important;
+  }
+
+  /* Keep the filter menu anchored under Filter rather than under the All shortcut. */
+  [data-discussions-filter-menu] {
+    left: 0 !important;
+    right: auto !important;
   }
 }
