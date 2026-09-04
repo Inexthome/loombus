@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   BellOff,
   FileText,
@@ -9,6 +10,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { supabase } from "@/lib/supabase/client";
 import {
   type Conversation,
   type MessageAttachment,
@@ -24,6 +26,28 @@ import {
   getPeopleResultHandle,
   getPeopleResultName,
 } from "./messages-v2-model";
+
+let autoLoadMessageMediaPreference: Promise<boolean> | null = null;
+
+async function getAutoLoadMessageMediaPreference() {
+  if (!autoLoadMessageMediaPreference) {
+    autoLoadMessageMediaPreference = (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token ?? "";
+      if (!token) return false;
+
+      const response = await fetch("/api/settings/member-preferences", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!response.ok) return false;
+      const payload = await response.json().catch(() => ({}));
+      return payload?.preferences?.autoDownloadMessageMedia === true;
+    })();
+  }
+
+  return autoLoadMessageMediaPreference;
+}
 
 export function ConversationIdentity({
   conversation,
@@ -150,15 +174,37 @@ export function MessageAttachmentCard({
   attachment,
   mine,
   compact = false,
-  autoLoadMedia = true,
+  autoLoadMedia,
 }: {
   attachment: MessageAttachment;
   mine: boolean;
   compact?: boolean;
   autoLoadMedia?: boolean;
 }) {
+  const [savedPreferenceAllowsMedia, setSavedPreferenceAllowsMedia] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (mine || autoLoadMedia !== undefined || attachment.attachmentKind !== "image") {
+      return () => {
+        alive = false;
+      };
+    }
+
+    void getAutoLoadMessageMediaPreference().then((allowed) => {
+      if (alive) setSavedPreferenceAllowsMedia(allowed);
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, [attachment.attachmentKind, autoLoadMedia, mine]);
+
+  const shouldAutoLoadImage =
+    mine || autoLoadMedia === true || (autoLoadMedia === undefined && savedPreferenceAllowsMedia);
+
   if (attachment.attachmentKind === "image") {
-    if (!mine && !autoLoadMedia) {
+    if (!shouldAutoLoadImage) {
       return (
         <a
           href={attachment.publicUrl}
@@ -219,7 +265,7 @@ export function MessageAttachmentCard({
 export function MessageBubble({
   message,
   mine,
-  autoLoadMedia = true,
+  autoLoadMedia,
 }: {
   message: ThreadMessage;
   mine: boolean;
