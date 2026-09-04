@@ -65,11 +65,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Use current npm audit client
-        run: npm install --global npm@11
-
       - name: Audit production dependency vulnerabilities
-        run: npm audit --package-lock-only --omit=dev --audit-level=high
+        run: node scripts/npm-audit-bulk.mjs
 
   migrations-reset:
     name: supabase db reset (migrations replay from empty)
