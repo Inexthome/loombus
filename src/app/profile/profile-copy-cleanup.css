@@ -27,6 +27,62 @@
   display: none !important;
 }
 
+/*
+ * Creator monetization guidance is useful context, but it should not occupy
+ * permanent page space. Keep the original copy in the DOM and present it as
+ * an editorial tooltip from the associated heading.
+ */
+.profile-editorial-creator .creator-supporter-manager-heading > div,
+.profile-editorial-creator .creator-paid-supporter-manager > header > div:first-child,
+.profile-editorial-creator .creator-paid-supporter-summary + .creator-paid-supporter-card .creator-paid-supporter-card-heading > div {
+  position: relative;
+}
+
+.profile-editorial-creator .creator-supporter-manager-heading > div > h3::after,
+.profile-editorial-creator .creator-paid-supporter-manager > header > div:first-child > h3::after,
+.profile-editorial-creator .creator-paid-supporter-summary + .creator-paid-supporter-card .creator-paid-supporter-card-heading > div > strong::after {
+  content: " ⓘ";
+  color: var(--loombus-gold, #cbab5b);
+  font-size: 0.72em;
+  font-weight: 700;
+  cursor: help;
+}
+
+.profile-editorial-creator .creator-supporter-manager-heading > div > p:last-child,
+.profile-editorial-creator .creator-paid-supporter-manager > header > div:first-child > span,
+.profile-editorial-creator .creator-paid-supporter-summary + .creator-paid-supporter-card .creator-paid-supporter-card-heading > div > span {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 40;
+  width: min(28rem, calc(100vw - 3rem));
+  margin: 0 !important;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.2));
+  border-radius: 0.55rem;
+  background: var(--loombus-surface, #fffdf8);
+  box-shadow: 0 0.75rem 2rem rgba(20, 17, 12, 0.12);
+  color: var(--loombus-text, #201b13);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.25rem);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.profile-editorial-creator .creator-supporter-manager-heading > div:hover > p:last-child,
+.profile-editorial-creator .creator-supporter-manager-heading > div:active > p:last-child,
+.profile-editorial-creator .creator-paid-supporter-manager > header > div:first-child:hover > span,
+.profile-editorial-creator .creator-paid-supporter-manager > header > div:first-child:active > span,
+.profile-editorial-creator .creator-paid-supporter-summary + .creator-paid-supporter-card .creator-paid-supporter-card-heading > div:hover > span,
+.profile-editorial-creator .creator-paid-supporter-summary + .creator-paid-supporter-card .creator-paid-supporter-card-heading > div:active > span {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 /* Keep public-preview content itself visible; only remove surrounding instruction. */
 .profile-editorial-preview-layout .profile-editorial-preview-card p,
 .profile-editorial-preview-layout .profile-editorial-preview-card span {
