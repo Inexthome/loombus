@@ -4,6 +4,7 @@ import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
 import { getSubscriptionEntitlementDecisionForUser } from "@/lib/subscription-access";
 
 type ProfileAccess = {
@@ -325,24 +326,29 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const [{ data: recipientBase }, { data: recipientSensitive }, { data: senderProfile }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("account_status, enforcement_reason, suspended_until")
-        .eq("id", recipientId)
-        .maybeSingle(),
-      serviceSupabaseForSafety
-        .from("profile_sensitive")
-        .select("age_band, teen_safety_mode, guardian_required")
-        .eq("id", recipientId)
-        .maybeSingle(),
-      supabase
-        .from("profiles")
-        .select("full_name, username")
-        .eq("id", user.id)
-        .maybeSingle(),
-    ]);
+  const [
+    { data: recipientBase },
+    { data: recipientSensitive },
+    { data: senderProfile },
+    recipientSettings,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("account_status, enforcement_reason, suspended_until")
+      .eq("id", recipientId)
+      .maybeSingle(),
+    serviceSupabaseForSafety
+      .from("profile_sensitive")
+      .select("age_band, teen_safety_mode, guardian_required")
+      .eq("id", recipientId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("full_name, username")
+      .eq("id", user.id)
+      .maybeSingle(),
+    getMemberSettingsForUser(recipientId, serviceSupabaseForSafety),
+  ]);
 
   const recipientProfile: ProfileAccess = {
     account_status: recipientBase?.account_status ?? null,
@@ -365,6 +371,14 @@ export async function POST(request: NextRequest) {
 
   if (blocked) {
     return jsonError("You cannot message this member.", 403);
+  }
+
+  if (hasAttachments && !recipientSettings.allowMessageAttachments) {
+    return jsonError(
+      "This member does not accept file or media attachments in private messages.",
+      403,
+      "recipient_attachments_disabled"
+    );
   }
 
   let marketplaceConversation = false;
@@ -546,6 +560,7 @@ export async function POST(request: NextRequest) {
       private_message_safety_checked: Boolean(rawBody),
       teen_safety_checked: true,
       marketplace_conversation: marketplaceConversation,
+      recipient_allows_attachments: recipientSettings.allowMessageAttachments,
       ...teenMessagingContext,
     },
   });
