@@ -14,6 +14,7 @@ import "./settings-editorial-mobile.css";
 import "./settings-mobile-section-select.css";
 import "./settings-loombus-background.css";
 import "./settings-editorial-expansion.css";
+import "./settings-copy-cleanup.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 
 const AUDIT_URL = "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk";
-const MAX_ATTEMPTS = 4;
+const MAX_ATTEMPTS = 3;
+const REQUEST_TIMEOUT_MS = 30_000;
+const BATCH_SIZE = 20;
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const BLOCKING_SEVERITIES = new Set(["high", "critical"]);
 
@@ -50,16 +52,27 @@ function buildProductionVersionMap(lockfile) {
   );
 }
 
+function splitPayload(payload, batchSize = BATCH_SIZE) {
+  const entries = Object.entries(payload);
+  const batches = [];
+
+  for (let index = 0; index < entries.length; index += batchSize) {
+    batches.push(Object.fromEntries(entries.slice(index, index + batchSize)));
+  }
+
+  return batches;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchAdvisories(payload) {
+async function fetchAdvisories(payload, batchLabel) {
   let lastError = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45_000);
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch(AUDIT_URL, {
@@ -67,7 +80,7 @@ async function fetchAdvisories(payload) {
         headers: {
           accept: "application/json",
           "content-type": "application/json",
-          "user-agent": "loombus-ci-bulk-audit/1.0",
+          "user-agent": "loombus-ci-bulk-audit/1.1",
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -83,30 +96,37 @@ async function fetchAdvisories(payload) {
         }
       }
 
-      const error = new Error(
-        `npm bulk audit returned HTTP ${response.status}${text ? `: ${text.slice(0, 400)}` : ""}`
+      const requestError = new Error(
+        `npm bulk audit ${batchLabel} returned HTTP ${response.status}${text ? `: ${text.slice(0, 400)}` : ""}`
       );
 
       if (!RETRYABLE_STATUS.has(response.status) || attempt === MAX_ATTEMPTS) {
-        throw error;
+        throw requestError;
       }
 
-      lastError = error;
+      lastError = requestError;
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error));
       lastError = normalized;
 
       if (attempt === MAX_ATTEMPTS) {
-        throw normalized;
+        throw new Error(
+          `npm bulk audit ${batchLabel} failed after ${MAX_ATTEMPTS} attempts: ${normalized.message}`,
+          { cause: normalized }
+        );
       }
+
+      console.warn(
+        `npm bulk audit ${batchLabel} attempt ${attempt}/${MAX_ATTEMPTS} failed (${normalized.message}); retrying.`
+      );
     } finally {
       clearTimeout(timeout);
     }
 
-    await sleep(2_000 * attempt);
+    await sleep(1_500 * attempt);
   }
 
-  throw lastError ?? new Error("npm bulk audit failed without a response.");
+  throw lastError ?? new Error(`npm bulk audit ${batchLabel} failed without a response.`);
 }
 
 function normalizeAdvisories(response) {
@@ -128,10 +148,20 @@ if (packageCount === 0) {
   throw new Error("No production dependencies were found in package-lock.json.");
 }
 
-console.log(`Auditing ${packageCount} production package names through npm bulk advisories.`);
+const batches = splitPayload(payload);
+console.log(
+  `Auditing ${packageCount} production package names through npm bulk advisories in ${batches.length} batches.`
+);
 
-const response = await fetchAdvisories(payload);
-const advisories = normalizeAdvisories(response);
+const advisories = [];
+for (let index = 0; index < batches.length; index += 1) {
+  const batch = batches[index];
+  const batchLabel = `batch ${index + 1}/${batches.length}`;
+  console.log(`Auditing ${batchLabel} (${Object.keys(batch).length} package names).`);
+  const response = await fetchAdvisories(batch, batchLabel);
+  advisories.push(...normalizeAdvisories(response));
+}
+
 const blocking = advisories.filter((advisory) =>
   BLOCKING_SEVERITIES.has(String(advisory.severity ?? "").toLowerCase())
 );

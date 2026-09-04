@@ -1,0 +1,38 @@
+/*
+ * Keep Settings operational and compact.
+ *
+ * Section-level prose that repeats the surrounding heading, navigation, or
+ * controls is intentionally hidden. Consequence text attached to individual
+ * controls, eligibility notices, status/error messages, legal consent copy,
+ * and destructive-account warnings remain visible.
+ */
+
+.settings-v2-hero-copy,
+.settings-v2-card-header > div > p:not(.settings-v2-eyebrow),
+.settings-expansion-panel-heading > div > span,
+.member-privacy-heading > div > h3,
+#account-security > .settings-v2-muted,
+.member-follow-requests > .member-follow-requests-empty {
+  display: none !important;
+}
+
+/*
+ * Secondary explanatory copy inside Account & Security is redundant with the
+ * field/control labels themselves. Keep status, validation, and action notices.
+ */
+#account-security .settings-expansion-panel-heading span,
+#account-security .settings-expansion-panel-heading > div > span,
+#account-security .settings-expansion-grid .settings-v2-field > small,
+#security .settings-v2-security-panel > p {
+  display: none !important;
+}
+
+/* The destination labels are sufficient in Settings; keep these links compact. */
+.settings-v2-resource-link > div > span {
+  display: none !important;
+}
+
+/* Group headings plus the individual control labels already explain the area. */
+.settings-v2-preference-group > p {
+  display: none !important;
+}
