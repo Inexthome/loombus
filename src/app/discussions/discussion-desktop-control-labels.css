@@ -1,11 +1,11 @@
 /* Desktop-only labels and alignment for the primary /discussions controls.
  * Phones and tablets keep the compact icon treatment. */
-.discussion-filter-all-quick {
+.discussion-engagement-new-button {
   display: none !important;
 }
 
 @media (min-width: 1024px) {
-  /* One shared 3.5rem control band: Create icon | Filter | All | Active | For You. */
+  /* One shared 3.5rem control band: Create icon | Filter | New | Active | For You. */
   [data-discussions-create-trigger-slot="true"] > button,
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
   .discussion-engagement-mode-button {
@@ -39,7 +39,7 @@
     height: 1.25rem !important;
   }
 
-  /* Filter becomes a text control; All is a dedicated quick reset beside it. */
+  /* Filter is text-only on desktop. */
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button {
     width: auto !important;
     min-width: 0 !important;
@@ -50,32 +50,17 @@
     color: var(--loombus-text-muted) !important;
   }
 
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button:first-child > svg {
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button > svg {
     display: none !important;
-  }
-
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button:first-child::after {
-    content: "Filter";
   }
 
   .discussion-desktop-control-label {
-    display: none !important;
+    display: inline !important;
   }
 
-  .discussion-filter-all-quick {
-    display: flex !important;
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 0 0.85rem !important;
-  }
-
-  .discussion-filter-all-quick[data-selected="true"] {
-    color: var(--loombus-gold) !important;
-    border-bottom-color: var(--loombus-gold) !important;
-  }
-
-  /* Active and For You are text controls, with Active first on desktop. */
+  /* New / Active / For You are equal-geometry text controls. */
   .discussion-engagement-mode-button {
+    display: flex !important;
     width: auto !important;
     flex-basis: auto !important;
     min-width: 0 !important;
@@ -90,20 +75,20 @@
     display: none !important;
   }
 
-  .discussion-engagement-mode-button:nth-child(1) {
-    order: 2;
+  .discussion-engagement-new-button {
+    display: flex !important;
   }
 
-  .discussion-engagement-mode-button:nth-child(1)::after {
-    content: "For You";
-  }
-
-  .discussion-engagement-mode-button:nth-child(2) {
-    order: 1;
+  .discussion-engagement-new-label {
+    display: inline !important;
   }
 
   .discussion-engagement-mode-button:nth-child(2)::after {
     content: "Active";
+  }
+
+  .discussion-engagement-mode-button:nth-child(3)::after {
+    content: "For You";
   }
 
   [data-discussions-filter-slot="true"],
@@ -125,7 +110,6 @@
     gap: 0.35rem !important;
   }
 
-  /* Keep the filter menu anchored under Filter rather than under the All shortcut. */
   [data-discussions-filter-menu] {
     left: 0 !important;
     right: auto !important;
