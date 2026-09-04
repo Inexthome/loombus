@@ -1,0 +1,52 @@
+/* Desktop-only labels for the primary /discussions controls.
+ * Phones and tablets keep the compact icon treatment. */
+@media (min-width: 1024px) {
+  [data-discussions-create-trigger-slot="true"] > button,
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
+  .discussion-engagement-mode-button {
+    width: auto !important;
+    flex-basis: auto !important;
+    min-width: 0 !important;
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+    gap: 0 !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button {
+    color: var(--loombus-gold) !important;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button > svg,
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button > svg,
+  .discussion-engagement-mode-button > svg {
+    display: none !important;
+  }
+
+  [data-discussions-create-trigger-slot="true"] > button::after {
+    content: "Start a discussion";
+  }
+
+  .discussion-engagement-mode-button:nth-child(1)::after {
+    content: "For You";
+  }
+
+  .discussion-engagement-mode-button:nth-child(2)::after {
+    content: "Active";
+  }
+
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button::after {
+    content: "Filter discussions";
+  }
+
+  [data-discussions-filter-slot="true"] {
+    gap: 0.35rem;
+  }
+
+  .discussion-engagement-mode-control {
+    gap: 0.35rem;
+  }
+}
