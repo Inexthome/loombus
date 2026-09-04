@@ -4,6 +4,7 @@ import { PhoneSecuritySettingsBridge } from "@/components/phone-security-setting
 import { SettingsAccountEditorialRefinement } from "@/components/settings-account-editorial-refinement";
 import { SettingsEditorialExpansion } from "@/components/settings-editorial-expansion";
 import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";
+import { SettingsTotpMobileSetup } from "@/components/settings-totp-mobile-setup";
 import { SettingsWorkspaceController } from "@/components/settings-workspace-controller";
 import { SubscriptionSettingsBridge } from "@/components/subscription-settings-bridge";
 import SettingsV2Client from "./settings-v2-client";
@@ -18,6 +19,7 @@ import "./settings-editorial-expansion.css";
 import "./settings-copy-cleanup.css";
 import "./settings-account-editorial-refinement.css";
 import "./settings-remaining-editorial.css";
+import "./settings-totp-mobile-setup.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +35,7 @@ export default function SettingsPage() {
       <PhoneSecuritySettingsBridge />
       <SubscriptionSettingsBridge />
       <SettingsEditorialExpansion />
+      <SettingsTotpMobileSetup />
       <SettingsAccountEditorialRefinement />
     </>
   );
