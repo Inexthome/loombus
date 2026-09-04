@@ -47,6 +47,18 @@ const securityHeaders = [
   },
 ];
 
+const LEGAL_ORIGIN = "https://legal.loombus.com";
+const LEGACY_LEGAL_REDIRECTS = [
+  ["/legal", "/"],
+  ["/privacy", "/privacy"],
+  ["/terms", "/terms"],
+  ["/guidelines", "/community-guidelines"],
+  ["/cookies", "/cookies"],
+  ["/refunds", "/refunds"],
+  ["/dmca", "/dmca"],
+  ["/accessibility", "/accessibility"],
+] as const;
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
@@ -66,6 +78,34 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  async redirects() {
+    return LEGACY_LEGAL_REDIRECTS.flatMap(([source, destination]) =>
+      ["loombus.com", "www.loombus.com"].map((host) => ({
+        source,
+        has: [{ type: "host" as const, value: host }],
+        destination: `${LEGAL_ORIGIN}${destination}`,
+        permanent: true,
+      }))
+    );
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/",
+          has: [{ type: "host", value: "legal.loombus.com" }],
+          destination: "/legal",
+        },
+        {
+          source: "/community-guidelines",
+          has: [{ type: "host", value: "legal.loombus.com" }],
+          destination: "/guidelines",
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 
