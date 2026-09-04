@@ -1,0 +1,91 @@
+.settings-totp-mobile-options {
+  order: -1;
+  display: grid;
+  gap: 0.8rem;
+  padding-bottom: 0.2rem;
+}
+
+.settings-totp-mobile-primary,
+.settings-totp-mobile-key {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.settings-totp-mobile-primary > span,
+.settings-totp-account-label,
+.settings-totp-copy-error,
+.settings-totp-mobile-key > span {
+  margin: 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.settings-totp-open-app {
+  width: fit-content;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.settings-totp-mobile-key {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-block: 1px solid var(--loombus-border);
+}
+
+.settings-totp-mobile-key > span {
+  grid-column: 1 / -1;
+}
+
+.settings-totp-mobile-key code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--loombus-text);
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  user-select: all;
+}
+
+.settings-totp-account-label strong {
+  color: var(--loombus-text);
+  font-weight: 650;
+}
+
+.settings-totp-copy-error {
+  color: var(--loombus-text);
+}
+
+@media (max-width: 760px) {
+  .settings-expansion-totp {
+    gap: 0.8rem;
+  }
+
+  .settings-expansion-totp img {
+    justify-self: center;
+    max-width: min(11rem, 52vw);
+  }
+
+  .settings-totp-mobile-primary {
+    padding-bottom: 0.2rem;
+  }
+
+  .settings-totp-open-app,
+  .settings-totp-mobile-key .settings-v2-quiet-button {
+    min-height: 2.75rem;
+  }
+
+  .settings-totp-open-app {
+    width: 100%;
+  }
+
+  .settings-totp-mobile-key {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-totp-mobile-key .settings-v2-quiet-button {
+    width: fit-content;
+  }
+}
