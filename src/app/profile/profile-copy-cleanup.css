@@ -4,7 +4,7 @@
  * Keep the editor operational and concise. Hide prose that merely explains
  * the surrounding section or control. Preserve labels, entered values,
  * verification/status metadata, validation/errors, save confirmations,
- * eligibility gates, and consequential warnings.
+ * eligibility gates, empty states, and consequential warnings.
  */
 
 .profile-editorial-boundary,
@@ -17,6 +17,13 @@
 
 /* The field label and selected value are sufficient in the editor. */
 .profile-editorial-form label > small {
+  display: none !important;
+}
+
+/* Creator Hub: retain actions, metrics, access gates, empty states, and status messages. */
+.profile-editorial-creator .creator-hub-hero > div > p:last-child,
+.profile-editorial-creator .creator-hub-launch-grid article > div > p,
+.profile-editorial-creator .creator-hub-links-editor .creator-hub-section-heading > div > p:last-child {
   display: none !important;
 }
 
