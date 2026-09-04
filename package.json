@@ -48,14 +48,14 @@
     "yauzl": "^3.4.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.0",
+    "@capacitor/cli": "^8.5.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/yauzl": "^3.4.0",
     "eslint": "^9.39.5",
-    "eslint-config-next": "16.3.3",
+    "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^6"
   },
