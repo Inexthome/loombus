@@ -1,0 +1,210 @@
+#privacy-safety .settings-expansion-panel,
+#messages .settings-expansion-panel,
+#notifications-alerts .settings-expansion-panel,
+#appearance .settings-expansion-panel,
+#plan .settings-expansion-panel,
+#data-activity .settings-expansion-panel {
+  padding: 1.55rem 0 1.7rem;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.18));
+  background: transparent;
+}
+
+#privacy-safety .settings-expansion-panel:last-child,
+#messages .settings-expansion-panel:last-child,
+#notifications-alerts .settings-expansion-panel:last-child,
+#appearance .settings-expansion-panel:last-child,
+#plan .settings-expansion-panel:last-child,
+#data-activity .settings-expansion-panel:last-child {
+  border-bottom: 0;
+}
+
+#privacy-safety .settings-expansion-panel-heading,
+#messages .settings-expansion-panel-heading,
+#notifications-alerts .settings-expansion-panel-heading,
+#appearance .settings-expansion-panel-heading,
+#plan .settings-expansion-panel-heading,
+#data-activity .settings-expansion-panel-heading {
+  display: block;
+  margin-bottom: 1.15rem;
+}
+
+#privacy-safety .settings-expansion-panel-icon,
+#messages .settings-expansion-panel-icon,
+#notifications-alerts .settings-expansion-panel-icon,
+#appearance .settings-expansion-panel-icon,
+#plan .settings-expansion-panel-icon,
+#data-activity .settings-expansion-panel-icon {
+  display: none;
+}
+
+#privacy-safety .settings-expansion-panel-heading p,
+#messages .settings-expansion-panel-heading p,
+#notifications-alerts .settings-expansion-panel-heading p,
+#appearance .settings-expansion-panel-heading p,
+#plan .settings-expansion-panel-heading p,
+#data-activity .settings-expansion-panel-heading p {
+  margin: 0 0 0.45rem;
+  color: color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 82%, #7f6422);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+#privacy-safety .settings-expansion-panel-heading h3,
+#messages .settings-expansion-panel-heading h3,
+#notifications-alerts .settings-expansion-panel-heading h3,
+#appearance .settings-expansion-panel-heading h3,
+#plan .settings-expansion-panel-heading h3,
+#data-activity .settings-expansion-panel-heading h3 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  font-weight: 500;
+}
+
+#privacy-safety .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon),
+#messages .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon),
+#notifications-alerts .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon),
+#appearance .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon),
+#plan .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon),
+#data-activity .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon) {
+  display: none;
+}
+
+#privacy-safety .settings-expansion-toggle-list,
+#privacy-safety .settings-expansion-select-list,
+#messages .settings-expansion-toggle-list,
+#messages .settings-expansion-select-list,
+#notifications-alerts .settings-expansion-toggle-list,
+#notifications-alerts .settings-expansion-select-list,
+#appearance .settings-expansion-toggle-list,
+#appearance .settings-expansion-select-list,
+#plan .settings-expansion-toggle-list,
+#plan .settings-expansion-select-list,
+#data-activity .settings-expansion-toggle-list,
+#data-activity .settings-expansion-select-list {
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+#privacy-safety .settings-expansion-toggle,
+#privacy-safety .settings-expansion-select-row,
+#messages .settings-expansion-toggle,
+#messages .settings-expansion-select-row,
+#notifications-alerts .settings-expansion-toggle,
+#notifications-alerts .settings-expansion-select-row,
+#appearance .settings-expansion-toggle,
+#appearance .settings-expansion-select-row,
+#plan .settings-expansion-toggle,
+#plan .settings-expansion-select-row,
+#data-activity .settings-expansion-toggle,
+#data-activity .settings-expansion-select-row {
+  min-height: 4.2rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.14));
+  background: transparent;
+}
+
+#privacy-safety .settings-expansion-toggle strong,
+#privacy-safety .settings-expansion-select-row strong,
+#messages .settings-expansion-toggle strong,
+#messages .settings-expansion-select-row strong,
+#notifications-alerts .settings-expansion-toggle strong,
+#notifications-alerts .settings-expansion-select-row strong,
+#appearance .settings-expansion-toggle strong,
+#appearance .settings-expansion-select-row strong,
+#plan .settings-expansion-toggle strong,
+#plan .settings-expansion-select-row strong,
+#data-activity .settings-expansion-toggle strong,
+#data-activity .settings-expansion-select-row strong {
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+#privacy-safety .settings-expansion-toggle small,
+#privacy-safety .settings-expansion-select-row small,
+#messages .settings-expansion-toggle small,
+#messages .settings-expansion-select-row small,
+#notifications-alerts .settings-expansion-toggle small,
+#notifications-alerts .settings-expansion-select-row small,
+#appearance .settings-expansion-toggle small,
+#appearance .settings-expansion-select-row small,
+#plan .settings-expansion-toggle small,
+#plan .settings-expansion-select-row small,
+#data-activity .settings-expansion-toggle small,
+#data-activity .settings-expansion-select-row small {
+  margin-top: 0.2rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+#privacy-safety .settings-expansion-grid.two,
+#appearance .settings-expansion-grid.two,
+#plan .settings-expansion-grid.two,
+#data-activity .settings-expansion-grid.two {
+  gap: 0 1rem;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+#privacy-safety .settings-expansion-grid.two .settings-v2-field,
+#appearance .settings-expansion-grid.two .settings-v2-field,
+#plan .settings-expansion-grid.two .settings-v2-field,
+#data-activity .settings-expansion-grid.two .settings-v2-field {
+  min-height: 5rem;
+  margin: 0;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+#privacy-safety .settings-expansion-panel .settings-v2-select,
+#messages .settings-expansion-panel .settings-v2-select,
+#notifications-alerts .settings-expansion-panel .settings-v2-select,
+#appearance .settings-expansion-panel .settings-v2-select,
+#plan .settings-expansion-panel .settings-v2-select,
+#data-activity .settings-expansion-panel .settings-v2-select,
+#privacy-safety .settings-expansion-panel .settings-v2-input,
+#appearance .settings-expansion-panel .settings-v2-input,
+#plan .settings-expansion-panel .settings-v2-input,
+#data-activity .settings-expansion-panel .settings-v2-input {
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.28));
+  border-radius: 0;
+  background: transparent;
+}
+
+#privacy-safety .settings-expansion-panel .settings-v2-secondary-action,
+#messages .settings-expansion-panel .settings-v2-secondary-action,
+#notifications-alerts .settings-expansion-panel .settings-v2-secondary-action,
+#appearance .settings-expansion-panel .settings-v2-secondary-action,
+#plan .settings-expansion-panel .settings-v2-secondary-action,
+#data-activity .settings-expansion-panel .settings-v2-secondary-action,
+#privacy-safety .settings-expansion-panel .settings-v2-quiet-button,
+#messages .settings-expansion-panel .settings-v2-quiet-button,
+#notifications-alerts .settings-expansion-panel .settings-v2-quiet-button,
+#appearance .settings-expansion-panel .settings-v2-quiet-button,
+#plan .settings-expansion-panel .settings-v2-quiet-button,
+#data-activity .settings-expansion-panel .settings-v2-quiet-button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (max-width: 760px) {
+  #privacy-safety .settings-expansion-grid.two,
+  #appearance .settings-expansion-grid.two,
+  #plan .settings-expansion-grid.two,
+  #data-activity .settings-expansion-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  #privacy-safety .settings-expansion-select-row,
+  #messages .settings-expansion-select-row,
+  #notifications-alerts .settings-expansion-select-row,
+  #appearance .settings-expansion-select-row,
+  #plan .settings-expansion-select-row,
+  #data-activity .settings-expansion-select-row {
+    align-items: flex-start;
+  }
+}

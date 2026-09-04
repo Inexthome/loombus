@@ -17,6 +17,7 @@ import "./settings-loombus-background.css";
 import "./settings-editorial-expansion.css";
 import "./settings-copy-cleanup.css";
 import "./settings-account-editorial-refinement.css";
+import "./settings-remaining-editorial.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
