@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
 import { getSubscriptionEntitlementDecisionForUser } from "@/lib/subscription-access";
 
 type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  identity_verification_status: string | null;
   age_band: string | null;
   teen_safety_mode: boolean | null;
   guardian_required: boolean | null;
@@ -91,6 +93,10 @@ function isValidUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
 
+function isVerified(status: string | null | undefined) {
+  return status === "verified" || status === "approved";
+}
+
 function normalizeAgeBand(value: unknown) {
   if (
     value === "unknown" ||
@@ -143,7 +149,9 @@ async function getCurrentUserAndProfile(supabase: any) {
   const [{ data: baseProfile }, { data: sensitiveProfile }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("account_status, enforcement_reason, suspended_until")
+      .select(
+        "account_status, enforcement_reason, suspended_until, identity_verification_status"
+      )
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -157,6 +165,7 @@ async function getCurrentUserAndProfile(supabase: any) {
     account_status: baseProfile?.account_status ?? null,
     enforcement_reason: baseProfile?.enforcement_reason ?? null,
     suspended_until: baseProfile?.suspended_until ?? null,
+    identity_verification_status: baseProfile?.identity_verification_status ?? null,
     age_band: sensitiveProfile?.age_band ?? null,
     teen_safety_mode: sensitiveProfile?.teen_safety_mode ?? null,
     guardian_required: sensitiveProfile?.guardian_required ?? null,
@@ -177,6 +186,21 @@ async function getCurrentUserAndProfile(supabase: any) {
   }
 
   return { user, profile, error: null };
+}
+
+async function userFollows(
+  supabase: any,
+  userId: string,
+  targetUserId: string
+) {
+  const { data } = await supabase
+    .from("follows")
+    .select("id")
+    .eq("follower_id", userId)
+    .eq("following_id", targetUserId)
+    .maybeSingle();
+
+  return Boolean(data);
 }
 
 async function usersMutuallyFollow(
@@ -599,7 +623,9 @@ export async function POST(request: NextRequest) {
   const [{ data: targetBase }, { data: targetSensitive }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, account_status, enforcement_reason, suspended_until")
+      .select(
+        "id, account_status, enforcement_reason, suspended_until, identity_verification_status"
+      )
       .eq("id", targetUserId)
       .maybeSingle(),
     serviceSupabaseForSafety
@@ -617,6 +643,7 @@ export async function POST(request: NextRequest) {
     account_status: targetBase.account_status ?? null,
     enforcement_reason: targetBase.enforcement_reason ?? null,
     suspended_until: targetBase.suspended_until ?? null,
+    identity_verification_status: targetBase.identity_verification_status ?? null,
     age_band: targetSensitive?.age_band ?? null,
     teen_safety_mode: targetSensitive?.teen_safety_mode ?? null,
     guardian_required: targetSensitive?.guardian_required ?? null,
@@ -660,6 +687,52 @@ export async function POST(request: NextRequest) {
       conversationId: existingConversationId,
       created: false,
     });
+  }
+
+  const targetSettings = await getMemberSettingsForUser(
+    targetUserId,
+    serviceSupabaseForSafety
+  );
+
+  if (targetSettings.messagePermission === "nobody") {
+    return jsonError(
+      "This member is not accepting new private conversations.",
+      403,
+      "message_permission_denied"
+    );
+  }
+
+  if (
+    targetSettings.messagePermission === "verified" &&
+    !isVerified((profile as ProfileAccess | null)?.identity_verification_status)
+  ) {
+    return jsonError(
+      "This member only accepts new conversations from verified members.",
+      403,
+      "verified_message_required"
+    );
+  }
+
+  if (targetSettings.messagePermission === "followers") {
+    const followsRecipient = await userFollows(supabase, user.id, targetUserId);
+    if (!followsRecipient) {
+      return jsonError(
+        "This member only accepts new conversations from followers.",
+        403,
+        "follower_message_required"
+      );
+    }
+  }
+
+  if (targetSettings.messagePermission === "mutual") {
+    const mutualFollow = await usersMutuallyFollow(supabase, user.id, targetUserId);
+    if (!mutualFollow) {
+      return jsonError(
+        "This member only accepts new conversations from mutual follows.",
+        403,
+        "mutual_message_required"
+      );
+    }
   }
 
   const messagingDecision = await getSubscriptionEntitlementDecisionForUser(
@@ -750,6 +823,7 @@ export async function POST(request: NextRequest) {
     target_id: conversation.id,
     metadata: {
       target_user_id: targetUserId,
+      recipient_message_permission: targetSettings.messagePermission,
     },
   });
 
