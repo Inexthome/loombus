@@ -1,18 +1,19 @@
 /*
  * Keep Settings operational and compact.
  *
- * Section-level prose that repeats the surrounding heading, navigation, or
- * controls is intentionally hidden. Consequence text attached to individual
- * controls, eligibility notices, status/error messages, legal consent copy,
- * and destructive-account warnings remain visible.
+ * Remove explanatory/instructional prose when the surrounding heading, label,
+ * status, or control already communicates the action. Keep validation, status,
+ * eligibility, consent, billing, security, and destructive-account warnings.
  */
 
+/* Page and section-level helper prose. */
 .settings-v2-hero-copy,
 .settings-v2-card-header > div > p:not(.settings-v2-eyebrow),
 .settings-expansion-panel-heading > div > span,
 .member-privacy-heading > div > h3,
 #account-security > .settings-v2-muted,
-.member-follow-requests > .member-follow-requests-empty {
+.member-follow-requests > .member-follow-requests-empty,
+.discussion-audience-settings-heading > div > p:not(.discussion-audience-settings-eyebrow) {
   display: none !important;
 }
 
@@ -27,12 +28,41 @@
   display: none !important;
 }
 
-/* The destination labels are sufficient in Settings; keep these links compact. */
+/* Destination labels are sufficient in Settings; keep links compact. */
 .settings-v2-resource-link > div > span {
   display: none !important;
 }
 
 /* Group headings plus the individual control labels already explain the area. */
-.settings-v2-preference-group > p {
+.settings-v2-preference-group > p,
+.settings-v2-plan-panel > p {
   display: none !important;
+}
+
+/*
+ * Remove option-by-option instructional copy where the option label itself is
+ * the member-facing choice. This includes Future Discussion visibility.
+ */
+.discussion-audience-settings-option small,
+.settings-v2-appearance-option > span {
+  display: none !important;
+}
+
+/*
+ * Keep the remaining Settings rows label-first. Toggle/select helper sentences
+ * are instructional; the actual controls, current values, and status remain.
+ */
+.settings-v2-toggle-copy > span,
+.member-privacy-toggle-copy > span,
+.settings-expansion-toggle small,
+.settings-expansion-select-row small {
+  display: none !important;
+}
+
+/* Preserve compact spacing after helper copy is removed. */
+.settings-v2-toggle-copy,
+.member-privacy-toggle-copy,
+.settings-expansion-toggle > span:first-child,
+.settings-expansion-select-row > span:first-child {
+  gap: 0 !important;
 }
