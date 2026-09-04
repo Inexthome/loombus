@@ -1,117 +1,147 @@
-/* Desktop-only labels and alignment for the primary /discussions controls.
- * Phones and tablets keep the compact icon treatment. */
-.discussion-engagement-new-button {
+/* Shared labels and alignment for the primary /discussions controls.
+ * All viewport sizes use: Create icon | Filter | New | Active | For You. */
+[data-discussions-create-trigger-slot="true"] > button,
+[data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
+.discussion-engagement-mode-button {
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+  vertical-align: top !important;
+}
+
+/* Create remains icon-only everywhere. */
+[data-discussions-create-trigger-slot="true"] > button {
+  width: 3rem !important;
+  min-width: 3rem !important;
+  padding: 0 !important;
+  color: var(--loombus-gold) !important;
+}
+
+[data-discussions-create-trigger-slot="true"] > button > svg {
+  display: block !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+/* Filter uses its short text label on every viewport. */
+[data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button {
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0 0.75rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button > svg {
   display: none !important;
 }
 
-@media (min-width: 1024px) {
-  /* One shared 3.5rem control band: Create icon | Filter | New | Active | For You. */
+.discussion-desktop-control-label {
+  display: inline !important;
+}
+
+/* New / Active / For You use text labels on every viewport. */
+.discussion-engagement-mode-button {
+  display: flex !important;
+  width: auto !important;
+  flex-basis: auto !important;
+  min-width: 0 !important;
+  padding: 0 0.75rem !important;
+  gap: 0 !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.discussion-engagement-mode-button > svg {
+  display: none !important;
+}
+
+.discussion-engagement-new-button,
+.discussion-engagement-new-label {
+  display: flex !important;
+}
+
+.discussion-engagement-mode-button:nth-child(2)::after {
+  content: "Active";
+}
+
+.discussion-engagement-mode-button:nth-child(3)::after {
+  content: "For You";
+}
+
+[data-discussions-filter-slot="true"],
+[data-discussion-engagement-mode-control="true"],
+.discussion-engagement-mode-control,
+[data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) {
+  align-items: flex-start !important;
+}
+
+[data-discussions-filter-slot="true"] {
+  gap: 0.25rem !important;
+}
+
+[data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]),
+.discussion-engagement-mode-control {
+  display: flex !important;
+  gap: 0.25rem !important;
+}
+
+[data-discussions-filter-menu] {
+  left: 0 !important;
+  right: auto !important;
+}
+
+@media (min-width: 640px) {
   [data-discussions-create-trigger-slot="true"] > button,
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
-  .discussion-engagement-mode-button {
-    box-sizing: border-box !important;
-    height: 3.5rem !important;
-    min-height: 3.5rem !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    border-top: 0 !important;
-    border-left: 0 !important;
-    border-right: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    line-height: 1 !important;
-    vertical-align: top !important;
-  }
-
-  /* Create stays icon-only on desktop. */
-  [data-discussions-create-trigger-slot="true"] > button {
-    width: 3rem !important;
-    min-width: 3rem !important;
-    padding: 0 !important;
-    color: var(--loombus-gold) !important;
-  }
-
-  [data-discussions-create-trigger-slot="true"] > button > svg {
-    display: block !important;
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-
-  /* Filter is text-only on desktop. */
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button {
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 0 0.85rem !important;
-    font-size: 0.82rem !important;
-    font-weight: 700 !important;
-    white-space: nowrap !important;
-    color: var(--loombus-text-muted) !important;
-  }
-
-  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button > svg {
-    display: none !important;
-  }
-
-  .discussion-desktop-control-label {
-    display: inline !important;
-  }
-
-  /* New / Active / For You are equal-geometry text controls. */
-  .discussion-engagement-mode-button {
-    display: flex !important;
-    width: auto !important;
-    flex-basis: auto !important;
-    min-width: 0 !important;
-    padding: 0 0.85rem !important;
-    gap: 0 !important;
-    font-size: 0.82rem !important;
-    font-weight: 700 !important;
-    white-space: nowrap !important;
-  }
-
-  .discussion-engagement-mode-button > svg {
-    display: none !important;
-  }
-
-  .discussion-engagement-new-button {
-    display: flex !important;
-  }
-
-  .discussion-engagement-new-label {
-    display: inline !important;
-  }
-
-  .discussion-engagement-mode-button:nth-child(2)::after {
-    content: "Active";
-  }
-
-  .discussion-engagement-mode-button:nth-child(3)::after {
-    content: "For You";
-  }
-
+  .discussion-engagement-mode-button,
   [data-discussions-filter-slot="true"],
   [data-discussion-engagement-mode-control="true"],
   .discussion-engagement-mode-control,
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) {
     height: 3.5rem !important;
     min-height: 3.5rem !important;
-    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-discussions-create-trigger-slot="true"] > button,
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
+  .discussion-engagement-mode-button,
+  [data-discussions-filter-slot="true"],
+  [data-discussion-engagement-mode-control="true"],
+  .discussion-engagement-mode-control,
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) {
+    height: 3.25rem !important;
+    min-height: 3.25rem !important;
   }
 
-  [data-discussions-filter-slot="true"] {
-    gap: 0.35rem !important;
+  [data-discussions-create-trigger-slot="true"] > button {
+    width: 2.5rem !important;
+    min-width: 2.5rem !important;
   }
 
+  [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]) > button,
+  .discussion-engagement-mode-button {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    font-size: 0.76rem !important;
+  }
+
+  [data-discussions-filter-slot="true"],
   [data-discussions-filter-slot="true"] > div:not([data-discussion-engagement-mode-control="true"]),
   .discussion-engagement-mode-control {
-    display: flex !important;
-    gap: 0.35rem !important;
-  }
-
-  [data-discussions-filter-menu] {
-    left: 0 !important;
-    right: auto !important;
+    gap: 0.1rem !important;
   }
 }
