@@ -26,6 +26,7 @@ import RouteClientLayout from "./route-client-layout";
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
+import { CanonicalLegalLinks } from "@/components/canonical-legal-links";
 import { DesktopAccountAutoCloseController } from "@/components/desktop-account-auto-close-controller";
 import { DesktopMessagesPreviewTrayController } from "@/components/desktop-messages-preview-tray-controller";
 import { DesktopNotificationsTrayController } from "@/components/desktop-notifications-tray-controller";
@@ -104,6 +105,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
+        <CanonicalLegalLinks />
         <PlatformPromptBridge />
         <PlatformPromptDomBridge />
         <PlatformNativeAlertBridge />
