@@ -59,7 +59,7 @@ function formatUsPhone(value: string) {
 function identifierLooksLikePhone(value: string) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.includes("@")) return false;
-  return /^[+()\d\s.-]+$/.test(trimmed) && getUsNationalDigits(trimmed).length > 0;
+  return /^[+()\d\s.-]+$/.test(trimmed) && getUsNationalDigits(trimmed).length === 10;
 }
 
 export default function LoginPage() {
@@ -119,7 +119,7 @@ export default function LoginPage() {
   async function handleEmailLogin() {
     const cleanEmail = identifier.trim().toLowerCase();
     if (!cleanEmail.includes("@")) {
-      setMessage("Enter a valid email address or U.S. mobile number.");
+      setMessage("Enter a valid email address or 10-digit U.S. mobile number.");
       return;
     }
 
@@ -395,8 +395,7 @@ export default function LoginPage() {
                     required
                     placeholder="Email or U.S. mobile number"
                     onChange={(event) => {
-                      const next = event.target.value;
-                      setIdentifier(identifierLooksLikePhone(next) ? formatUsPhone(next) : next);
+                      setIdentifier(event.target.value);
                       setShowResendVerification(false);
                       setMessage("");
                     }}
