@@ -65,8 +65,37 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install production dependency graph for audit
+        run: npm ci --omit=dev --ignore-scripts --no-audit
+
       - name: Audit production dependency vulnerabilities
-        run: npm audit --omit=dev --audit-level=high --package-lock-only
+        shell: bash
+        run: |
+          set -o pipefail
+          for attempt in 1 2 3; do
+            audit_log="$(mktemp)"
+            set +e
+            npm audit --omit=dev --audit-level=high 2>&1 | tee "$audit_log"
+            status=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$status" -eq 0 ]; then
+              rm -f "$audit_log"
+              exit 0
+            fi
+
+            if grep -Eq 'audit endpoint returned an error|500 Internal Server Error|502 Bad Gateway|503 Service Unavailable|504 Gateway Timeout|ECONNRESET|ETIMEDOUT' "$audit_log"; then
+              rm -f "$audit_log"
+              if [ "$attempt" -lt 3 ]; then
+                echo "npm audit service unavailable; retrying in $((attempt * 20)) seconds..."
+                sleep $((attempt * 20))
+                continue
+              fi
+            fi
+
+            rm -f "$audit_log"
+            exit "$status"
+          done
 
   migrations-reset:
     name: supabase db reset (migrations replay from empty)
