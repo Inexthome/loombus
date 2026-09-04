@@ -1,0 +1,27 @@
+/*
+ * Profile Instructional Copy Cleanup
+ *
+ * Keep the editor operational and concise. Hide prose that merely explains
+ * the surrounding section or control. Preserve labels, entered values,
+ * verification/status metadata, validation/errors, save confirmations,
+ * eligibility gates, and consequential warnings.
+ */
+
+.profile-editorial-boundary,
+.profile-editorial-section-heading > p:not(.profile-editorial-kicker),
+.profile-editorial-field-wide > small,
+.profile-editorial-overview-grid article > p,
+.profile-editorial-viewers-runtime summary > div > p:last-child {
+  display: none !important;
+}
+
+/* The field label and selected value are sufficient in the editor. */
+.profile-editorial-form label > small {
+  display: none !important;
+}
+
+/* Keep public-preview content itself visible; only remove surrounding instruction. */
+.profile-editorial-preview-layout .profile-editorial-preview-card p,
+.profile-editorial-preview-layout .profile-editorial-preview-card span {
+  display: revert;
+}
