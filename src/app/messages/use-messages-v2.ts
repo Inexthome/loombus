@@ -35,6 +35,7 @@ export function useMessagesV2() {
   const [threadLoading, setThreadLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState("Someone");
+  const [typingIndicatorsEnabled, setTypingIndicatorsEnabled] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
@@ -78,6 +79,46 @@ export function useMessagesV2() {
     const token = await getAccessToken();
     if (!token && typeof window !== "undefined") window.location.href = "/login";
     return token;
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadTypingPreference() {
+      const token = await getAccessToken();
+      if (!token || !alive) {
+        if (alive) setTypingIndicatorsEnabled(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/settings/member-preferences", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!alive) return;
+        setTypingIndicatorsEnabled(
+          response.ok && payload?.preferences?.typingIndicators === true
+        );
+      } catch {
+        if (alive) setTypingIndicatorsEnabled(false);
+      }
+    }
+
+    function handleMemberSettingsChanged(event: Event) {
+      const detail = (event as CustomEvent<Record<string, unknown>>).detail;
+      if (!detail || typeof detail.typingIndicators !== "boolean") return;
+      setTypingIndicatorsEnabled(detail.typingIndicators);
+    }
+
+    void loadTypingPreference();
+    window.addEventListener("loombus:member-settings-changed", handleMemberSettingsChanged);
+
+    return () => {
+      alive = false;
+      window.removeEventListener("loombus:member-settings-changed", handleMemberSettingsChanged);
+    };
   }, [getAccessToken]);
 
   const loadConversations = useCallback(
@@ -536,7 +577,7 @@ export function useMessagesV2() {
   );
 
   const sendTypingIndicator = useCallback(() => {
-    if (!selectedConversationId || !currentUserId) return;
+    if (!typingIndicatorsEnabled || !selectedConversationId || !currentUserId) return;
     const now = Date.now();
     if (now - lastTypingSentRef.current < 1500) return;
     lastTypingSentRef.current = now;
@@ -545,7 +586,7 @@ export function useMessagesV2() {
       event: "typing",
       payload: { userId: currentUserId, name: currentUserName || "Someone" },
     });
-  }, [currentUserId, currentUserName, selectedConversationId]);
+  }, [currentUserId, currentUserName, selectedConversationId, typingIndicatorsEnabled]);
 
   const handleAttachmentSelection = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
