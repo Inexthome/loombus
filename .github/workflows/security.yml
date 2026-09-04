@@ -66,7 +66,7 @@ jobs:
           cache: npm
 
       - name: Audit production dependency vulnerabilities
-        run: node scripts/npm-audit-bulk.mjs
+        run: npm audit --omit=dev --audit-level=high --package-lock-only
 
   migrations-reset:
     name: supabase db reset (migrations replay from empty)
