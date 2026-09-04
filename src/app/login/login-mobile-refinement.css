@@ -23,6 +23,11 @@
     display: none !important;
   }
 
+  /* Transactional SMS consent must remain visible before a phone code is sent. */
+  [data-loombus-login-editorial] form > p.border-y {
+    display: block !important;
+  }
+
   [data-loombus-login-editorial] > div > section:last-child a {
     text-decoration-line: underline;
     text-decoration-color: var(--loombus-gold);
