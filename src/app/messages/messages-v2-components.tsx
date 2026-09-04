@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   BellOff,
   FileText,
@@ -9,6 +10,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { supabase } from "@/lib/supabase/client";
 import {
   type Conversation,
   type MessageAttachment,
@@ -24,6 +26,28 @@ import {
   getPeopleResultHandle,
   getPeopleResultName,
 } from "./messages-v2-model";
+
+let autoLoadMessageMediaPreference: Promise<boolean> | null = null;
+
+async function getAutoLoadMessageMediaPreference() {
+  if (!autoLoadMessageMediaPreference) {
+    autoLoadMessageMediaPreference = (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token ?? "";
+      if (!token) return false;
+
+      const response = await fetch("/api/settings/member-preferences", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!response.ok) return false;
+      const payload = await response.json().catch(() => ({}));
+      return payload?.preferences?.autoDownloadMessageMedia === true;
+    })();
+  }
+
+  return autoLoadMessageMediaPreference;
+}
 
 export function ConversationIdentity({
   conversation,
@@ -150,12 +174,55 @@ export function MessageAttachmentCard({
   attachment,
   mine,
   compact = false,
+  autoLoadMedia,
 }: {
   attachment: MessageAttachment;
   mine: boolean;
   compact?: boolean;
+  autoLoadMedia?: boolean;
 }) {
+  const [savedPreferenceAllowsMedia, setSavedPreferenceAllowsMedia] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (mine || autoLoadMedia !== undefined || attachment.attachmentKind !== "image") {
+      return () => {
+        alive = false;
+      };
+    }
+
+    void getAutoLoadMessageMediaPreference().then((allowed) => {
+      if (alive) setSavedPreferenceAllowsMedia(allowed);
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, [attachment.attachmentKind, autoLoadMedia, mine]);
+
+  const shouldAutoLoadImage =
+    mine || autoLoadMedia === true || (autoLoadMedia === undefined && savedPreferenceAllowsMedia);
+
   if (attachment.attachmentKind === "image") {
+    if (!shouldAutoLoadImage) {
+      return (
+        <a
+          href={attachment.publicUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={`messages-v2-message-attachment is-file${compact ? " is-compact" : ""}`}
+        >
+          <span className="messages-v2-message-file-icon">
+            <ImageIcon aria-hidden="true" size={20} />
+          </span>
+          <span>
+            <strong>{attachment.fileName}</strong>
+            <small>Image · Open to view</small>
+          </span>
+        </a>
+      );
+    }
+
     return (
       <a
         href={attachment.publicUrl}
@@ -198,9 +265,11 @@ export function MessageAttachmentCard({
 export function MessageBubble({
   message,
   mine,
+  autoLoadMedia,
 }: {
   message: ThreadMessage;
   mine: boolean;
+  autoLoadMedia?: boolean;
 }) {
   const visibleBody = message.body && message.body !== "[Attachment]";
 
@@ -219,6 +288,7 @@ export function MessageBubble({
                     key={attachment.id}
                     attachment={attachment}
                     mine={mine}
+                    autoLoadMedia={autoLoadMedia}
                   />
                 ))}
               </div>
@@ -260,19 +330,19 @@ export function PrivateMessagingNote() {
   return (
     <div className="messages-v2-private-note">
       <LockKeyhole aria-hidden="true" size={16} />
-      <span>
-        <strong>Private conversations</strong>
-        <small>New member messages normally require mutual following. Marketplace inquiries use listing-specific contact.</small>
-      </span>
+      <div>
+        <strong>Private by design</strong>
+        <span>Messages are visible only to conversation participants and authorized safety operations.</span>
+      </div>
     </div>
   );
 }
 
 export function AttachmentLimitNote() {
   return (
-    <p className="messages-v2-attachment-limit">
-      <Paperclip aria-hidden="true" size={13} />
-      Up to 3 images or PDFs, 10 MB each
-    </p>
+    <div className="messages-v2-attachment-limit-note">
+      <Paperclip aria-hidden="true" size={14} />
+      <span>JPG, PNG, WebP, GIF, or PDF · 10 MB each · 3 per message</span>
+    </div>
   );
 }
