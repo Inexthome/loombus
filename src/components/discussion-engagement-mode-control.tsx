@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-type EngagementMode = "for_you" | "active" | null;
+type EngagementMode = "new" | "for_you" | "active" | null;
 
 const MODE_REQUEST_EVENT = "loombus:discussion-engagement-mode-request";
 const MODE_STATE_EVENT = "loombus:discussion-engagement-mode-state";
@@ -52,8 +52,8 @@ export function DiscussionEngagementModeControl() {
 
       mount = document.createElement("div");
       mount.dataset.discussionEngagementModeControl = "true";
-      // Keep Filter, For You, and Active in one flex formatting context so their
-      // icon centers and underline baselines cannot drift independently.
+      // Keep Filter, New, Active, and For You in one flex formatting context so
+      // their vertical alignment and underline baselines stay identical.
       filterSlot.append(mount);
       setHost(mount);
     }
@@ -76,8 +76,28 @@ export function DiscussionEngagementModeControl() {
     return () => window.removeEventListener(MODE_STATE_EVENT, handler);
   }, []);
 
-  function selectMode(nextMode: Exclude<EngagementMode, null>) {
+  function selectMode(nextMode: "for_you" | "active") {
     window.dispatchEvent(new CustomEvent(MODE_REQUEST_EVENT, { detail: { mode: nextMode } }));
+  }
+
+  function selectNew() {
+    const feedRoot = Array.from(
+      document.querySelectorAll<HTMLElement>(".discussion-feed-route main")
+    ).find((main) => main.querySelector("h1")?.textContent?.trim() === "Discussions");
+    const allButton = feedRoot
+      ? Array.from(feedRoot.querySelectorAll<HTMLButtonElement>("button")).find((button) => {
+          if (button.textContent?.trim() !== "All") return false;
+          const parentLabels = Array.from(button.parentElement?.querySelectorAll("button") ?? []).map(
+            (candidate) => candidate.textContent?.trim()
+          );
+          return parentLabels.includes("Following");
+        })
+      : null;
+
+    // The base discussion query is already reverse chronological. Returning to
+    // the original All tab clears engagement ordering and restores newest first.
+    allButton?.click();
+    setMode("new");
   }
 
   if (pathname !== "/discussions" || !host) return null;
@@ -86,14 +106,14 @@ export function DiscussionEngagementModeControl() {
     <div className="discussion-engagement-mode-control" aria-label="Discussion feed modes">
       <button
         type="button"
-        className="discussion-engagement-mode-button"
-        data-selected={mode === "for_you" ? "true" : "false"}
-        aria-pressed={mode === "for_you"}
-        aria-label="For You discussions"
-        title="For You — discussions selected from the people, topics, and conversations relevant to you."
-        onClick={() => selectMode("for_you")}
+        className="discussion-engagement-mode-button discussion-engagement-new-button"
+        data-selected={mode === "new" ? "true" : "false"}
+        aria-pressed={mode === "new"}
+        aria-label="New discussions"
+        title="New — newest discussions first."
+        onClick={selectNew}
       >
-        <ForYouWeaveIcon />
+        <span className="discussion-engagement-new-label">New</span>
       </button>
       <button
         type="button"
@@ -105,6 +125,17 @@ export function DiscussionEngagementModeControl() {
         onClick={() => selectMode("active")}
       >
         <ActiveWeaveIcon />
+      </button>
+      <button
+        type="button"
+        className="discussion-engagement-mode-button"
+        data-selected={mode === "for_you" ? "true" : "false"}
+        aria-pressed={mode === "for_you"}
+        aria-label="For You discussions"
+        title="For You — discussions selected from the people, topics, and conversations relevant to you."
+        onClick={() => selectMode("for_you")}
+      >
+        <ForYouWeaveIcon />
       </button>
     </div>,
     host
