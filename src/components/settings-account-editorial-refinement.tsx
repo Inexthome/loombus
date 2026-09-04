@@ -2,6 +2,10 @@
 
 import { useEffect } from "react";
 
+const ACCOUNT_DETAILS_TITLE = "Private account information";
+const EMAIL_TITLE = "Change account email";
+const CONNECTED_ACCOUNTS_TITLE = "Sign-in methods";
+const MFA_TITLE = "Authenticator protection";
 const SESSION_TITLE = "Device and session security";
 const VERIFICATION_TITLE = "Verification status";
 
@@ -47,6 +51,22 @@ function markEditorialPanels() {
 
   panels.forEach((panel) => {
     const title = panel.querySelector<HTMLElement>(".settings-expansion-panel-heading h3")?.textContent?.trim();
+
+    if (title === ACCOUNT_DETAILS_TITLE) {
+      panel.classList.add("settings-account-editorial-panel", "settings-account-editorial-details");
+    }
+
+    if (title === EMAIL_TITLE) {
+      panel.classList.add("settings-account-editorial-panel", "settings-account-editorial-email");
+    }
+
+    if (title === CONNECTED_ACCOUNTS_TITLE) {
+      panel.classList.add("settings-account-editorial-panel", "settings-account-editorial-connected");
+    }
+
+    if (title === MFA_TITLE) {
+      panel.classList.add("settings-account-editorial-panel", "settings-account-editorial-mfa");
+    }
 
     if (title === SESSION_TITLE) {
       panel.classList.add("settings-account-editorial-panel", "settings-account-editorial-sessions");
