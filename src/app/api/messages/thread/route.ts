@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
+import type { MemberSettings } from "@/lib/member-settings";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -118,13 +120,15 @@ export async function GET(request: NextRequest) {
 
   if (membersError) return jsonError(membersError.message, 500);
 
-  const otherUserIds = [
-    ...new Set(
-      ((members ?? []) as { user_id: string }[])
-        .filter((member) => member.user_id !== user.id)
-        .map((member) => member.user_id)
-    ),
-  ];
+  const memberRows = ((members ?? []) as Array<{
+    conversation_id: string;
+    user_id: string;
+    joined_at: string | null;
+    archived_at: string | null;
+    deleted_at: string | null;
+  }>);
+  const memberIds = [...new Set(memberRows.map((member) => member.user_id).filter(Boolean))];
+  const otherUserIds = memberIds.filter((memberId) => memberId !== user.id);
 
   const { data: profiles } =
     otherUserIds.length > 0
@@ -162,6 +166,19 @@ export async function GET(request: NextRequest) {
     return jsonError("Private attachment delivery is not configured.", 503);
   }
 
+  const memberSettingsMap = new Map<string, MemberSettings>();
+  if (service) {
+    const settingsEntries = await Promise.all(
+      memberIds.map(async (memberId) => [
+        memberId,
+        await getMemberSettingsForUser(memberId, service),
+      ] as const)
+    );
+    for (const [memberId, settings] of settingsEntries) {
+      memberSettingsMap.set(memberId, settings);
+    }
+  }
+
   const attachmentMap = new Map<string, any[]>();
   for (const attachment of attachments ?? []) {
     let signedUrl: string | null = null;
@@ -177,34 +194,41 @@ export async function GET(request: NextRequest) {
     attachmentMap.set(attachment.message_id, existing);
   }
 
-  const responseMessages = messageRows.map((message) => ({
-    id: message.id,
-    conversationId: message.conversation_id,
-    senderId: message.sender_id,
-    messageType: message.message_type,
-    body: message.deleted_by_sender ? "" : message.body,
-    createdAt: message.created_at,
-    editedAt: message.edited_at,
-    deletedBySender: message.deleted_by_sender,
-    readByRecipientAt: message.read_by_recipient_at,
-    attachments: (attachmentMap.get(message.id) ?? []).map((attachment) => ({
-      id: attachment.id,
-      messageId: attachment.message_id,
-      conversationId: attachment.conversation_id,
-      userId: attachment.user_id,
-      storageBucket: attachment.storage_bucket,
-      storagePath: attachment.storage_path,
-      // Keep the existing response field for web/mobile compatibility, but its
-      // value is now a short-lived URL minted only after membership authorization.
-      publicUrl: attachment.authorized_url,
-      fileName: attachment.file_name,
-      mimeType: attachment.mime_type,
-      fileSizeBytes: attachment.file_size_bytes,
-      attachmentKind: attachment.attachment_kind,
-      sortOrder: attachment.sort_order,
-      createdAt: attachment.created_at,
-    })),
-  }));
+  const responseMessages = messageRows.map((message) => {
+    const recipientId = memberIds.find((memberId) => memberId !== message.sender_id) ?? null;
+    const recipientSharesReceipts = recipientId
+      ? Boolean(memberSettingsMap.get(recipientId)?.readReceipts)
+      : false;
+
+    return {
+      id: message.id,
+      conversationId: message.conversation_id,
+      senderId: message.sender_id,
+      messageType: message.message_type,
+      body: message.deleted_by_sender ? "" : message.body,
+      createdAt: message.created_at,
+      editedAt: message.edited_at,
+      deletedBySender: message.deleted_by_sender,
+      readByRecipientAt: recipientSharesReceipts ? message.read_by_recipient_at : null,
+      attachments: (attachmentMap.get(message.id) ?? []).map((attachment) => ({
+        id: attachment.id,
+        messageId: attachment.message_id,
+        conversationId: attachment.conversation_id,
+        userId: attachment.user_id,
+        storageBucket: attachment.storage_bucket,
+        storagePath: attachment.storage_path,
+        // Keep the existing response field for web/mobile compatibility, but its
+        // value is now a short-lived URL minted only after membership authorization.
+        publicUrl: attachment.authorized_url,
+        fileName: attachment.file_name,
+        mimeType: attachment.mime_type,
+        fileSizeBytes: attachment.file_size_bytes,
+        attachmentKind: attachment.attachment_kind,
+        sortOrder: attachment.sort_order,
+        createdAt: attachment.created_at,
+      })),
+    };
+  });
 
   return NextResponse.json(
     {
@@ -223,7 +247,7 @@ export async function GET(request: NextRequest) {
           deletedAt: membership.deleted_at,
           mutedAt: membership.muted_at,
         },
-        members: ((members ?? []) as any[]).map((member) => ({
+        members: memberRows.map((member) => ({
           userId: member.user_id,
           joinedAt: member.joined_at,
           archivedAt: member.archived_at,

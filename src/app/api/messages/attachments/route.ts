@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
 
 const ATTACHMENT_BUCKET = "message-attachments";
 const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
@@ -172,30 +173,39 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid attachment order.", 400);
   }
 
-  const [{ data: profile }, { data: membership }, { data: message }, { count }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until")
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("private_conversation_members")
-        .select("conversation_id")
-        .eq("conversation_id", conversationId)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("private_messages")
-        .select("id, conversation_id, sender_id")
-        .eq("id", messageId)
-        .eq("conversation_id", conversationId)
-        .maybeSingle(),
-      supabase
-        .from("private_message_attachments")
-        .select("*", { count: "exact", head: true })
-        .eq("message_id", messageId),
-    ]);
+  const [
+    { data: profile },
+    { data: membership },
+    { data: message },
+    { count },
+    { data: members },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_admin, account_status, enforcement_reason, suspended_until")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("private_conversation_members")
+      .select("conversation_id")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("private_messages")
+      .select("id, conversation_id, sender_id")
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId)
+      .maybeSingle(),
+    supabase
+      .from("private_message_attachments")
+      .select("*", { count: "exact", head: true })
+      .eq("message_id", messageId),
+    supabase
+      .from("private_conversation_members")
+      .select("user_id")
+      .eq("conversation_id", conversationId),
+  ]);
 
   const enforcement = getAccountEnforcementResult(
     (profile ?? null) as ProfileAccess | null
@@ -215,6 +225,30 @@ export async function POST(request: NextRequest) {
   if ((count ?? 0) >= MAX_ATTACHMENTS_PER_MESSAGE) {
     await removeStoredObject(supabase, storagePath);
     return jsonError("A message can have at most 3 attachments.", 400);
+  }
+
+  const recipientIds = [
+    ...new Set(
+      ((members ?? []) as { user_id: string }[])
+        .map((member) => member.user_id)
+        .filter((memberId) => memberId && memberId !== user.id)
+    ),
+  ];
+
+  if (recipientIds.length === 0) {
+    await removeStoredObject(supabase, storagePath);
+    return jsonError("Conversation recipient could not be resolved.", 400);
+  }
+
+  const recipientSettings = await Promise.all(
+    recipientIds.map((recipientId) => getMemberSettingsForUser(recipientId, supabase))
+  );
+  if (recipientSettings.some((settings) => !settings.allowMessageAttachments)) {
+    await removeStoredObject(supabase, storagePath);
+    return jsonError(
+      "A conversation member does not accept file or media attachments.",
+      403
+    );
   }
 
   const storedObject = await getStoredObjectInfo(supabase, storagePath);

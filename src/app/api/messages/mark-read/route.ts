@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getMemberSettingsForUser } from "@/lib/member-settings-server";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -135,6 +136,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
+  const memberSettings = await getMemberSettingsForUser(user.id, serviceSupabase);
   const now = new Date().toISOString();
 
   const { error: updateError } = await serviceSupabase
@@ -148,6 +150,19 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     return jsonError(updateError.message, 500);
+  }
+
+  if (memberSettings.readReceipts && latestMessage?.id) {
+    const { error: receiptError } = await serviceSupabase
+      .from("private_messages")
+      .update({ read_by_recipient_at: now })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+      .is("read_by_recipient_at", null);
+
+    if (receiptError) {
+      console.error("Unable to update private-message read receipts:", receiptError.message);
+    }
   }
 
   const { error: notificationUpdateError } = await serviceSupabase
@@ -170,5 +185,6 @@ export async function POST(request: NextRequest) {
     success: true,
     lastReadAt: now,
     lastReadMessageId: latestMessage?.id ?? null,
+    readReceiptShared: memberSettings.readReceipts,
   });
 }
