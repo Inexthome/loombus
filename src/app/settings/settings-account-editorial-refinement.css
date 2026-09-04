@@ -29,11 +29,37 @@
   font-weight: 500;
 }
 
+.settings-account-editorial-panel .settings-expansion-panel-heading span:not(.settings-expansion-panel-icon) {
+  display: none;
+}
+
+.settings-account-editorial-details .settings-expansion-grid.two,
 .settings-account-editorial-verification .settings-expansion-grid.two {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1rem;
   border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.settings-account-editorial-details .settings-v2-field {
+  min-height: 5.15rem;
+  margin: 0;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.settings-account-editorial-details .settings-v2-field small {
+  display: none;
+}
+
+.settings-account-editorial-details .settings-v2-input,
+.settings-account-editorial-email .settings-v2-input {
+  min-height: 2.45rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.28));
+  border-radius: 0;
+  background: transparent;
 }
 
 .settings-account-editorial-panel .settings-expansion-summary-card {
@@ -76,6 +102,48 @@
   line-height: 1.4;
 }
 
+.settings-account-editorial-email .settings-expansion-inline-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding-top: 0.2rem;
+}
+
+.settings-account-editorial-connected .settings-expansion-identity-list,
+.settings-account-editorial-mfa .settings-expansion-identity-list {
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.settings-account-editorial-connected .settings-expansion-identity-list article,
+.settings-account-editorial-mfa .settings-expansion-identity-list article {
+  min-height: 4.25rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.settings-account-editorial-connected .settings-v2-quiet-button,
+.settings-account-editorial-mfa .settings-v2-quiet-button {
+  min-height: 2.4rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.settings-account-editorial-mfa .settings-v2-section-note {
+  margin: 0;
+  padding: 0.95rem 0;
+  border: 0;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+  border-bottom: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+  background: transparent;
+}
+
+.settings-account-editorial-sessions .settings-expansion-summary-card,
+.settings-account-editorial-verification .settings-expansion-summary-card {
+  border-top: 0;
+}
+
 .settings-account-editorial-sessions .settings-expansion-summary-card {
   border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
 }
@@ -105,7 +173,10 @@
 }
 
 .settings-account-editorial-panel .settings-v2-inline-actions .settings-v2-secondary-action,
-.settings-account-editorial-panel > .settings-v2-secondary-action {
+.settings-account-editorial-panel > .settings-v2-secondary-action,
+.settings-account-editorial-email .settings-v2-secondary-action,
+.settings-account-editorial-connected .settings-v2-inline-actions .settings-v2-secondary-action,
+.settings-account-editorial-mfa > .settings-v2-secondary-action {
   min-height: 2.6rem;
   padding: 0.55rem 0.15rem;
   border: 0;
@@ -116,11 +187,20 @@
 }
 
 .settings-account-editorial-panel .settings-v2-inline-actions .settings-v2-secondary-action:hover,
-.settings-account-editorial-panel > .settings-v2-secondary-action:hover {
+.settings-account-editorial-panel > .settings-v2-secondary-action:hover,
+.settings-account-editorial-email .settings-v2-secondary-action:hover,
+.settings-account-editorial-connected .settings-v2-inline-actions .settings-v2-secondary-action:hover,
+.settings-account-editorial-mfa > .settings-v2-secondary-action:hover {
   color: color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 82%, var(--loombus-text, #201b13));
 }
 
 @media (max-width: 760px) {
+  .settings-account-editorial-details .settings-expansion-grid.two,
+  .settings-account-editorial-verification .settings-expansion-grid.two,
+  .settings-account-editorial-email .settings-expansion-inline-form {
+    grid-template-columns: 1fr;
+  }
+
   .settings-account-editorial-panel .settings-expansion-summary-card {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
