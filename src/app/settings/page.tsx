@@ -4,7 +4,6 @@ import { PhoneSecuritySettingsBridge } from "@/components/phone-security-setting
 import { SettingsAccountEditorialRefinement } from "@/components/settings-account-editorial-refinement";
 import { SettingsEditorialExpansion } from "@/components/settings-editorial-expansion";
 import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";
-import { SettingsPasswordEditorialBridge } from "@/components/settings-password-editorial-bridge";
 import { SettingsWorkspaceController } from "@/components/settings-workspace-controller";
 import { SubscriptionSettingsBridge } from "@/components/subscription-settings-bridge";
 import SettingsV2Client from "./settings-v2-client";
@@ -34,7 +33,6 @@ export default function SettingsPage() {
       <PhoneSecuritySettingsBridge />
       <SubscriptionSettingsBridge />
       <SettingsEditorialExpansion />
-      <SettingsPasswordEditorialBridge />
       <SettingsAccountEditorialRefinement />
     </>
   );
