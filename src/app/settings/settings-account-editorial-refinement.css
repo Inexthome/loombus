@@ -194,6 +194,89 @@
   color: color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 82%, var(--loombus-text, #201b13));
 }
 
+.settings-loombus-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(12, 10, 7, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.settings-loombus-prompt {
+  width: min(100%, 30rem);
+  padding: 1.65rem 1.7rem 1.45rem;
+  border: 1px solid color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 32%, var(--loombus-border, rgba(81, 67, 39, 0.18)));
+  border-radius: 0.85rem;
+  background: var(--loombus-surface, #fffdf8);
+  box-shadow: 0 24px 70px rgba(16, 12, 6, 0.28);
+  color: var(--loombus-text, #201b13);
+}
+
+.settings-loombus-prompt-eyebrow {
+  margin: 0 0 0.55rem;
+  color: color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 84%, #7f6422);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.settings-loombus-prompt h2 {
+  margin: 0;
+  font-size: clamp(1.55rem, 4vw, 2rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  font-weight: 550;
+}
+
+.settings-loombus-prompt > p:not(.settings-loombus-prompt-eyebrow) {
+  margin: 0.8rem 0 0;
+  color: var(--loombus-text-muted, #736a5b);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.settings-loombus-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 1.45rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.16));
+}
+
+.settings-loombus-prompt-actions button {
+  min-height: 2.65rem;
+  padding: 0.6rem 0.95rem;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-loombus-prompt-cancel {
+  border: 1px solid var(--loombus-border, rgba(81, 67, 39, 0.24));
+  background: transparent;
+  color: var(--loombus-text, #201b13);
+}
+
+.settings-loombus-prompt-confirm {
+  border: 1px solid color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 75%, #7f6422);
+  background: color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 18%, transparent);
+  color: var(--loombus-text, #201b13);
+}
+
+.settings-loombus-prompt-actions button:hover,
+.settings-loombus-prompt-actions button:focus-visible {
+  border-color: var(--settings-editorial-gold, #cbab5b);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--settings-editorial-gold, #cbab5b) 18%, transparent);
+}
+
 @media (max-width: 760px) {
   .settings-account-editorial-details .settings-expansion-grid.two,
   .settings-account-editorial-verification .settings-expansion-grid.two,
@@ -219,5 +302,17 @@
 
   .settings-account-editorial-sessions .settings-expansion-summary-card::after {
     max-width: 100%;
+  }
+
+  .settings-loombus-prompt {
+    padding: 1.35rem 1.2rem 1.2rem;
+  }
+
+  .settings-loombus-prompt-actions {
+    flex-direction: column-reverse;
+  }
+
+  .settings-loombus-prompt-actions button {
+    width: 100%;
   }
 }
