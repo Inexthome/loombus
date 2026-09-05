@@ -14,8 +14,6 @@ import {
 
 const BIOMETRIC_SESSION_VERIFIED_KEY =
   "loombus:native-biometric-session-verified";
-const BIOMETRIC_SESSION_PROMPT_SEEN_KEY =
-  "loombus:native-biometric-session-prompt-seen";
 
 const SKIPPED_PATH_PREFIXES = [
   "/auth/callback",
@@ -36,16 +34,16 @@ function shouldSkipCurrentPath() {
   );
 }
 
-function markSessionVerified() {
-  window.sessionStorage.setItem(BIOMETRIC_SESSION_VERIFIED_KEY, "true");
+function markSessionVerified(userId: string) {
+  window.localStorage.setItem(BIOMETRIC_SESSION_VERIFIED_KEY, userId);
 }
 
 function clearSessionVerified() {
-  window.sessionStorage.removeItem(BIOMETRIC_SESSION_VERIFIED_KEY);
+  window.localStorage.removeItem(BIOMETRIC_SESSION_VERIFIED_KEY);
 }
 
-function isSessionVerified() {
-  return window.sessionStorage.getItem(BIOMETRIC_SESSION_VERIFIED_KEY) === "true";
+function isSessionVerified(userId: string) {
+  return window.localStorage.getItem(BIOMETRIC_SESSION_VERIFIED_KEY) === userId;
 }
 
 export function NativeBiometricSessionGate() {
@@ -78,40 +76,21 @@ export function NativeBiometricSessionGate() {
         return;
       }
 
+      if (!isBiometricUnlockEnabled()) {
+        setStatus("ready");
+        setMessage("");
+        return;
+      }
+
+      if (!forceVerification && isSessionVerified(data.session.user.id)) {
+        setStatus("ready");
+        setMessage("");
+        return;
+      }
+
       const availability = await getNativeBiometricAvailability();
 
       if (!availability.isAvailable) {
-        setStatus("ready");
-        setMessage("");
-        return;
-      }
-
-      let unlockEnabled = isBiometricUnlockEnabled();
-
-      if (!unlockEnabled) {
-        const promptSeen =
-          window.localStorage.getItem(BIOMETRIC_SESSION_PROMPT_SEEN_KEY) ===
-          "true";
-
-        if (!promptSeen) {
-          window.localStorage.setItem(BIOMETRIC_SESSION_PROMPT_SEEN_KEY, "true");
-          unlockEnabled = window.confirm(
-            "Protect remembered Loombus sessions with device biometrics?"
-          );
-
-          if (unlockEnabled) {
-            setBiometricUnlockEnabled(true);
-          }
-        }
-      }
-
-      if (!unlockEnabled) {
-        setStatus("ready");
-        setMessage("");
-        return;
-      }
-
-      if (!forceVerification && isSessionVerified()) {
         setStatus("ready");
         setMessage("");
         return;
@@ -123,7 +102,7 @@ export function NativeBiometricSessionGate() {
       const result = await verifyNativeBiometric("Unlock Loombus to continue.");
 
       if (result.ok) {
-        markSessionVerified();
+        markSessionVerified(data.session.user.id);
         setStatus("ready");
         setMessage("");
         return;
@@ -152,27 +131,16 @@ export function NativeBiometricSessionGate() {
       void runBiometricGate();
     });
 
-    function handleVisibilityChange() {
-      if (document.visibilityState !== "visible" || !isBiometricUnlockEnabled()) {
-        return;
-      }
-
-      clearSessionVerified();
-      void runBiometricGate(true);
-    }
-
     function handleSettingChange() {
       clearSessionVerified();
       void runBiometricGate(true);
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener(BIOMETRIC_UNLOCK_SETTING_EVENT, handleSettingChange);
 
     return () => {
       window.clearTimeout(initialCheck);
       subscription.unsubscribe();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener(
         BIOMETRIC_UNLOCK_SETTING_EVENT,
         handleSettingChange
