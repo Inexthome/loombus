@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
 
     public static final String LOOMBUS_DESTINATION_EXTRA = "com.loombus.app.DESTINATION";
     private static final String LOOMBUS_HOST = "loombus.com";
+    private static final int LONG_PULL_REFRESH_DISTANCE_DP = 180;
     private SwipeRefreshLayout loombusRefreshLayout;
 
     @Override
@@ -52,6 +53,10 @@ public class MainActivity extends BridgeActivity {
 
         SwipeRefreshLayout refreshLayout = new SwipeRefreshLayout(this);
         refreshLayout.setLayoutParams(originalLayoutParams);
+        int triggerDistancePx = Math.round(
+            LONG_PULL_REFRESH_DISTANCE_DP * getResources().getDisplayMetrics().density
+        );
+        refreshLayout.setDistanceToTriggerSync(triggerDistancePx);
         refreshLayout.setOnChildScrollUpCallback((layout, child) -> webView.getScrollY() > 0);
         refreshLayout.setOnRefreshListener(() -> {
             webView.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
