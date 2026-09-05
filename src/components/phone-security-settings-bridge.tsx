@@ -89,7 +89,8 @@ function Toggle({
 }
 
 export function PhoneSecuritySettingsBridge() {
-  const [mount, setMount] = useState<HTMLElement | null>(null);
+  const [profileMount, setProfileMount] = useState<HTMLElement | null>(null);
+  const [privacyMount, setPrivacyMount] = useState<HTMLElement | null>(null);
   const [phone, setPhone] = useState<PhoneState>({ masked: null, verified: false });
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [capabilities, setCapabilities] = useState<Capabilities>({
@@ -107,7 +108,10 @@ export function PhoneSecuritySettingsBridge() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setMount(document.getElementById("privacy"));
+    setProfileMount(
+      document.querySelector<HTMLElement>('[data-settings-workspace-slot="profile"]')
+    );
+    setPrivacyMount(document.getElementById("privacy"));
   }, []);
 
   async function load() {
@@ -146,7 +150,6 @@ export function PhoneSecuritySettingsBridge() {
       setMessage("Enter a valid 10-digit U.S. mobile number.");
       return;
     }
-
     if (!smsConsent) {
       setMessage("Check the SMS consent box before requesting a verification code.");
       return;
@@ -230,136 +233,149 @@ export function PhoneSecuritySettingsBridge() {
     setWorking(false);
   }
 
-  if (!mount) return null;
+  if (!profileMount || !privacyMount) return null;
 
-  return createPortal(
-    <section className="member-privacy-settings" aria-labelledby="verified-mobile-heading">
-      <div className="member-privacy-heading">
-        <div>
-          <p>Verified mobile number</p>
-          <h3 id="verified-mobile-heading">Use your number for sign-in and account security without making it public.</h3>
-        </div>
-        <span>{loading ? "Loading" : working ? "Saving" : phone.verified ? "Verified" : "Not verified"}</span>
-      </div>
+  const status = loading ? "Loading" : working ? "Saving" : phone.verified ? "Verified" : "Not verified";
 
-      <div className="rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <strong className="block text-[color:var(--loombus-text)]">{phone.masked ?? "No mobile number added"}</strong>
-            <span className="text-sm text-[color:var(--loombus-text-muted)]">Your full number is never displayed on your public Loombus profile.</span>
-          </div>
-          {phone.verified ? <span className="text-sm font-semibold">Verified</span> : null}
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-          <div>
-            <div className="flex overflow-hidden rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] focus-within:ring-2 focus-within:ring-[color:var(--loombus-border)]">
-              <span className="flex items-center gap-2 border-r border-[color:var(--loombus-border)] px-3 text-sm font-semibold" aria-hidden="true">
-                <span>🇺🇸</span><span>+1</span>
-              </span>
-              <input
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel-national"
-                value={newPhone}
-                disabled={working || awaitingOtp}
-                onChange={(event) => handlePhoneChange(event.target.value)}
-                placeholder="(904) 555-1234"
-                aria-label="U.S. mobile number"
-                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[color:var(--loombus-text)] outline-none"
-              />
+  return (
+    <>
+      {createPortal(
+        <section className="phone-editorial-section" aria-labelledby="verified-mobile-heading">
+          <div className="phone-editorial-heading">
+            <div>
+              <p className="settings-v2-eyebrow">Verified mobile number</p>
+              <h2 id="verified-mobile-heading">Add a trusted number for sign-in and account verification.</h2>
             </div>
-            <p className="mt-2 text-xs text-[color:var(--loombus-text-muted)]">U.S. numbers use +1 automatically.</p>
+            <span className="settings-v2-badge">{status}</span>
           </div>
-          <button
-            type="button"
-            className="settings-v2-secondary-action self-start"
-            disabled={working || awaitingOtp || !smsConsent}
-            onClick={() => void sendPhoneVerification()}
-          >
-            {phone.verified ? "Change number" : "Add & verify"}
-          </button>
-        </div>
 
-        <label className="mt-4 flex items-start gap-3 rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-3">
-          <input
-            type="checkbox"
-            checked={smsConsent}
-            disabled={working || awaitingOtp}
-            onChange={(event) => {
-              setSmsConsent(event.target.checked);
-              setMessage("");
-            }}
-            className="mt-1 h-4 w-4 shrink-0"
-          />
-          <span className="text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-            <strong className="block text-sm text-[color:var(--loombus-text)]">I agree to receive Loombus verification codes by SMS.</strong>
-            By checking this box, you agree to receive transactional authentication and verification text messages from Loombus at the mobile number you provide. Message frequency varies based on your requests. Message and data rates may apply. No marketing or promotional messages are sent through this program. This consent is separate from accepting the Loombus Terms and Privacy Policy. See the{" "}
-            <Link href="/terms" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
-          </span>
-        </label>
+          <div className="phone-editorial-summary">
+            <span>Mobile number</span>
+            <strong>{phone.masked ?? "No mobile number added"}</strong>
+            <p>Your full number is never displayed on your public Loombus profile.</p>
+          </div>
 
-        {awaitingOtp ? (
-          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={otp}
-              disabled={working}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-              placeholder="6-digit code"
-              aria-label="SMS verification code"
-              className="min-w-0 rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-3 py-2 text-[color:var(--loombus-text)]"
-            />
+          <div className="phone-editorial-field-row">
+            <label className="phone-editorial-field">
+              <span>U.S. mobile number</span>
+              <div className="phone-editorial-input-shell">
+                <span aria-hidden="true">🇺🇸 +1</span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  value={newPhone}
+                  disabled={working || awaitingOtp}
+                  onChange={(event) => handlePhoneChange(event.target.value)}
+                  placeholder="(904) 555-1234"
+                  aria-label="U.S. mobile number"
+                />
+              </div>
+              <small>U.S. numbers use +1 automatically.</small>
+            </label>
             <button
               type="button"
-              className="settings-v2-secondary-action"
-              disabled={working}
-              onClick={() => void verifyPhoneChange()}
+              className="settings-v2-primary-action phone-editorial-action"
+              disabled={working || awaitingOtp || !smsConsent}
+              onClick={() => void sendPhoneVerification()}
             >
-              Verify code
+              {phone.verified ? "Change number" : "Add & verify"}
             </button>
           </div>
-        ) : null}
-      </div>
 
-      <div className="member-privacy-toggle-list">
-        <Toggle
-          title="Allow people who have my phone number to find me"
-          description="Opt in to secure phone-number discovery. Your number itself is never shown to other members."
-          checked={preferences.phoneDiscoverable}
-          disabled={loading || working || !phone.verified}
-          onChange={(value) => void savePhoneDiscovery(value)}
-          icon={Search}
-        />
-        <Toggle
-          title="Contact matching"
-          description={capabilities.contactMatching ? "Match contacts you explicitly choose against opted-in Loombus members." : "Coming after Loombus adds a private contact-matching service. Contact access will require a separate explicit permission."}
-          checked={preferences.contactMatchingEnabled}
-          disabled={!capabilities.contactMatching || loading || working}
-          onChange={() => undefined}
-          icon={ContactRound}
-        />
-        <Toggle
-          title="Security SMS alerts"
-          description={capabilities.securitySmsDelivery ? "Receive important account-security alerts by SMS." : "Available after Loombus configures a general security-SMS delivery provider. Authentication codes remain separate."}
-          checked={preferences.securitySmsEnabled}
-          disabled={!capabilities.securitySmsDelivery || loading || working}
-          onChange={() => undefined}
-          icon={MessageSquareLock}
-        />
-      </div>
+          <label className="phone-editorial-consent">
+            <input
+              type="checkbox"
+              checked={smsConsent}
+              disabled={working || awaitingOtp}
+              onChange={(event) => {
+                setSmsConsent(event.target.checked);
+                setMessage("");
+              }}
+            />
+            <span>
+              <strong>I agree to receive Loombus verification codes by SMS.</strong>
+              <small>
+                Transactional authentication and verification messages only. Message frequency varies based on your requests. Message and data rates may apply. No marketing or promotional messages are sent through this program. SMS consent is separate from accepting the Loombus Terms and Privacy Policy. See the{" "}
+                <Link href="/terms">Terms</Link>{" "}
+                and{" "}
+                <Link href="/privacy">Privacy Policy</Link>.
+              </small>
+            </span>
+          </label>
 
-      {message ? <p className="member-privacy-message" role="status">{message}</p> : null}
+          {awaitingOtp ? (
+            <div className="phone-editorial-field-row phone-editorial-otp-row">
+              <label className="phone-editorial-field">
+                <span>Verification code</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otp}
+                  disabled={working}
+                  onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
+                  placeholder="6-digit code"
+                  aria-label="SMS verification code"
+                />
+              </label>
+              <button
+                type="button"
+                className="settings-v2-primary-action phone-editorial-action"
+                disabled={working}
+                onClick={() => void verifyPhoneChange()}
+              >
+                Verify code
+              </button>
+            </div>
+          ) : null}
 
-      <p className="member-follow-requests-empty">
-        Loombus does not use your mobile number for public display, advertising profiles, or SMS marketing. Phone-number discovery is off by default.
-      </p>
-    </section>,
-    mount
+          {message ? <p className="member-privacy-message" role="status">{message}</p> : null}
+        </section>,
+        profileMount
+      )}
+
+      {createPortal(
+        <section className="member-privacy-settings phone-privacy-controls" aria-labelledby="phone-privacy-heading">
+          <div className="member-privacy-heading">
+            <div>
+              <p>Phone privacy</p>
+              <h3 id="phone-privacy-heading">Control how your verified number can be used across Loombus.</h3>
+            </div>
+          </div>
+          <div className="member-privacy-toggle-list">
+            <Toggle
+              title="Allow people who have my phone number to find me"
+              description="Opt in to secure phone-number discovery. Your number itself is never shown to other members."
+              checked={preferences.phoneDiscoverable}
+              disabled={loading || working || !phone.verified}
+              onChange={(value) => void savePhoneDiscovery(value)}
+              icon={Search}
+            />
+            <Toggle
+              title="Contact matching"
+              description={capabilities.contactMatching ? "Match contacts you explicitly choose against opted-in Loombus members." : "Coming after Loombus adds a private contact-matching service. Contact access will require a separate explicit permission."}
+              checked={preferences.contactMatchingEnabled}
+              disabled={!capabilities.contactMatching || loading || working}
+              onChange={() => undefined}
+              icon={ContactRound}
+            />
+            <Toggle
+              title="Security SMS alerts"
+              description={capabilities.securitySmsDelivery ? "Receive important account-security alerts by SMS." : "Available after Loombus configures a general security-SMS delivery provider. Authentication codes remain separate."}
+              checked={preferences.securitySmsEnabled}
+              disabled={!capabilities.securitySmsDelivery || loading || working}
+              onChange={() => undefined}
+              icon={MessageSquareLock}
+            />
+          </div>
+          <p className="member-follow-requests-empty">
+            Loombus does not use your mobile number for public display, advertising profiles, or SMS marketing. Phone-number discovery is off by default.
+          </p>
+        </section>,
+        privacyMount
+      )}
+    </>
   );
 }
