@@ -85,7 +85,7 @@ export function DiscussionFocusedThreadBridge() {
         : `Show ${responseLabel} inline`;
 
       if (existing) {
-        existing.textContent = visibleLabel;
+        if (existing.textContent !== visibleLabel) existing.textContent = visibleLabel;
         existing.setAttribute("aria-label", ariaLabel);
         existing.setAttribute("aria-expanded", String(isExpanded));
         return;
@@ -141,7 +141,9 @@ export function DiscussionFocusedThreadBridge() {
         const childId = replyIdFromWrapper(childWrapper);
         if (!childId) continue;
 
-        anchor.insertAdjacentElement("afterend", childWrapper);
+        if (childWrapper.previousElementSibling !== anchor) {
+          anchor.insertAdjacentElement("afterend", childWrapper);
+        }
         childWrapper.hidden = false;
         childWrapper.dataset.threadChild = "true";
         childWrapper.dataset.threadDepth = String(depth);
