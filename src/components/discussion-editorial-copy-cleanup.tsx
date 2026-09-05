@@ -19,15 +19,24 @@ const TOOLTIP_COPY: Record<WorkspaceMode, string> = {
     "Write a reply that moves the discussion forward. Respond to the claim, add evidence, ask a precise question, or identify the next useful step.",
 };
 
-function ensureTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: string) {
+const AI_TOOL_COPY: Record<string, string> = {
+  Overview: "Compress the discussion without flattening the important context.",
+  "Key takeaways": "Surface the strongest conclusions, evidence, and unresolved questions.",
+  "What changed": "See how the conversation evolved from the opening post to the latest replies.",
+  Disagreement: "Separate genuine disagreement from different assumptions or definitions.",
+  Structure: "Trace the major claims, supporting points, counterpoints, and branches.",
+  "Related ideas": "Find adjacent questions and concepts worth carrying into another discussion.",
+};
+
+function ensureNamedTooltip(target: HTMLElement | null, key: string, label: string, copy: string) {
   if (!target) return;
 
-  let trigger = target.querySelector<HTMLButtonElement>(`:scope > [${TOOLTIP_ATTR}='${mode}']`);
+  let trigger = target.querySelector<HTMLButtonElement>(`:scope > [${TOOLTIP_ATTR}='${key}']`);
   if (!trigger) {
     trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "discussion-editorial-heading-help";
-    trigger.setAttribute(TOOLTIP_ATTR, mode);
+    trigger.setAttribute(TOOLTIP_ATTR, key);
     trigger.setAttribute("aria-label", `About ${label}`);
 
     const mark = document.createElement("span");
@@ -39,7 +48,7 @@ function ensureTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: s
     target.append(trigger);
   }
 
-  const tooltipId = `discussion-${mode}-heading-help`;
+  const tooltipId = `discussion-${key}-heading-help`;
   trigger.setAttribute("aria-describedby", tooltipId);
 
   let tooltip = trigger.querySelector<HTMLElement>(".discussion-editorial-heading-tooltip");
@@ -51,15 +60,35 @@ function ensureTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: s
     trigger.append(tooltip);
   }
 
-  if (tooltip.textContent !== TOOLTIP_COPY[mode]) {
-    tooltip.textContent = TOOLTIP_COPY[mode];
+  if (tooltip.textContent !== copy) {
+    tooltip.textContent = copy;
   }
+}
+
+function ensureTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: string) {
+  ensureNamedTooltip(target, mode, label, TOOLTIP_COPY[mode]);
 }
 
 function removeVisibleCopy(container: HTMLElement | null) {
   if (!container) return;
   container.querySelector(":scope > h2")?.remove();
   container.querySelector(":scope > p:not(.discussion-v2-eyebrow)")?.remove();
+}
+
+function cleanActiveAiToolDescription() {
+  const heading = document.querySelector<HTMLElement>(
+    ".discussion-v2-ai-output-heading > div"
+  );
+  if (!heading) return;
+
+  const title = heading.querySelector<HTMLElement>(":scope > h3");
+  const label = title?.childNodes[0]?.textContent?.trim() || title?.textContent?.trim() || "";
+  const copy = AI_TOOL_COPY[label];
+  if (!title || !copy) return;
+
+  heading.querySelector(":scope > p:last-child")?.remove();
+  const key = `ai-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+  ensureNamedTooltip(title, key, label, copy);
 }
 
 export function DiscussionEditorialCopyCleanup() {
@@ -118,6 +147,8 @@ export function DiscussionEditorialCopyCleanup() {
         "reply",
         "Reply"
       );
+
+      cleanActiveAiToolDescription();
     };
 
     const schedule = () => {
