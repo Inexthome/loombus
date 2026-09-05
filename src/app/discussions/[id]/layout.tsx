@@ -2,6 +2,7 @@ import { DiscussionConversationIntelligenceBridge } from "@/components/discussio
 import { DiscussionEditorialCopyCleanup } from "@/components/discussion-editorial-copy-cleanup";
 import { DiscussionFollowBridge } from "@/components/discussion-follow-bridge";
 import { DiscussionFocusedThreadBridge } from "@/components/discussion-focused-thread-bridge";
+import { DiscussionMobileReplyLabel } from "@/components/discussion-mobile-reply-label";
 import { DiscussionPhaseFourNavigation } from "@/components/discussion-phase-four-navigation";
 import { DiscussionReplyPaginationBridge } from "@/components/discussion-reply-pagination-bridge";
 import { DiscussionThreadWindowDispatcher } from "@/components/discussion-thread-window-dispatcher";
@@ -28,6 +29,7 @@ export default function DiscussionDetailLayout({
       <DiscussionConversationIntelligenceBridge />
       <DiscussionFollowBridge />
       <DiscussionEditorialCopyCleanup />
+      <DiscussionMobileReplyLabel />
       {children}
     </>
   );
