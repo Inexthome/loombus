@@ -28,17 +28,17 @@
   .discussion-mobile-reply-helper-trigger {
     width: 100%;
     min-height: 2.5rem;
-    border: 1px solid var(--loombus-border);
-    border-radius: 999px;
-    background: var(--loombus-page-bg);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--loombus-text-muted);
-    padding: 0.55rem 0.7rem;
+    padding: 0.35rem 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    font-size: 0.7rem;
-    font-weight: 800;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 750;
     cursor: pointer;
   }
 
@@ -54,7 +54,6 @@
   }
 
   .discussion-mobile-reply-helper-trigger[aria-expanded="true"] {
-    border-color: rgba(180, 83, 9, 0.42);
     color: #b45309;
   }
 
@@ -98,8 +97,8 @@
     color: var(--loombus-text);
     padding: 0.6rem 0.75rem;
     text-align: left;
-    font-size: 0.72rem;
-    font-weight: 800;
+    font-size: 0.68rem;
+    font-weight: 750;
     cursor: pointer;
     white-space: nowrap;
   }
