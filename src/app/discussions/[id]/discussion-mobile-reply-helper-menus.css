@@ -1,0 +1,124 @@
+[data-mobile-reply-helper-host="true"] {
+  display: none;
+}
+
+@media (max-width: 719px) {
+  [data-mobile-reply-helper-host="true"] {
+    display: block;
+    position: relative;
+    z-index: 20;
+  }
+
+  .discussion-v2-helper-row {
+    display: none !important;
+  }
+
+  .discussion-mobile-reply-helper-menus {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .discussion-mobile-reply-helper-group {
+    position: relative;
+    min-width: 0;
+  }
+
+  .discussion-mobile-reply-helper-trigger {
+    width: 100%;
+    min-height: 2.5rem;
+    border: 1px solid var(--loombus-border);
+    border-radius: 999px;
+    background: var(--loombus-page-bg);
+    color: var(--loombus-text-muted);
+    padding: 0.55rem 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .discussion-mobile-reply-helper-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .discussion-mobile-reply-helper-trigger svg {
+    flex: 0 0 auto;
+    transition: transform 140ms ease;
+  }
+
+  .discussion-mobile-reply-helper-trigger[aria-expanded="true"] {
+    border-color: rgba(180, 83, 9, 0.42);
+    color: #b45309;
+  }
+
+  .discussion-mobile-reply-helper-trigger[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+
+  .discussion-mobile-reply-helper-menu {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 80;
+    min-width: 100%;
+    width: max-content;
+    max-width: min(11rem, calc(100vw - 2rem));
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.35rem;
+    border: 1px solid var(--loombus-border);
+    border-radius: 0.9rem;
+    background: var(--loombus-surface);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+  }
+
+  .discussion-mobile-reply-helper-group:nth-child(2) .discussion-mobile-reply-helper-menu {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .discussion-mobile-reply-helper-group:last-child .discussion-mobile-reply-helper-menu {
+    right: 0;
+    left: auto;
+  }
+
+  .discussion-mobile-reply-helper-menu button {
+    width: 100%;
+    min-height: 2.5rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: transparent;
+    color: var(--loombus-text);
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .discussion-mobile-reply-helper-menu button:hover,
+  .discussion-mobile-reply-helper-menu button:focus-visible {
+    background: var(--loombus-surface-muted);
+    color: #b45309;
+  }
+
+  .discussion-mobile-reply-helper-trigger:focus-visible,
+  .discussion-mobile-reply-helper-menu button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 55%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-mobile-reply-helper-trigger svg {
+    transition: none;
+  }
+}
