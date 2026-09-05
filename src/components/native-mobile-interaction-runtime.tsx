@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { isNativeApp } from "@/lib/native-app";
+import { isHapticFeedbackEnabled } from "@/lib/mobile-native-preferences";
 import { performLoombusHaptic } from "@/lib/native-live-updates";
 
 const PULL_THRESHOLD_PX = 88;
@@ -10,6 +11,7 @@ const HAPTIC_SELECTOR =
   'button, a[href], [role="button"], summary, input[type="checkbox"], input[type="radio"]';
 
 function fallbackVibrate(duration = 10) {
+  if (!isHapticFeedbackEnabled()) return;
   try {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
       navigator.vibrate(duration);
@@ -20,6 +22,7 @@ function fallbackVibrate(duration = 10) {
 }
 
 async function haptic(style: "light" | "success" = "light") {
+  if (!isHapticFeedbackEnabled()) return;
   try {
     await performLoombusHaptic(style);
   } catch {
