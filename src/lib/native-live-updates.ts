@@ -1,5 +1,9 @@
 import { registerPlugin } from "@capacitor/core";
 import { getNativePlatform } from "@/lib/native-app";
+import {
+  areLiveAppointmentUpdatesEnabled,
+  isHapticFeedbackEnabled,
+} from "@/lib/mobile-native-preferences";
 
 export type LiveAppointmentItem = {
   id: string;
@@ -88,6 +92,7 @@ export async function shareFromLoombus(input: NativeShareInput) {
 }
 
 export async function performLoombusHaptic(style: NativeHapticStyle = "light") {
+  if (!isHapticFeedbackEnabled()) return;
   const platform = getNativePlatform();
   if (platform !== "ios" && platform !== "android") return;
   await LiveUpdates.haptic({ style });
@@ -156,6 +161,9 @@ export async function startAppointmentLiveUpdate(item: LiveAppointmentItem) {
   if (platform !== "ios" && platform !== "android") {
     throw new Error("Live appointment updates are available in the mobile app.");
   }
+  if (!areLiveAppointmentUpdatesEnabled()) {
+    throw new Error("Live appointment updates are turned off in Loombus Settings.");
+  }
   if (!isEligibleForLiveUpdate(item)) {
     throw new Error(
       "Live updates become available one hour before an accepted appointment."
@@ -177,6 +185,11 @@ export async function reconcileAppointmentLiveUpdates(
 ) {
   const platform = getNativePlatform();
   if (platform !== "ios" && platform !== "android") return [];
+
+  if (!areLiveAppointmentUpdatesEnabled()) {
+    await LiveUpdates.endAllAppointments();
+    return [];
+  }
 
   const status = await LiveUpdates.getStatus();
   const itemsById = new Map(items.map((item) => [item.id, item]));
