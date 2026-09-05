@@ -206,6 +206,12 @@ export const ACCOUNT_NAVIGATION_SECTIONS: readonly LoombusNavigationSection[] = 
         icon: "dashboard",
       },
       {
+        href: "/onboarding",
+        label: "Onboarding",
+        description: "Review your Loombus starting path and member setup.",
+        icon: "guide",
+      },
+      {
         href: "/my-activity",
         label: "My Activity",
         description: "Review your recent activity across Loombus.",
