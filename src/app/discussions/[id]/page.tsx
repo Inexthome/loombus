@@ -2,10 +2,12 @@ import { DiscussionAudienceDetailBadge } from "@/components/discussion-audience-
 import { DiscussionViewersPanel } from "@/components/discussion-viewers-panel";
 import { DiscussionLibraryFeedbackLauncher } from "@/components/library/discussion-library-feedback-launcher";
 import "./discussion-mobile-back-navigation.css";
+import "./discussion-mobile-reply-helper-menus.css";
 import DiscussionDetailActionsLayer from "./discussion-detail-actions-layer";
 import DiscussionDetailV2Client from "./discussion-detail-v2-client";
 import DiscussionInlinePointReplies from "./discussion-inline-point-replies";
 import DiscussionMobileBackNavigation from "./discussion-mobile-back-navigation";
+import DiscussionMobileReplyHelperMenus from "./discussion-mobile-reply-helper-menus";
 import QuestionOfWeekBodyDisclosure from "./question-of-week-body-disclosure";
 import QuestionOfWeekEditorialAttribution from "./question-of-week-editorial-attribution";
 
@@ -14,6 +16,7 @@ export default function DiscussionPage() {
     <>
       <DiscussionMobileBackNavigation />
       <DiscussionDetailV2Client />
+      <DiscussionMobileReplyHelperMenus />
       <QuestionOfWeekEditorialAttribution />
       <QuestionOfWeekBodyDisclosure />
       <DiscussionInlinePointReplies />
