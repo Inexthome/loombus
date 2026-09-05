@@ -34,6 +34,7 @@ export function DiscussionFocusedThreadBridge() {
     let activeReplyId: string | null = null;
     let applying = false;
     let reloadTimer: number | null = null;
+    let retryTimer: number | null = null;
     const storageKey = `${COLLAPSED_STORAGE_PREFIX}${discussionId}`;
 
     function loadCollapsedPreference() {
@@ -87,6 +88,16 @@ export function DiscussionFocusedThreadBridge() {
       requestDiscussionThreadWindow({ discussionId, parentReplyId: replyId });
     }
 
+    function scheduleExpandedChildRetry() {
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (cancelled) return;
+        for (const replyId of expanded) requestChildren(replyId);
+        window.requestAnimationFrame(applyThreadView);
+      }, 250);
+    }
+
     function syncDefaultExpandedState() {
       for (const [replyId, childIds] of children.entries()) {
         if (childIds.length <= 0) continue;
@@ -97,6 +108,7 @@ export function DiscussionFocusedThreadBridge() {
         expanded.add(replyId);
         requestChildren(replyId);
       }
+      scheduleExpandedChildRetry();
     }
 
     function ensureBranchButton(wrapper: HTMLElement, replyId: string) {
@@ -246,6 +258,7 @@ export function DiscussionFocusedThreadBridge() {
         expanded.add(replyId);
         activeReplyId = replyId;
         requestChildren(replyId);
+        scheduleExpandedChildRetry();
       }
 
       persistCollapsedPreference();
@@ -328,6 +341,7 @@ export function DiscussionFocusedThreadBridge() {
       observer.disconnect();
       window.removeEventListener("loombus:discussion-metrics-changed", refresh);
       if (reloadTimer !== null) window.clearTimeout(reloadTimer);
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
 
       document
         .querySelectorAll<HTMLElement>(".discussion-v2-reply-list > [id^='reply-']")
