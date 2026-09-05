@@ -60,9 +60,7 @@ function ensureNamedTooltip(target: HTMLElement | null, key: string, label: stri
     trigger.append(tooltip);
   }
 
-  if (tooltip.textContent !== copy) {
-    tooltip.textContent = copy;
-  }
+  if (tooltip.textContent !== copy) tooltip.textContent = copy;
 }
 
 function ensureTooltip(target: HTMLElement | null, mode: WorkspaceMode, label: string) {
