@@ -296,7 +296,7 @@ export function PhoneSecuritySettingsBridge() {
             <span>
               <strong>I agree to receive Loombus verification codes by SMS.</strong>
               <small>
-                Transactional authentication and verification messages only. Message frequency varies based on your requests. Message and data rates may apply. No marketing or promotional messages are sent through this program. SMS consent is separate from accepting the Loombus Terms and Privacy Policy. See the{" "}
+                Transactional authentication and verification messages only. Message frequency varies based on your requests. Message and data rates may apply. No marketing or promotional messages are sent through this program. Reply STOP to opt out and HELP for help. SMS consent is separate from accepting the Loombus Terms and Privacy Policy. See the{" "}
                 <Link href="/terms">Terms</Link>{" "}
                 and{" "}
                 <Link href="/privacy">Privacy Policy</Link>.
