@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./loombus-brand-accent.css";
 import "./desktop-navigation-shell.css";
+import "./desktop-account-menu-organization.css";
 import "./desktop-rail-appearance-footer.css";
 import "./ipad-desktop-shell-safe-inset.css";
 import "./mobile-navigation-shell.css";
