@@ -5,6 +5,7 @@ import { useEffect } from "react";
 type WorkspaceMode = "state" | "intelligence" | "points" | "evidence" | "reply";
 
 const TOOLTIP_ATTR = "data-loombus-editorial-tooltip";
+const SOURCE_TOKEN_PATTERN = /\[\[source:([^|\]]+)\|([^|\]]+)\|([^\]]+)\]\]/g;
 
 const TOOLTIP_COPY: Record<WorkspaceMode, string> = {
   state:
@@ -89,6 +90,66 @@ function cleanActiveAiToolDescription() {
   ensureNamedTooltip(title, key, label, copy);
 }
 
+function scrollToAiSource(sourceId: string) {
+  const targetId = sourceId === "opening" ? "discussion-opening" : `reply-${sourceId}`;
+  const target = document.getElementById(targetId);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("discussion-ai-source-target");
+    window.setTimeout(() => target.classList.remove("discussion-ai-source-target"), 1800);
+    return;
+  }
+
+  if (sourceId !== "opening") {
+    document.querySelector<HTMLElement>(".discussion-v2-replies")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function replaceSourceTokensInTextNode(textNode: Text) {
+  const value = textNode.nodeValue ?? "";
+  SOURCE_TOKEN_PATTERN.lastIndex = 0;
+  if (!SOURCE_TOKEN_PATTERN.test(value)) return;
+  SOURCE_TOKEN_PATTERN.lastIndex = 0;
+
+  const fragment = document.createDocumentFragment();
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = SOURCE_TOKEN_PATTERN.exec(value)) !== null) {
+    if (match.index > cursor) fragment.append(document.createTextNode(value.slice(cursor, match.index)));
+
+    const sourceId = match[1].trim();
+    const author = match[2].trim() || "Loombus member";
+    const role = match[3].trim() || (sourceId === "opening" ? "Opening post" : "Contribution");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "discussion-ai-source-citation";
+    button.dataset.discussionAiSource = sourceId;
+    button.textContent = `${author} · ${role}`;
+    button.setAttribute("aria-label", `View ${role.toLowerCase()} by ${author}`);
+    button.addEventListener("click", () => scrollToAiSource(sourceId));
+    fragment.append(button);
+
+    cursor = match.index + match[0].length;
+  }
+
+  if (cursor < value.length) fragment.append(document.createTextNode(value.slice(cursor)));
+  textNode.replaceWith(fragment);
+}
+
+function enhanceAiSourceCitations() {
+  document.querySelectorAll<HTMLElement>(".discussion-v2-ai-result").forEach((container) => {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement?.closest(".discussion-ai-source-citation")) continue;
+      if ((node.nodeValue ?? "").includes("[[source:")) textNodes.push(node as Text);
+    }
+    textNodes.forEach(replaceSourceTokensInTextNode);
+  });
+}
+
 export function DiscussionEditorialCopyCleanup() {
   useEffect(() => {
     let scheduled = false;
@@ -147,6 +208,7 @@ export function DiscussionEditorialCopyCleanup() {
       );
 
       cleanActiveAiToolDescription();
+      enhanceAiSourceCitations();
     };
 
     const schedule = () => {

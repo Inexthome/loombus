@@ -12,12 +12,17 @@ import {
   getOpenAiUsageMetadata,
   upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
+import {
+  DISCUSSION_AI_CITATION_INSTRUCTIONS,
+  DISCUSSION_AI_CITATION_SCHEMA,
+  buildDiscussionAiCitationContext,
+  normalizeDiscussionAiCitationTokens,
+  type CitationReply,
+} from "@/lib/discussion-ai-source-citations";
 
 const FEATURE_KEY = "related_ideas";
 const RELATED_IDEAS_MODEL =
-  process.env.OPENAI_RELATED_IDEAS_MODEL ||
-  process.env.OPENAI_SUMMARY_MODEL ||
-  "gpt-4o-mini";
+  process.env.OPENAI_RELATED_IDEAS_MODEL || process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MAX_DISCUSSION_BODY_CHARS = 6000;
 const MAX_REPLY_CHARS = 8000;
@@ -35,10 +40,7 @@ type CachedAiOutput = {
 };
 
 function clampText(text: string, maxLength: number) {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
+  if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength)}\n\n[Content truncated for related ideas generation.]`;
 }
 
@@ -51,12 +53,10 @@ async function getMonthlyRelatedIdeasUsageCount(supabase: any, userId: string) {
     .eq("cached", false)
     .eq("success", true)
     .gte("created_at", getCurrentMonthStart());
-
   if (error) {
     console.error("AI related ideas usage count failed:", error.message);
     return 0;
   }
-
   return count ?? 0;
 }
 
@@ -64,61 +64,44 @@ async function generateOpenAIRelatedIdeas({
   title,
   topic,
   realityLens,
-  body,
-  replies,
+  sourceText,
   replyCount,
+  sourceAuthors,
 }: {
   title: string;
   topic: string;
   realityLens: string | null;
-  body: string;
-  replies: string;
+  sourceText: string;
   replyCount: number;
+  sourceAuthors: Map<string, string>;
 }) {
-  if (!OPENAI_API_KEY) {
-    throw new Error("AI related ideas are not configured yet.");
-  }
-
+  if (!OPENAI_API_KEY) throw new Error("AI related ideas are not configured yet.");
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: RELATED_IDEAS_MODEL,
-      temperature: 0.2,
-      max_tokens: 300,
+      temperature: 0.15,
+      max_tokens: 460,
       messages: [
         {
           role: "system",
           content:
-            "You identify related ideas for a public high-signal discussion platform. Do not add unsupported claims. Do not summarize the thread. Extract idea connections that could help readers discover adjacent discussions. Keep labels short, neutral, and non-sensational.",
+            "You identify adjacent ideas for a public high-signal discussion platform. Do not add unsupported claims and do not merely summarize the thread. Extract conceptual connections that could become future discussion or knowledge nodes. Keep labels short, neutral, and non-sensational. " + DISCUSSION_AI_CITATION_INSTRUCTIONS,
         },
         {
           role: "user",
-          content: `Identify 6-10 related ideas for this discussion. Return only a concise bullet list. Each bullet should use this format: - Idea label: one short reason it connects. Keep idea labels broad enough to become future clickable idea graph nodes.\n\nTopic: ${topic}\nReality Lens: ${realityLens || "None"}\nTitle: ${title}\nReply count: ${replyCount}\n\nOriginal discussion body:\n${clampText(body, MAX_DISCUSSION_BODY_CHARS)}\n\nReplies in chronological order:\n${clampText(replies || "No replies yet.", MAX_REPLY_CHARS)}`,
+          content: `Identify 6-10 related ideas for this discussion. Use this format: - Idea label: one short reason it connects. Cite the specific contribution that makes each connection relevant when the connection comes from a participant's point. Keep idea labels broad enough to become future knowledge graph nodes.\n\nTopic: ${topic}\nReality Lens: ${realityLens || "None"}\nTitle: ${title}\nReply count: ${replyCount}\n\n${sourceText}`,
         },
       ],
     }),
   });
-
   const payload = await response.json();
-
-  if (!response.ok) {
-    const message =
-      payload?.error?.message || "AI related ideas generation failed.";
-    throw new Error(message);
-  }
-
-  const relatedIdeas = payload?.choices?.[0]?.message?.content?.trim();
-
-  if (!relatedIdeas) {
-    throw new Error("AI related ideas generation returned no content.");
-  }
-
+  if (!response.ok) throw new Error(payload?.error?.message || "AI related ideas generation failed.");
+  const raw = payload?.choices?.[0]?.message?.content?.trim();
+  if (!raw) throw new Error("AI related ideas generation returned no content.");
   return {
-    relatedIdeas,
+    relatedIdeas: normalizeDiscussionAiCitationTokens(raw, sourceAuthors),
     usageMetadata: getOpenAiUsageMetadata(payload, RELATED_IDEAS_MODEL),
   };
 }
@@ -126,111 +109,57 @@ async function generateOpenAIRelatedIdeas({
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
-
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 }
-      );
-    }
-
+    if (!authHeader) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     const token = authHeader.replace("Bearer ", "");
-
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Invalid session." },
-        { status: 401 }
-      );
-    }
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) return NextResponse.json({ error: "Invalid session." }, { status: 401 });
 
     const access = await getAiAccess(supabase, user.id);
-
     const body = await request.json();
     const discussionId = String(body.discussionId ?? "").trim();
-
     if (!access.allowed) {
-      await logAiUsage({
-        supabase,
-        userId: user.id,
-        featureKey: FEATURE_KEY,
-        targetType: "discussion",
-        targetId: discussionId || undefined,
-        provider: "openai",
-        modelName: RELATED_IDEAS_MODEL,
-        success: false,
-        errorMessage: "Premium AI access required.",
-      });
-
-      return NextResponse.json(
-        {
-          error: "Premium AI access is required for related ideas.",
-          code: "premium_required",
-        },
-        { status: 403 }
-      );
+      await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: discussionId || undefined, provider: "openai", modelName: RELATED_IDEAS_MODEL, success: false, errorMessage: "Premium AI access required." });
+      return NextResponse.json({ error: "Premium AI access is required for related ideas.", code: "premium_required" }, { status: 403 });
     }
-
-    if (!discussionId) {
-      return NextResponse.json(
-        { error: "Missing discussion id." },
-        { status: 400 }
-      );
-    }
+    if (!discussionId) return NextResponse.json({ error: "Missing discussion id." }, { status: 400 });
 
     const { data: discussion, error: discussionError } = await supabase
       .from("discussions")
-      .select("id, title, topic, reality_lens, body")
+      .select("id, user_id, title, topic, reality_lens, body")
       .eq("id", discussionId)
       .is("deleted_at", null)
       .single();
-
-    if (discussionError || !discussion) {
-      return NextResponse.json(
-        { error: "Discussion not found." },
-        { status: 404 }
-      );
-    }
+    if (discussionError || !discussion) return NextResponse.json({ error: "Discussion not found." }, { status: 404 });
 
     const { data: replyData } = await supabase
       .from("replies")
-      .select("body, created_at")
+      .select("id, user_id, body, created_at")
       .eq("discussion_id", discussionId)
       .is("deleted_at", null)
       .order("created_at", { ascending: true })
       .limit(25);
-
-    const visibleReplies = (replyData ?? []) as { body: string; created_at: string }[];
-    const replies = visibleReplies
-      .map((reply, index) => `Reply ${index + 1}: ${reply.body}`)
-      .join("\n\n");
+    const visibleReplies = (replyData ?? []) as CitationReply[];
+    const citationContext = await buildDiscussionAiCitationContext({
+      supabase,
+      discussionUserId: discussion.user_id,
+      discussionBody: clampText(discussion.body, MAX_DISCUSSION_BODY_CHARS),
+      replies: visibleReplies,
+      clamp: (text) => clampText(text, MAX_REPLY_CHARS),
+    });
 
     const sourceReplyCount = visibleReplies.length;
-    const sourceContent = [
+    const sourceContentHash = createContentHash([
+      DISCUSSION_AI_CITATION_SCHEMA,
       discussion.title,
       discussion.topic,
       discussion.reality_lens ?? "",
-      discussion.body,
-      ...visibleReplies.map((reply, index) => `reply_${index + 1}:${reply.body}`),
-    ].join("\n\n");
-
-    const sourceContentHash = createContentHash(sourceContent);
+      ...citationContext.hashMaterial,
+    ].join("\n\n"));
 
     const { data: existingOutput } = await supabase
       .from("discussion_ai_outputs")
@@ -238,175 +167,47 @@ export async function POST(request: NextRequest) {
       .eq("discussion_id", discussionId)
       .eq("feature_key", FEATURE_KEY)
       .maybeSingle();
-
-    if (
-      existingOutput &&
-      existingOutput.source_content_hash === sourceContentHash
-    ) {
-      await logAiUsage({
-        supabase,
-        userId: user.id,
-        featureKey: FEATURE_KEY,
-        targetType: "discussion",
-        targetId: discussionId,
-        provider: "openai",
-        modelName: existingOutput.model_name ?? RELATED_IDEAS_MODEL,
-        cached: true,
-        success: true,
-      });
-
-      return NextResponse.json({
-        relatedIdeas: (existingOutput as CachedAiOutput).output_text,
-        cached: true,
-        modelName: existingOutput.model_name ?? RELATED_IDEAS_MODEL,
-        generatedAt: existingOutput.generated_at,
-        sourceReplyCount: existingOutput.source_reply_count,
-      });
+    if (existingOutput && existingOutput.source_content_hash === sourceContentHash) {
+      await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: discussionId, provider: "openai", modelName: existingOutput.model_name ?? RELATED_IDEAS_MODEL, cached: true, success: true });
+      return NextResponse.json({ relatedIdeas: (existingOutput as CachedAiOutput).output_text, cached: true, modelName: existingOutput.model_name ?? RELATED_IDEAS_MODEL, generatedAt: existingOutput.generated_at, sourceReplyCount: existingOutput.source_reply_count });
     }
 
-    const monthlyUsageCount = access.isAdmin
-      ? 0
-      : await getMonthlyRelatedIdeasUsageCount(supabase, user.id);
-
-    const shouldUseExtraCredit =
-      !access.isAdmin && monthlyUsageCount >= access.monthlyThreadAiLimit;
-    const extraCreditsRemaining = shouldUseExtraCredit
-      ? await getExtraAiCreditBalance(user.id)
-      : 0;
-
+    const monthlyUsageCount = access.isAdmin ? 0 : await getMonthlyRelatedIdeasUsageCount(supabase, user.id);
+    const shouldUseExtraCredit = !access.isAdmin && monthlyUsageCount >= access.monthlyThreadAiLimit;
+    const extraCreditsRemaining = shouldUseExtraCredit ? await getExtraAiCreditBalance(user.id) : 0;
     if (shouldUseExtraCredit && extraCreditsRemaining <= 0) {
-      await logAiUsage({
-        supabase,
-        userId: user.id,
-        featureKey: FEATURE_KEY,
-        targetType: "discussion",
-        targetId: discussionId,
-        provider: "openai",
-        modelName: RELATED_IDEAS_MODEL,
-        cached: false,
-        success: false,
-        errorMessage: "Monthly Premium AI related ideas limit reached.",
-      });
-
-      return NextResponse.json(
-        {
-          error: "Monthly Premium AI related ideas limit reached.",
-          code: "related_ideas_limit_reached",
-          monthlyRelatedIdeasLimit: access.monthlyThreadAiLimit,
-          monthlyRelatedIdeasUsage: monthlyUsageCount,
-        },
-        { status: 429 }
-      );
+      await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: discussionId, provider: "openai", modelName: RELATED_IDEAS_MODEL, cached: false, success: false, errorMessage: "Monthly Premium AI related ideas limit reached." });
+      return NextResponse.json({ error: "Monthly Premium AI related ideas limit reached.", code: "related_ideas_limit_reached", monthlyRelatedIdeasLimit: access.monthlyThreadAiLimit, monthlyRelatedIdeasUsage: monthlyUsageCount }, { status: 429 });
     }
 
     let relatedIdeas: string;
     let usageMetadata = {};
-
     try {
-      const generatedRelatedIdeas = await generateOpenAIRelatedIdeas({
-        title: discussion.title,
-        topic: discussion.topic,
-        realityLens: discussion.reality_lens ?? null,
-        body: discussion.body,
-        replies,
-        replyCount: sourceReplyCount,
-      });
-      relatedIdeas = generatedRelatedIdeas.relatedIdeas;
-      usageMetadata = generatedRelatedIdeas.usageMetadata;
+      const generated = await generateOpenAIRelatedIdeas({ title: discussion.title, topic: discussion.topic, realityLens: discussion.reality_lens ?? null, sourceText: citationContext.sourceText, replyCount: sourceReplyCount, sourceAuthors: citationContext.sourceAuthors });
+      relatedIdeas = generated.relatedIdeas;
+      usageMetadata = generated.usageMetadata;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "AI related ideas generation failed.";
-
-      await logAiUsage({
-        supabase,
-        userId: user.id,
-        featureKey: FEATURE_KEY,
-        targetType: "discussion",
-        targetId: discussionId,
-        provider: "openai",
-        modelName: RELATED_IDEAS_MODEL,
-        success: false,
-        errorMessage: message,
-      });
-
+      const message = error instanceof Error ? error.message : "AI related ideas generation failed.";
+      await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: discussionId, provider: "openai", modelName: RELATED_IDEAS_MODEL, success: false, errorMessage: message });
       const aiError = getAiProviderErrorResponse(message);
-
-      return NextResponse.json(
-        { error: aiError.error },
-        { status: aiError.status }
-      );
+      return NextResponse.json({ error: aiError.error }, { status: aiError.status });
     }
 
     const generatedAt = new Date().toISOString();
+    const { error: cacheError } = await upsertDiscussionAiOutput({ discussion_id: discussionId, feature_key: FEATURE_KEY, output_text: relatedIdeas, model_name: RELATED_IDEAS_MODEL, source_reply_count: sourceReplyCount, source_content_hash: sourceContentHash, generated_by: user.id, generated_at: generatedAt, updated_at: generatedAt });
+    if (cacheError) console.error("AI related ideas cache write failed:", cacheError.message);
 
-    const { error: cacheError } = await upsertDiscussionAiOutput({
-      discussion_id: discussionId,
-      feature_key: FEATURE_KEY,
-      output_text: relatedIdeas,
-      model_name: RELATED_IDEAS_MODEL,
-      source_reply_count: sourceReplyCount,
-      source_content_hash: sourceContentHash,
-      generated_by: user.id,
-      generated_at: generatedAt,
-      updated_at: generatedAt,
-    });
-
-    if (cacheError) {
-      console.error("AI related ideas cache write failed:", cacheError.message);
-    }
-
-    await logAiUsage({
-      supabase,
-      userId: user.id,
-      featureKey: FEATURE_KEY,
-      targetType: "discussion",
-      targetId: discussionId,
-      provider: "openai",
-      modelName: RELATED_IDEAS_MODEL,
-      cached: false,
-      success: true,
-      ...usageMetadata,
-    });
-
+    await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: discussionId, provider: "openai", modelName: RELATED_IDEAS_MODEL, cached: false, success: true, ...usageMetadata });
     if (shouldUseExtraCredit) {
-      const creditConsumed = await consumeExtraAiCredit({
-        userId: user.id,
-        featureKey: FEATURE_KEY,
-      });
-
-      if (!creditConsumed) {
-        console.error("Extra AI credit consume failed for related ideas.");
-      }
+      const creditConsumed = await consumeExtraAiCredit({ userId: user.id, featureKey: FEATURE_KEY });
+      if (!creditConsumed) console.error("Extra AI credit consume failed for related ideas.");
     }
 
-    await logAuditEvent({
-      actor_id: user.id,
-      action: "ai.related_ideas.generated",
-      target_type: "discussion",
-      target_id: discussionId,
-      metadata: {
-        cached: false,
-        source_reply_count: sourceReplyCount,
-      },
-    });
-
-    const nextUsage = access.isAdmin
-      ? 0
-      : monthlyUsageCount + 1;
-
-    return NextResponse.json({
-      relatedIdeas,
-      cached: false,
-      modelName: RELATED_IDEAS_MODEL,
-      generatedAt,
-      sourceReplyCount,
-      monthlyRelatedIdeasUsage: nextUsage,
-    });
+    await logAuditEvent({ actor_id: user.id, action: "ai.related_ideas.generated", target_type: "discussion", target_id: discussionId, metadata: { cached: false, source_reply_count: sourceReplyCount, citation_schema: DISCUSSION_AI_CITATION_SCHEMA } });
+    const nextUsage = access.isAdmin ? 0 : monthlyUsageCount + 1;
+    return NextResponse.json({ relatedIdeas, cached: false, modelName: RELATED_IDEAS_MODEL, generatedAt, sourceReplyCount, monthlyRelatedIdeasUsage: nextUsage });
   } catch (error) {
     console.error("AI related ideas route failed:", error);
-    return NextResponse.json(
-      { error: "Unable to generate related ideas." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Unable to generate related ideas." }, { status: 500 });
   }
 }

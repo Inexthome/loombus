@@ -1,0 +1,56 @@
+.discussion-ai-source-citation {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0.12rem;
+  padding: 0.08rem 0.18rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--loombus-gold) 72%, transparent);
+  background: transparent;
+  color: var(--discussion-v2-accent-text, var(--loombus-gold));
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  vertical-align: baseline;
+}
+
+.discussion-ai-source-citation:hover,
+.discussion-ai-source-citation:focus-visible {
+  color: var(--loombus-text);
+  border-bottom-color: var(--loombus-gold);
+}
+
+.discussion-ai-source-citation:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--loombus-gold) 62%, transparent);
+  outline-offset: 2px;
+}
+
+.discussion-ai-source-target {
+  animation: discussion-ai-source-highlight 1.8s ease-out;
+}
+
+@keyframes discussion-ai-source-highlight {
+  0% {
+    box-shadow: inset 3px 0 0 var(--loombus-gold);
+    background: color-mix(in srgb, var(--loombus-gold) 10%, transparent);
+  }
+  100% {
+    box-shadow: inset 3px 0 0 transparent;
+    background: transparent;
+  }
+}
+
+@media (max-width: 719px) {
+  .discussion-ai-source-citation {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-ai-source-target {
+    animation: none;
+  }
+}
