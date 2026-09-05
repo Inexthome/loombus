@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Capacitor
 import Foundation
 import Security
@@ -22,6 +23,64 @@ public class LoombusPasswordManagerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        if #available(iOS 26.2, *) {
+            savePasswordWithCredentialDataManager(
+                email: email,
+                password: password,
+                call: call
+            )
+            return
+        }
+
+        savePasswordWithSharedWebCredentials(
+            email: email,
+            password: password,
+            call: call
+        )
+    }
+
+    @available(iOS 26.2, *)
+    private func savePasswordWithCredentialDataManager(
+        email: String,
+        password: String,
+        call: CAPPluginCall
+    ) {
+        DispatchQueue.main.async {
+            guard let anchor = self.bridge?.viewController?.view.window else {
+                call.reject("Apple Passwords could not present credential-saving UI.")
+                return
+            }
+
+            let credential = ASPasswordCredential(user: email, password: password)
+            let scope = ASAutoFillURLScope(
+                scheme: .https,
+                host: "loombus.com",
+                path: "/"
+            )
+
+            Task { @MainActor in
+                do {
+                    try await ASCredentialDataManager().save(
+                        password: credential,
+                        for: scope,
+                        title: "Loombus",
+                        anchor: anchor
+                    )
+                    call.resolve(["saved": true])
+                } catch {
+                    call.reject(
+                        "Apple Passwords did not accept this login: \(error.localizedDescription)"
+                    )
+                }
+            }
+        }
+    }
+
+    private func savePasswordWithSharedWebCredentials(
+        email: String,
+        password: String,
+        call: CAPPluginCall
+    ) {
         SecAddSharedWebCredential(
             "loombus.com" as CFString,
             email as CFString,
