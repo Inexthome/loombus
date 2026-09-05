@@ -36,6 +36,7 @@ import { DesktopRailAppearanceFooter } from "@/components/desktop-rail-appearanc
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { MobileTopAppearanceCycle } from "@/components/mobile-top-appearance-cycle";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
+import { NativeMobileInteractionRuntime } from "@/components/native-mobile-interaction-runtime";
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
 import { PlatformNativeAlertBridge } from "@/components/platform-native-alert-bridge";
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <SessionLifecycleGuard />
         <WelcomeEmailTrigger />
         <NativeBiometricSessionGate />
+        <NativeMobileInteractionRuntime />
         <NativePushRegistration />
       </body>
     </html>
