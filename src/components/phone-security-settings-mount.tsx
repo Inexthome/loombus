@@ -4,26 +4,31 @@ import { useEffect, useState } from "react";
 import { PhoneSecuritySettingsBridge } from "@/components/phone-security-settings-bridge";
 
 export function PhoneSecuritySettingsMount() {
-  const [privacySectionReady, setPrivacySectionReady] = useState(false);
+  const [settingsTargetsReady, setSettingsTargetsReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
     let timer: number | null = null;
 
-    function locatePrivacySection() {
-      if (document.getElementById("privacy")) {
-        if (!cancelled) setPrivacySectionReady(true);
+    function locateSettingsTargets() {
+      const profileSlot = document.querySelector<HTMLElement>(
+        '[data-settings-workspace-slot="profile"]'
+      );
+      const privacySection = document.getElementById("privacy");
+
+      if (profileSlot && privacySection) {
+        if (!cancelled) setSettingsTargetsReady(true);
         return;
       }
 
       attempts += 1;
-      if (attempts < 60) {
-        timer = window.setTimeout(locatePrivacySection, 120);
+      if (attempts < 80) {
+        timer = window.setTimeout(locateSettingsTargets, 100);
       }
     }
 
-    locatePrivacySection();
+    locateSettingsTargets();
 
     return () => {
       cancelled = true;
@@ -31,5 +36,5 @@ export function PhoneSecuritySettingsMount() {
     };
   }, []);
 
-  return privacySectionReady ? <PhoneSecuritySettingsBridge /> : null;
+  return settingsTargetsReady ? <PhoneSecuritySettingsBridge /> : null;
 }
