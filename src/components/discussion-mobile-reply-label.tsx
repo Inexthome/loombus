@@ -1,61 +1,85 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const MOBILE_QUERY = "(max-width: 63.99rem)";
-const MOBILE_REPLY_LABEL = "Reply";
-const DESKTOP_JOIN_LABEL = "Join the discussion";
+type MobileDiscussionAction = "reply" | "save" | "share";
 
-function normalize(value: string | null | undefined) {
-  return value?.replace(/\s+/g, " ").trim() ?? "";
-}
+function triggerOriginalAction(action: MobileDiscussionAction) {
+  const bar = document.querySelector<HTMLElement>(".discussion-v2-mobile-bar");
+  if (!bar) return;
 
-function updateOpeningReplyLabel(isMobile: boolean) {
-  const button = document.querySelector<HTMLButtonElement>(
-    ".discussion-v2-opening-actions > button.discussion-v2-button-primary"
-  );
-  if (!button) return;
+  const buttons = Array.from(bar.querySelectorAll<HTMLButtonElement>("button"));
+  let target: HTMLButtonElement | undefined;
 
-  const textNode = Array.from(button.childNodes).find(
-    (node) =>
-      node.nodeType === Node.TEXT_NODE &&
-      [DESKTOP_JOIN_LABEL, MOBILE_REPLY_LABEL].includes(normalize(node.textContent))
-  );
-  if (!textNode) return;
-
-  const nextLabel = isMobile ? MOBILE_REPLY_LABEL : DESKTOP_JOIN_LABEL;
-  if (normalize(textNode.textContent) !== nextLabel) {
-    textNode.textContent = nextLabel;
+  if (action === "reply") {
+    target = buttons[0];
+  } else if (action === "save") {
+    target = buttons.find((button) =>
+      (button.getAttribute("aria-label") ?? "").toLowerCase().includes("saved discussion")
+    );
+  } else {
+    target = buttons.find(
+      (button) => (button.getAttribute("aria-label") ?? "").toLowerCase() === "share discussion"
+    );
   }
+
+  target?.click();
 }
 
 export function DiscussionMobileReplyLabel() {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const media = window.matchMedia(MOBILE_QUERY);
-    let scheduled = false;
-
-    const apply = () => {
-      scheduled = false;
-      updateOpeningReplyLabel(media.matches);
+    const handlePointerDown = (event: PointerEvent) => {
+      const root = rootRef.current;
+      if (root && event.target instanceof Node && !root.contains(event.target)) {
+        setOpen(false);
+      }
     };
 
-    const schedule = () => {
-      if (scheduled) return;
-      scheduled = true;
-      window.requestAnimationFrame(apply);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
     };
 
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
-    media.addEventListener("change", schedule);
-    schedule();
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      observer.disconnect();
-      media.removeEventListener("change", schedule);
-      updateOpeningReplyLabel(false);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
-  return null;
+  const run = (action: MobileDiscussionAction) => {
+    setOpen(false);
+    triggerOriginalAction(action);
+  };
+
+  return (
+    <div ref={rootRef} className="discussion-mobile-action-menu" data-open={open ? "true" : "false"}>
+      <div className="discussion-mobile-action-menu-items" role="menu" aria-hidden={!open}>
+        <button type="button" role="menuitem" tabIndex={open ? 0 : -1} onClick={() => run("reply")}>
+          Reply
+        </button>
+        <button type="button" role="menuitem" tabIndex={open ? 0 : -1} onClick={() => run("save")}>
+          Save
+        </button>
+        <button type="button" role="menuitem" tabIndex={open ? 0 : -1} onClick={() => run("share")}>
+          Share
+        </button>
+      </div>
+
+      <button
+        type="button"
+        className="discussion-mobile-action-menu-toggle"
+        aria-label={open ? "Close discussion actions" : "Open discussion actions"}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span aria-hidden="true">•••</span>
+      </button>
+    </div>
+  );
 }
