@@ -1,6 +1,0 @@
-@supports (content-visibility: auto) {
-  main.min-h-screen article {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 520px;
-  }
-}
