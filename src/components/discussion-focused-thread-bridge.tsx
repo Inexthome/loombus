@@ -31,7 +31,6 @@ export function DiscussionFocusedThreadBridge() {
     let children = new Map<string, string[]>();
     const expanded = new Set<string>();
     const collapsed = new Set<string>();
-    const requestedChildren = new Set<string>();
     let activeReplyId: string | null = null;
     let applying = false;
     let reloadTimer: number | null = null;
@@ -84,8 +83,7 @@ export function DiscussionFocusedThreadBridge() {
     }
 
     function requestChildren(replyId: string) {
-      if (requestedChildren.has(replyId) || directChildCount(replyId) <= 0) return;
-      requestedChildren.add(replyId);
+      if (directChildCount(replyId) <= 0) return;
       requestDiscussionThreadWindow({ discussionId, parentReplyId: replyId });
     }
 
