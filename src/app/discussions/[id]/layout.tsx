@@ -1,4 +1,5 @@
 import { DiscussionConversationIntelligenceBridge } from "@/components/discussion-conversation-intelligence-bridge";
+import { DiscussionEditorialCopyCleanup } from "@/components/discussion-editorial-copy-cleanup";
 import { DiscussionFollowBridge } from "@/components/discussion-follow-bridge";
 import { DiscussionFocusedThreadBridge } from "@/components/discussion-focused-thread-bridge";
 import { DiscussionPhaseFourNavigation } from "@/components/discussion-phase-four-navigation";
@@ -26,6 +27,7 @@ export default function DiscussionDetailLayout({
       <DiscussionPhaseFourNavigation />
       <DiscussionConversationIntelligenceBridge />
       <DiscussionFollowBridge />
+      <DiscussionEditorialCopyCleanup />
       {children}
     </>
   );
