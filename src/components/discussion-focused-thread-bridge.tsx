@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
+import { requestDiscussionThreadWindow } from "@/lib/discussion-reply-window";
 import { supabase } from "@/lib/supabase/client";
 
 type ReplyThreadRow = {
@@ -11,6 +12,7 @@ type ReplyThreadRow = {
 
 const OPEN_BUTTON_ATTR = "data-loombus-open-thread";
 const GENERATED_ATTR = "data-loombus-thread-generated";
+const COLLAPSED_STORAGE_PREFIX = "loombus:discussion-collapsed-response-branches:";
 
 function replyIdFromWrapper(element: Element) {
   const id = element.id;
@@ -28,9 +30,34 @@ export function DiscussionFocusedThreadBridge() {
     let rows = new Map<string, ReplyThreadRow>();
     let children = new Map<string, string[]>();
     const expanded = new Set<string>();
+    const collapsed = new Set<string>();
+    const requestedChildren = new Set<string>();
     let activeReplyId: string | null = null;
     let applying = false;
     let reloadTimer: number | null = null;
+    const storageKey = `${COLLAPSED_STORAGE_PREFIX}${discussionId}`;
+
+    function loadCollapsedPreference() {
+      try {
+        const stored = window.localStorage.getItem(storageKey);
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as unknown;
+        if (!Array.isArray(parsed)) return;
+        for (const replyId of parsed) {
+          if (typeof replyId === "string" && replyId) collapsed.add(replyId);
+        }
+      } catch {
+        // Preference storage is best-effort; default-open behavior remains usable.
+      }
+    }
+
+    function persistCollapsedPreference() {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify([...collapsed]));
+      } catch {
+        // Do not block thread interaction if local storage is unavailable.
+      }
+    }
 
     function rebuildChildren(nextRows: ReplyThreadRow[]) {
       rows = new Map(nextRows.map((row) => [row.id, row]));
@@ -56,10 +83,21 @@ export function DiscussionFocusedThreadBridge() {
       return parentOf(replyId) === null;
     }
 
-    function removeExpandedDescendants(replyId: string) {
-      for (const childId of children.get(replyId) ?? []) {
-        expanded.delete(childId);
-        removeExpandedDescendants(childId);
+    function requestChildren(replyId: string) {
+      if (requestedChildren.has(replyId) || directChildCount(replyId) <= 0) return;
+      requestedChildren.add(replyId);
+      requestDiscussionThreadWindow({ discussionId, parentReplyId: replyId });
+    }
+
+    function syncDefaultExpandedState() {
+      for (const [replyId, childIds] of children.entries()) {
+        if (childIds.length <= 0) continue;
+        if (collapsed.has(replyId)) {
+          expanded.delete(replyId);
+          continue;
+        }
+        expanded.add(replyId);
+        requestChildren(replyId);
       }
     }
 
@@ -135,6 +173,7 @@ export function DiscussionFocusedThreadBridge() {
       depth: number,
     ): HTMLElement {
       if (!expanded.has(parentId)) return parentWrapper;
+      requestChildren(parentId);
 
       let anchor = parentWrapper;
       for (const childWrapper of visibleChildWrappers(replyList, parentId)) {
@@ -202,13 +241,16 @@ export function DiscussionFocusedThreadBridge() {
 
       if (expanded.has(replyId)) {
         expanded.delete(replyId);
-        removeExpandedDescendants(replyId);
+        collapsed.add(replyId);
         if (activeReplyId === replyId) activeReplyId = parentOf(replyId);
       } else {
+        collapsed.delete(replyId);
         expanded.add(replyId);
         activeReplyId = replyId;
+        requestChildren(replyId);
       }
 
+      persistCollapsedPreference();
       applyThreadView();
     }
 
@@ -230,10 +272,16 @@ export function DiscussionFocusedThreadBridge() {
       if (cancelled || !data) return;
       rebuildChildren(data as ReplyThreadRow[]);
 
+      for (const replyId of [...collapsed]) {
+        if (!rows.has(replyId) || directChildCount(replyId) <= 0) collapsed.delete(replyId);
+      }
       for (const replyId of [...expanded]) {
-        if (!rows.has(replyId)) expanded.delete(replyId);
+        if (!rows.has(replyId) || directChildCount(replyId) <= 0) expanded.delete(replyId);
       }
       if (activeReplyId && !rows.has(activeReplyId)) activeReplyId = null;
+
+      syncDefaultExpandedState();
+      persistCollapsedPreference();
       window.requestAnimationFrame(applyThreadView);
     }
 
@@ -268,6 +316,7 @@ export function DiscussionFocusedThreadBridge() {
       if (foundUnknownReply) scheduleHierarchyReload();
     });
 
+    loadCollapsedPreference();
     document.addEventListener("click", handleClick);
     observer.observe(document.body, { childList: true, subtree: true });
 
