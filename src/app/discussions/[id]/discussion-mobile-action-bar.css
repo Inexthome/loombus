@@ -16,7 +16,22 @@
   }
 
   .discussion-v2-opening-actions {
-    overflow: visible !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+
+  .discussion-v2-opening-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .discussion-v2-opening-actions > :not(.discussion-v2-opening-action-spacer) {
+    flex: 0 0 auto;
   }
 
   .discussion-v2-opening-actions > .discussion-v2-button-primary:first-child::after {
