@@ -1,64 +1,106 @@
+.discussion-mobile-action-menu {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   .discussion-v2-mobile-bar {
-    left: max(0.75rem, env(safe-area-inset-left)) !important;
-    right: max(0.75rem, env(safe-area-inset-right)) !important;
-    bottom: max(0.65rem, env(safe-area-inset-bottom)) !important;
-    transform: none !important;
-    width: auto !important;
-    max-width: 28rem !important;
-    margin-inline: auto !important;
-    grid-template-columns: minmax(0, 1fr) auto auto auto !important;
-    gap: 0 !important;
-    border: 0 !important;
-    border-top: 1px solid var(--loombus-border) !important;
-    border-radius: 0 !important;
-    background: var(--loombus-surface) !important;
-    padding: 0.3rem 0 !important;
-    box-shadow: none !important;
+    display: none !important;
   }
 
-  .discussion-v2-mobile-bar button {
-    min-width: 2.75rem !important;
-    min-height: 2.75rem !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: var(--loombus-text-muted) !important;
-    box-shadow: none !important;
+  .discussion-mobile-action-menu {
+    position: fixed;
+    z-index: 70;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.5rem);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.55rem;
   }
 
-  .discussion-v2-mobile-bar button:first-child {
-    justify-content: flex-start !important;
-    min-width: 0 !important;
-    padding-inline: 0.2rem 0.8rem !important;
-    color: var(--loombus-gold) !important;
-    font-weight: 850 !important;
+  .discussion-mobile-action-menu-items {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 9.5rem;
+    padding: 0.45rem;
+    border: 1px solid var(--loombus-border);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--loombus-surface) 96%, transparent);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.24);
+    transform: translateY(0.35rem) scale(0.98);
+    transform-origin: bottom right;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
   }
 
-  .discussion-v2-mobile-bar button:first-child::after {
-    content: "";
-    align-self: flex-end;
-    height: 1px;
-    flex: 1 1 auto;
-    margin: 0 0 0.34rem 0.55rem;
-    background: color-mix(in srgb, var(--loombus-gold) 42%, transparent);
+  .discussion-mobile-action-menu[data-open="true"] .discussion-mobile-action-menu-items {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
-  .discussion-v2-mobile-bar button:hover:not(:disabled),
-  .discussion-v2-mobile-bar button:focus-visible {
-    background: transparent !important;
-    color: var(--loombus-text) !important;
+  .discussion-mobile-action-menu-items button {
+    width: 100%;
+    min-height: 2.8rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: var(--loombus-text);
+    padding: 0.7rem 0.85rem;
+    text-align: left;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
   }
 
-  .discussion-v2-mobile-bar button:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent) !important;
-    outline-offset: 2px !important;
+  .discussion-mobile-action-menu-items button:hover,
+  .discussion-mobile-action-menu-items button:focus-visible {
+    background: var(--loombus-surface-muted);
+  }
+
+  .discussion-mobile-action-menu-toggle {
+    width: 3.25rem;
+    height: 3.25rem;
+    border: 1px solid color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
+    border-radius: 999px;
+    background: var(--loombus-surface);
+    color: var(--loombus-gold);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .discussion-mobile-action-menu-toggle span {
+    display: block;
+    margin-top: -0.3rem;
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  .discussion-mobile-action-menu-toggle:focus-visible,
+  .discussion-mobile-action-menu-items button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
+    outline-offset: 2px;
   }
 }
 
 @media (max-width: 639px) {
-  .discussion-v2-mobile-bar {
-    left: max(0.5rem, env(safe-area-inset-left)) !important;
-    right: max(0.5rem, env(safe-area-inset-right)) !important;
+  .discussion-mobile-action-menu {
+    right: max(0.75rem, env(safe-area-inset-right));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discussion-mobile-action-menu-items {
+    transition: none !important;
   }
 }
