@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import {
@@ -48,14 +48,6 @@ function normalizeUsPhone(value: string) {
   return digits.length === 10 ? `+1${digits}` : null;
 }
 
-function formatUsPhone(value: string) {
-  const digits = getUsNationalDigits(value);
-  if (!digits) return "";
-  if (digits.length < 4) return `(${digits}`;
-  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
 function identifierLooksLikePhone(value: string) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.includes("@")) return false;
@@ -65,9 +57,6 @@ function identifierLooksLikePhone(value: string) {
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
-  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
@@ -75,10 +64,7 @@ export default function LoginPage() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
 
-  const phoneMode = useMemo(
-    () => identifierLooksLikePhone(identifier),
-    [identifier]
-  );
+  const phoneMode = identifierLooksLikePhone(identifier);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setNativeApp(isNativeApp()), 0);
@@ -92,6 +78,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function loadLoginState() {
       try {
         await clearLegacyNativeBiometricLoginCredentials();
@@ -104,33 +91,50 @@ export default function LoginPage() {
         }
         return;
       }
+
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       if (data.session) {
         window.location.replace(getNextPath());
       }
     }
+
     void loadLoginState();
     return () => {
       mounted = false;
     };
   }, [getNextPath]);
 
-  async function handleEmailLogin() {
-    const cleanEmail = identifier.trim().toLowerCase();
-    if (!cleanEmail.includes("@")) {
+  async function handlePasswordLogin() {
+    const cleanIdentifier = identifier.trim();
+    const normalizedPhone = normalizeUsPhone(cleanIdentifier);
+    const cleanEmail = cleanIdentifier.toLowerCase();
+
+    if (!phoneMode && !cleanEmail.includes("@")) {
       setMessage("Enter a valid email address or 10-digit U.S. mobile number.");
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
+    if (phoneMode && !normalizedPhone) {
+      setMessage("Enter a valid 10-digit U.S. mobile number.");
+      return;
+    }
+
+    const { error } = phoneMode
+      ? await supabase.auth.signInWithPassword({
+          phone: normalizedPhone as string,
+          password,
+        })
+      : await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
     if (error) {
       setMessage(`Error: ${getAuthErrorMessage(error, "login")}`);
-      setShowResendVerification(isEmailNotConfirmedError(error.message));
+      setShowResendVerification(
+        !phoneMode && isEmailNotConfirmedError(error.message)
+      );
       return;
     }
 
@@ -143,7 +147,8 @@ export default function LoginPage() {
     }
 
     if (isNativeApp()) {
-      const saved = await saveLoginToSystemPasswordManager(cleanEmail, password);
+      const credentialName = phoneMode ? normalizedPhone as string : cleanEmail;
+      const saved = await saveLoginToSystemPasswordManager(credentialName, password);
       if (!saved.ok && !saved.cancelled) {
         console.warn(
           "Loombus could not offer this login to the system password manager.",
@@ -155,29 +160,6 @@ export default function LoginPage() {
     window.location.replace(getNextPath());
   }
 
-  async function sendPhoneCode() {
-    const normalized = normalizeUsPhone(identifier);
-    if (!normalized) {
-      setMessage("Enter a valid 10-digit U.S. mobile number.");
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: normalized,
-      options: { shouldCreateUser: true },
-    });
-
-    if (error) {
-      setMessage(error.message || "Unable to send a sign-in code.");
-      return;
-    }
-
-    setVerifiedPhone(normalized);
-    setPhoneCodeSent(true);
-    setOtp("");
-    setMessage("A 6-digit sign-in code was sent by SMS.");
-  }
-
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     if (loading) return;
@@ -187,37 +169,7 @@ export default function LoginPage() {
     setShowResendVerification(false);
 
     try {
-      if (phoneMode) {
-        await sendPhoneCode();
-      } else {
-        await handleEmailLogin();
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function verifyPhoneCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (loading) return;
-    if (!/^\d{6}$/.test(otp.trim())) {
-      setMessage("Enter the 6-digit code from the SMS.");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: verifiedPhone,
-        token: otp.trim(),
-        type: "sms",
-      });
-      if (error) {
-        setMessage(error.message || "The sign-in code could not be verified.");
-        return;
-      }
-      window.location.replace(getNextPath());
+      await handlePasswordLogin();
     } finally {
       setLoading(false);
     }
@@ -225,7 +177,7 @@ export default function LoginPage() {
 
   async function handleResendVerification() {
     const cleanEmail = identifier.trim().toLowerCase();
-    if (!cleanEmail || resendingVerification) return;
+    if (!cleanEmail || !cleanEmail.includes("@") || resendingVerification) return;
 
     setResendingVerification(true);
     setMessage("");
@@ -303,13 +255,6 @@ export default function LoginPage() {
     }
   }
 
-  function resetPhoneStep() {
-    setPhoneCodeSent(false);
-    setVerifiedPhone("");
-    setOtp("");
-    setMessage("");
-  }
-
   return (
     <main
       data-loombus-auth-shell
@@ -360,148 +305,95 @@ export default function LoginPage() {
           <section className="py-8 lg:pl-10 sm:py-10">
             <div className="flex items-end justify-between gap-4 border-b border-[color:var(--loombus-border)] pb-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
-                  {phoneCodeSent ? "SMS verification" : "Account access"}
-                </p>
-                <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                  {phoneCodeSent ? "Enter your sign-in code" : "Sign in to your account"}
-                </h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">Account access</p>
+                <h2 className="mt-2 text-xl font-semibold tracking-tight">Sign in to your account</h2>
               </div>
-              {!phoneCodeSent ? (
-                <Link
-                  href="/forgot-password"
-                  className="min-h-11 shrink-0 content-center text-sm text-[color:var(--loombus-text-muted)] underline underline-offset-4 transition hover:text-[color:var(--loombus-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                >
-                  Forgot password?
-                </Link>
-              ) : null}
+              <Link
+                href="/forgot-password"
+                className="min-h-11 shrink-0 content-center text-sm text-[color:var(--loombus-text-muted)] underline underline-offset-4 transition hover:text-[color:var(--loombus-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                Forgot password?
+              </Link>
             </div>
 
-            {!phoneCodeSent ? (
-              <form onSubmit={handleLogin} className="mt-6 space-y-6">
-                <div>
-                  <label htmlFor="identifier" className="block text-sm font-medium text-[color:var(--loombus-text)]">
-                    Email or phone number
-                  </label>
-                  <input
-                    id="identifier"
-                    name="identifier"
-                    type="text"
-                    value={identifier}
-                    autoComplete="username"
-                    inputMode="text"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    required
-                    placeholder="Email or U.S. mobile number"
-                    onChange={(event) => {
-                      setIdentifier(event.target.value);
-                      setShowResendVerification(false);
-                      setMessage("");
-                    }}
-                    className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                  />
-                </div>
+            <form onSubmit={handleLogin} className="mt-6 space-y-6">
+              <div>
+                <label htmlFor="identifier" className="block text-sm font-medium text-[color:var(--loombus-text)]">
+                  Email or phone number
+                </label>
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  value={identifier}
+                  autoComplete="username"
+                  inputMode="text"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  placeholder="Email or U.S. mobile number"
+                  onChange={(event) => {
+                    setIdentifier(event.target.value);
+                    setShowResendVerification(false);
+                    setMessage("");
+                  }}
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                />
+              </div>
 
-                {!phoneMode ? (
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-[color:var(--loombus-text)]">Password</label>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      value={password}
-                      autoComplete="current-password"
-                      required
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                    />
-                  </div>
-                ) : (
-                  <p className="border-y border-[color:var(--loombus-border)] py-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
-                    Phone sign-in uses a 6-digit SMS code. By requesting a code, you consent to receive a transactional authentication SMS from Loombus. Message and data rates may apply. No marketing messages are sent. See the{" "}
-                    <Link href="/terms#sms-authentication" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
-                    and{" "}
-                    <Link href="/privacy#mobile-sms-auth" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
-                  </p>
-                )}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-[color:var(--loombus-text)]">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={password}
+                  autoComplete="current-password"
+                  required
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                />
+              </div>
 
-                {nativeApp === true && !phoneMode ? (
-                  <div className="border-y border-[color:var(--loombus-border)] py-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
-                    After a successful email login, your device password manager can offer to save or update this login. Face ID or device biometrics remain an optional app lock.
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                >
-                  {loading
-                    ? phoneMode ? "Sending code..." : "Logging in..."
-                    : phoneMode ? "Send sign-in code" : "Log In"}
-                </button>
-
-                {message ? (
-                  <p role="status" aria-live="polite" className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    {message}
-                  </p>
-                ) : null}
-
-                {showResendVerification ? (
-                  <div className="border-t border-[color:var(--loombus-border)] pt-5">
-                    <button
-                      type="button"
-                      onClick={() => void handleResendVerification()}
-                      disabled={resendingVerification}
-                      className="min-h-11 border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                    >
-                      {resendingVerification ? "Sending verification email..." : "Resend verification email"}
-                    </button>
-                  </div>
-                ) : null}
-              </form>
-            ) : (
-              <form onSubmit={verifyPhoneCode} className="mt-6 space-y-6">
-                <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                  Code sent to +1 {formatUsPhone(verifiedPhone)}.
+              {phoneMode ? (
+                <p className="border-y border-[color:var(--loombus-border)] py-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+                  Sign in with the password on the Loombus account linked to this verified mobile number. SMS is not sent for routine phone-number sign-in.
                 </p>
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-[color:var(--loombus-text)]">6-digit SMS code</label>
-                  <input
-                    id="otp"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-                    required
-                    className="mt-2 min-h-12 w-full border-0 border-b border-[color:var(--loombus-border)] bg-transparent px-0 py-3 text-center text-xl tracking-[0.3em] text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                  />
+              ) : null}
+
+              {nativeApp === true ? (
+                <div className="border-y border-[color:var(--loombus-border)] py-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+                  After a successful password login, your device password manager can offer to save or update this login. Face ID or device biometrics remain an optional app lock.
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
-                >
-                  {loading ? "Verifying..." : "Verify and sign in"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetPhoneStep}
-                  disabled={loading}
-                  className="min-h-11 border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:opacity-50"
-                >
-                  Use a different email or phone number
-                </button>
-                {message ? (
-                  <p role="status" aria-live="polite" className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                    {message}
-                  </p>
-                ) : null}
-              </form>
-            )}
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="min-h-12 w-full border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-gold)] px-6 py-3 text-sm font-semibold text-[#17140B] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+              >
+                {loading ? "Logging in..." : "Log In"}
+              </button>
+
+              {message ? (
+                <p role="status" aria-live="polite" className="border-t border-[color:var(--loombus-border)] pt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  {message}
+                </p>
+              ) : null}
+
+              {showResendVerification ? (
+                <div className="border-t border-[color:var(--loombus-border)] pt-5">
+                  <button
+                    type="button"
+                    onClick={() => void handleResendVerification()}
+                    disabled={resendingVerification}
+                    className="min-h-11 border-b border-[color:var(--loombus-gold)] px-0 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:text-[color:var(--loombus-gold)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--loombus-gold)]"
+                  >
+                    {resendingVerification ? "Sending verification email..." : "Resend verification email"}
+                  </button>
+                </div>
+              ) : null}
+            </form>
 
             <div className="mt-8 border-t border-[color:var(--loombus-border)] pt-6">
               <p className="text-sm text-[color:var(--loombus-text-muted)]">
