@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BookOpen, Brain, CheckCircle2, ChevronDown, FlaskConical, MessageCircle } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { libraryReaderHref } from "@/lib/library/passage-context";
 import { supabase } from "@/lib/supabase/client";
@@ -25,8 +25,17 @@ type PassageContext = PassageLink & {
   evidenceSaved: boolean;
 };
 
+type MenuPosition = {
+  left: number;
+  top: number;
+  width: number;
+  maxHeight: number;
+};
+
 const INLINE_HOST_ATTR = "data-discussion-library-feedback-inline";
 const MORE_ACTION_SELECTOR = 'button[aria-label="Open Discussion actions"]';
+const MENU_WIDTH_PX = 352;
+const MENU_GUTTER_PX = 12;
 
 export function DiscussionLibraryFeedbackLauncher() {
   const params = useParams<{ id: string }>();
@@ -34,7 +43,25 @@ export function DiscussionLibraryFeedbackLauncher() {
   const [passage, setPassage] = useState<PassageContext | null>(null);
   const [inlineHost, setInlineHost] = useState<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger || typeof window === "undefined") return;
+
+    const rect = trigger.getBoundingClientRect();
+    const width = Math.min(MENU_WIDTH_PX, Math.max(0, window.innerWidth - MENU_GUTTER_PX * 2));
+    const left = Math.min(
+      Math.max(MENU_GUTTER_PX, rect.right - width),
+      Math.max(MENU_GUTTER_PX, window.innerWidth - width - MENU_GUTTER_PX)
+    );
+    const top = Math.min(rect.bottom + 7, Math.max(MENU_GUTTER_PX, window.innerHeight - MENU_GUTTER_PX));
+    const maxHeight = Math.max(160, window.innerHeight - top - MENU_GUTTER_PX);
+
+    setMenuPosition({ left, top, width, maxHeight });
+  }, []);
 
   useEffect(() => {
     if (!discussionId) return;
@@ -95,7 +122,8 @@ export function DiscussionLibraryFeedbackLauncher() {
     if (!menuOpen) return;
 
     const closeOnPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
         setMenuOpen(false);
       }
     };
@@ -110,6 +138,19 @@ export function DiscussionLibraryFeedbackLauncher() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const reposition = () => updateMenuPosition();
+    reposition();
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [menuOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (!discussionId) return;
@@ -169,25 +210,46 @@ export function DiscussionLibraryFeedbackLauncher() {
 
   if (!discussionId || !inlineHost) return null;
 
-  return createPortal(
-    <div ref={menuRef} className="relative">
+  const trigger = createPortal(
+    <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         className="discussion-v2-button inline-flex items-center gap-1.5"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((open) => !open)}
+        onClick={() => {
+          if (menuOpen) {
+            setMenuOpen(false);
+            return;
+          }
+          updateMenuPosition();
+          setMenuOpen(true);
+        }}
       >
         <Brain aria-hidden="true" size={15} />
         Knowledge
         <ChevronDown aria-hidden="true" size={14} />
       </button>
+    </div>,
+    inlineHost
+  );
 
-      {menuOpen ? (
+  const menu = menuOpen && menuPosition
+    ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Library and knowledge actions"
-          className="absolute right-0 top-[calc(100%+0.45rem)] z-50 w-[min(22rem,calc(100vw-2rem))] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 text-[var(--loombus-text)] shadow-xl"
+          data-discussion-library-feedback-menu="true"
+          className="fixed z-[100] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 text-[var(--loombus-text)] shadow-xl"
+          style={{
+            left: menuPosition.left,
+            top: menuPosition.top,
+            width: menuPosition.width,
+            maxHeight: menuPosition.maxHeight,
+            overflowY: "auto",
+          }}
         >
           <div className="grid">
             <Link
@@ -262,9 +324,15 @@ export function DiscussionLibraryFeedbackLauncher() {
               </div>
             </section>
           ) : null}
-        </div>
-      ) : null}
-    </div>,
-    inlineHost
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <>
+      {trigger}
+      {menu}
+    </>
   );
 }
