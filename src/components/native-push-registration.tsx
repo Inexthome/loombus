@@ -29,6 +29,11 @@ export function NativePushRegistration() {
       await registerNativePushNotifications();
     }
 
+    function handleResume() {
+      if (document.visibilityState !== "visible") return;
+      void registerIfSignedIn();
+    }
+
     void registerIfSignedIn();
 
     const {
@@ -42,9 +47,14 @@ export function NativePushRegistration() {
       }
     });
 
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
     };
   }, []);
 
