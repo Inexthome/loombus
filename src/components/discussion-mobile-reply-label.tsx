@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type MobileDiscussionAction = "reply" | "save" | "share";
+type MobileDiscussionAction = "reply" | "save" | "share" | "more";
 
 function triggerOriginalAction(action: MobileDiscussionAction) {
   const bar = document.querySelector<HTMLElement>(".discussion-v2-mobile-bar");
@@ -18,9 +18,15 @@ function triggerOriginalAction(action: MobileDiscussionAction) {
       const label = (button.getAttribute("aria-label") ?? "").toLowerCase();
       return label.includes("save discussion") || label.includes("saved discussion");
     });
-  } else {
+  } else if (action === "share") {
     target = buttons.find(
       (button) => (button.getAttribute("aria-label") ?? "").toLowerCase() === "share discussion"
+    );
+  } else {
+    target = buttons.find((button) =>
+      (button.getAttribute("aria-label") ?? "")
+        .toLowerCase()
+        .includes("open more discussion actions")
     );
   }
 
@@ -68,6 +74,9 @@ export function DiscussionMobileReplyLabel() {
         </button>
         <button type="button" role="menuitem" tabIndex={open ? 0 : -1} onClick={() => run("share")}>
           Share
+        </button>
+        <button type="button" role="menuitem" tabIndex={open ? 0 : -1} onClick={() => run("more")}>
+          More
         </button>
       </div>
 
