@@ -14,6 +14,7 @@ import "./discussion-phase-five.css";
 import "./discussion-reply-pagination.css";
 import "./discussion-detail-polish.css";
 import "./discussion-mobile-action-bar.css";
+import "./discussion-ai-citations.css";
 
 export default function DiscussionDetailLayout({
   children,
