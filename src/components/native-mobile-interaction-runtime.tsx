@@ -5,8 +5,8 @@ import { isNativeApp } from "@/lib/native-app";
 import { isHapticFeedbackEnabled } from "@/lib/mobile-native-preferences";
 import { performLoombusHaptic } from "@/lib/native-live-updates";
 
-const PULL_THRESHOLD_PX = 88;
-const MAX_PULL_VISUAL_PX = 116;
+const PULL_THRESHOLD_PX = 140;
+const MAX_PULL_VISUAL_PX = 176;
 const HAPTIC_SELECTOR =
   'button, a[href], [role="button"], summary, input[type="checkbox"], input[type="radio"]';
 
