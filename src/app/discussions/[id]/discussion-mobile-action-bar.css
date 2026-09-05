@@ -2,6 +2,17 @@
   display: none;
 }
 
+/* The opening-post primary action is Reply on every viewport. */
+.discussion-v2-opening-actions > .discussion-v2-button-primary:first-child {
+  font-size: 0 !important;
+}
+
+.discussion-v2-opening-actions > .discussion-v2-button-primary:first-child::after {
+  content: "Reply";
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
 @media (max-width: 1023px) {
   .discussion-v2-mobile-bar {
     display: none !important;
@@ -9,6 +20,10 @@
 
   .discussion-v2-opening-card {
     position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .discussion-v2-topic-row {
@@ -16,6 +31,10 @@
   }
 
   .discussion-v2-opening-actions {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     flex-wrap: nowrap !important;
     justify-content: flex-start !important;
     overflow-x: auto !important;
@@ -34,27 +53,16 @@
     flex: 0 0 auto;
   }
 
-  .discussion-v2-opening-actions > .discussion-v2-button-primary:first-child::after {
-    content: "Reply" !important;
-  }
-
   [data-discussion-library-feedback-inline="true"] {
     position: relative !important;
     z-index: 40;
-  }
-
-  [data-discussion-library-feedback-inline="true"] [role="menu"][aria-label="Library and knowledge actions"] {
-    right: 0 !important;
-    left: auto !important;
-    width: min(22rem, calc(100vw - 1.5rem)) !important;
-    max-width: calc(100vw - 1.5rem) !important;
   }
 
   .discussion-v2-opening-actions > button[aria-label="Open Discussion actions"] {
     position: absolute !important;
     z-index: 3;
     top: 0.35rem;
-    right: clamp(1.25rem, 3vw, 2.25rem);
+    right: max(0.75rem, env(safe-area-inset-right));
     width: 2.35rem;
     min-width: 2.35rem;
     height: 2.35rem;
@@ -179,7 +187,7 @@
 
 @media (max-width: 639px) {
   .discussion-v2-opening-actions > button[aria-label="Open Discussion actions"] {
-    right: 1.25rem;
+    right: max(0.75rem, env(safe-area-inset-right));
   }
 
   .discussion-mobile-action-menu {
