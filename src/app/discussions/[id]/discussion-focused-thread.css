@@ -50,13 +50,16 @@
   bottom: 0;
   left: -0.7rem;
   width: 1px;
-  background: color-mix(in srgb, var(--loombus-gold) 38%, var(--loombus-border));
+  background: color-mix(in srgb, var(--loombus-gold) 34%, var(--loombus-border));
 }
 
+/* Inline responses are part of the same editorial conversation, not separate cards. */
 .discussion-thread-inline-list > [data-thread-child="true"] > .discussion-v2-reply-card {
   box-shadow: none !important;
-  border-color: var(--loombus-border) !important;
-  background: color-mix(in srgb, var(--loombus-surface) 96%, var(--loombus-page-bg)) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 
 .discussion-thread-inline-list > [data-thread-child="true"] > .discussion-v2-reply-card > .discussion-v2-reference-card {
