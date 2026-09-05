@@ -38,6 +38,44 @@ export function DiscussionMobileReplyLabel() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    let scheduled = false;
+
+    const applyOpeningReplyLabel = () => {
+      scheduled = false;
+      const button = document.querySelector<HTMLButtonElement>(
+        ".discussion-v2-opening-actions > .discussion-v2-button-primary:first-child"
+      );
+      if (!button) return;
+
+      const label = media.matches ? "Reply" : "Join the discussion";
+      const textNode = Array.from(button.childNodes).find(
+        (node) => node.nodeType === Node.TEXT_NODE && Boolean(node.textContent?.trim())
+      );
+      if (textNode && textNode.textContent?.trim() !== label) {
+        textNode.textContent = ` ${label}`;
+      }
+      button.setAttribute("aria-label", label);
+    };
+
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(applyOpeningReplyLabel);
+    };
+
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true });
+    media.addEventListener("change", schedule);
+    schedule();
+
+    return () => {
+      observer.disconnect();
+      media.removeEventListener("change", schedule);
+    };
+  }, []);
+
+  useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       const root = rootRef.current;
       if (root && event.target instanceof Node && !root.contains(event.target)) {
