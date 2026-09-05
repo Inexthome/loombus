@@ -14,9 +14,10 @@ function triggerOriginalAction(action: MobileDiscussionAction) {
   if (action === "reply") {
     target = buttons[0];
   } else if (action === "save") {
-    target = buttons.find((button) =>
-      (button.getAttribute("aria-label") ?? "").toLowerCase().includes("saved discussion")
-    );
+    target = buttons.find((button) => {
+      const label = (button.getAttribute("aria-label") ?? "").toLowerCase();
+      return label.includes("save discussion") || label.includes("saved discussion");
+    });
   } else {
     target = buttons.find(
       (button) => (button.getAttribute("aria-label") ?? "").toLowerCase() === "share discussion"
