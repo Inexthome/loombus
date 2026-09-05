@@ -13,6 +13,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     private var loombusOAuthHandlerConfigured = false
     private var safariViewController: SFSafariViewController?
     private var webAuthenticationSession: ASWebAuthenticationSession?
+    private let loombusLongPullRefreshDistance: CGFloat = 180.0
+    private var loombusMaximumPullDistance: CGFloat = 0.0
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         BackgroundRunnerPlugin.registerBackgroundTask()
@@ -84,6 +86,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     }
 
     @objc private func refreshLoombus(_ refreshControl: UIRefreshControl) {
+        let reachedLongPullThreshold =
+            loombusMaximumPullDistance >= loombusLongPullRefreshDistance
+        loombusMaximumPullDistance = 0.0
+
+        guard reachedLongPullThreshold else {
+            refreshControl.endRefreshing()
+            return
+        }
+
         let feedback = UIImpactFeedbackGenerator(style: .light)
         feedback.prepare()
         feedback.impactOccurred()
@@ -263,6 +274,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return scrollView.subviews.first
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let pullDistance = max(0.0, -scrollView.contentOffset.y)
+        if pullDistance > loombusMaximumPullDistance {
+            loombusMaximumPullDistance = pullDistance
+        }
+
+        if pullDistance == 0.0 && !scrollView.isDragging && !scrollView.isDecelerating {
+            loombusMaximumPullDistance = 0.0
+        }
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
