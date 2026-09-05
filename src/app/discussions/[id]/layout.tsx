@@ -1,28 +1,34 @@
-import { DiscussionAudienceDetailBadge } from "@/components/discussion-audience-detail-badge";
-import { DiscussionViewersPanel } from "@/components/discussion-viewers-panel";
-import { DiscussionLibraryFeedbackLauncher } from "@/components/library/discussion-library-feedback-launcher";
+import { DiscussionConversationIntelligenceBridge } from "@/components/discussion-conversation-intelligence-bridge";
 import { DiscussionEditorialCopyCleanup } from "@/components/discussion-editorial-copy-cleanup";
-import "./discussion-mobile-back-navigation.css";
-import DiscussionDetailActionsLayer from "./discussion-detail-actions-layer";
-import DiscussionDetailV2Client from "./discussion-detail-v2-client";
-import DiscussionInlinePointReplies from "./discussion-inline-point-replies";
-import DiscussionMobileBackNavigation from "./discussion-mobile-back-navigation";
-import QuestionOfWeekBodyDisclosure from "./question-of-week-body-disclosure";
-import QuestionOfWeekEditorialAttribution from "./question-of-week-editorial-attribution";
+import { DiscussionFollowBridge } from "@/components/discussion-follow-bridge";
+import { DiscussionFocusedThreadBridge } from "@/components/discussion-focused-thread-bridge";
+import { DiscussionPhaseFourNavigation } from "@/components/discussion-phase-four-navigation";
+import { DiscussionReplyPaginationBridge } from "@/components/discussion-reply-pagination-bridge";
+import { DiscussionThreadWindowDispatcher } from "@/components/discussion-thread-window-dispatcher";
+import "./discussion-detail-v2.css";
+import "./discussion-detail-v2-brand.css";
+import "./discussion-focused-thread.css";
+import "./discussion-phase-four.css";
+import "./discussion-phase-five.css";
+import "./discussion-reply-pagination.css";
+import "./discussion-detail-polish.css";
+import "./discussion-mobile-action-bar.css";
 
-export default function DiscussionPage() {
+export default function DiscussionDetailLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <>
-      <DiscussionMobileBackNavigation />
-      <DiscussionDetailV2Client />
+      <DiscussionThreadWindowDispatcher />
+      <DiscussionFocusedThreadBridge />
+      <DiscussionReplyPaginationBridge />
+      <DiscussionPhaseFourNavigation />
+      <DiscussionConversationIntelligenceBridge />
+      <DiscussionFollowBridge />
       <DiscussionEditorialCopyCleanup />
-      <QuestionOfWeekEditorialAttribution />
-      <QuestionOfWeekBodyDisclosure />
-      <DiscussionInlinePointReplies />
-      <DiscussionViewersPanel />
-      <DiscussionAudienceDetailBadge />
-      <DiscussionDetailActionsLayer />
-      <DiscussionLibraryFeedbackLauncher />
+      {children}
     </>
   );
 }
