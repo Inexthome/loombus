@@ -168,11 +168,12 @@ export function NativeAppPermissionsCard() {
 
     const location =
       locationResult.status === "fulfilled"
-        ? normalizePermission(
-            locationResult.value.coarseLocation === "granted"
-              ? "granted"
-              : locationResult.value.coarseLocation
-          )
+        ? locationResult.value.coarseLocation === "granted" ||
+          locationResult.value.location === "granted"
+          ? "granted"
+          : normalizePermission(
+              locationResult.value.coarseLocation ?? locationResult.value.location
+            )
         : "unavailable";
     const camera =
       cameraResult.status === "fulfilled"
@@ -217,7 +218,21 @@ export function NativeAppPermissionsCard() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadPermissions(), 0);
-    return () => window.clearTimeout(timeout);
+
+    function handleResume() {
+      if (document.visibilityState === "visible") {
+        void loadPermissions();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+
+    return () => {
+      window.clearTimeout(timeout);
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
+    };
   }, [loadPermissions]);
 
   async function requestPermission(kind: PermissionKind) {
