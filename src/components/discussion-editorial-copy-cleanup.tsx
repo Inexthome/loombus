@@ -96,6 +96,11 @@ export function DiscussionEditorialCopyCleanup() {
     const apply = () => {
       scheduled = false;
 
+      const intelligenceTab = document.querySelector<HTMLButtonElement>(
+        ".discussion-phase-four-nav button[data-discussion-workspace-mode='intelligence']"
+      );
+      if (intelligenceTab?.textContent !== "Intelligence") intelligenceTab.textContent = "Intelligence";
+
       const stateHeading = document.querySelector<HTMLElement>(
         "#discussion-intelligence .discussion-v2-section-heading > div"
       );
