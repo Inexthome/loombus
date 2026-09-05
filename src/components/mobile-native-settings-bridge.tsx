@@ -54,7 +54,7 @@ function Toggle({
 export function MobileNativeSettingsBridge() {
   const [appearanceMount, setAppearanceMount] = useState<HTMLElement | null>(null);
   const [securityMount, setSecurityMount] = useState<HTMLElement | null>(null);
-  const [platform] = useState(() => getNativePlatform());
+  const [platform, setPlatform] = useState<"ios" | "android" | "web" | "unknown">("unknown");
   const [preferences, setPreferencesState] = useState<MobileNativePreferences>(
     DEFAULT_MOBILE_NATIVE_PREFERENCES
   );
@@ -64,13 +64,16 @@ export function MobileNativeSettingsBridge() {
   const [securityMessage, setSecurityMessage] = useState("");
 
   useEffect(() => {
-    if (platform !== "ios" && platform !== "android") return;
+    const detectedPlatform = getNativePlatform();
+    setPlatform(detectedPlatform);
 
-    setPreferencesState(getMobileNativePreferences());
-    setBiometricEnabled(isBiometricUnlockEnabled());
-    void getNativeBiometricAvailability().then((availability) => {
-      setBiometricAvailable(availability.isAvailable);
-    });
+    if (detectedPlatform === "ios" || detectedPlatform === "android") {
+      setPreferencesState(getMobileNativePreferences());
+      setBiometricEnabled(isBiometricUnlockEnabled());
+      void getNativeBiometricAvailability().then((availability) => {
+        setBiometricAvailable(availability.isAvailable);
+      });
+    }
 
     let cancelled = false;
     let attempts = 0;
@@ -94,15 +97,18 @@ export function MobileNativeSettingsBridge() {
     return () => {
       cancelled = true;
     };
-  }, [platform]);
+  }, []);
 
-  if (platform !== "ios" && platform !== "android") return null;
+  if (platform === "unknown") return null;
+
+  const isNative = platform === "ios" || platform === "android";
 
   function save(next: MobileNativePreferences) {
     setPreferencesState(setMobileNativePreferences(next));
   }
 
   async function setHaptics(enabled: boolean) {
+    if (!isNative) return;
     const next = { ...preferences, hapticFeedbackEnabled: enabled };
     save(next);
     setMessage(enabled ? "Haptic feedback enabled." : "Haptic feedback disabled.");
@@ -116,6 +122,7 @@ export function MobileNativeSettingsBridge() {
   }
 
   async function setLiveAppointmentUpdates(enabled: boolean) {
+    if (!isNative) return;
     const next = { ...preferences, liveAppointmentUpdatesEnabled: enabled };
     save(next);
     if (!enabled) {
@@ -127,12 +134,17 @@ export function MobileNativeSettingsBridge() {
     }
     setMessage(
       enabled
-        ? "Live appointment updates enabled."
-        : "Live appointment updates disabled."
+        ? platform === "ios"
+          ? "Live Activities enabled."
+          : "Promoted appointment updates enabled."
+        : platform === "ios"
+          ? "Live Activities disabled."
+          : "Promoted appointment updates disabled."
     );
   }
 
   async function setBiometricAppLock(enabled: boolean) {
+    if (!isNative) return;
     setSecurityMessage("");
 
     if (enabled) {
@@ -155,6 +167,8 @@ export function MobileNativeSettingsBridge() {
     );
   }
 
+  const mobileOnlyMessage = !isNative ? "Available in the Loombus mobile app." : "";
+
   return (
     <>
       {appearanceMount
@@ -171,20 +185,38 @@ export function MobileNativeSettingsBridge() {
                   label="Haptic feedback"
                   description="Use subtle tactile feedback for taps and actions in the Loombus mobile app."
                   checked={preferences.hapticFeedbackEnabled}
+                  disabled={!isNative}
                   onChange={(enabled) => void setHaptics(enabled)}
                 />
-                <Toggle
-                  label="Live appointment updates"
-                  description={
-                    platform === "ios"
-                      ? "Allow eligible appointments to use iOS Live Activities when supported by this device."
-                      : "Allow eligible appointments to use ongoing and promoted Android system updates when supported by this device."
-                  }
-                  checked={preferences.liveAppointmentUpdatesEnabled}
-                  onChange={(enabled) => void setLiveAppointmentUpdates(enabled)}
-                />
+                {platform === "android" ? (
+                  <Toggle
+                    label="Promoted appointment updates"
+                    description="Allow eligible appointments to use ongoing and promoted Android system updates when supported by this device."
+                    checked={preferences.liveAppointmentUpdatesEnabled}
+                    onChange={(enabled) => void setLiveAppointmentUpdates(enabled)}
+                  />
+                ) : (
+                  <Toggle
+                    label="Live Activities"
+                    description="Allow eligible appointments to use iOS Live Activities when supported by this device."
+                    checked={preferences.liveAppointmentUpdatesEnabled}
+                    disabled={!isNative}
+                    onChange={(enabled) => void setLiveAppointmentUpdates(enabled)}
+                  />
+                )}
+                {platform === "web" ? (
+                  <Toggle
+                    label="Android promoted appointment updates"
+                    description="Available in the Android app on supported devices."
+                    checked={preferences.liveAppointmentUpdatesEnabled}
+                    disabled
+                    onChange={() => undefined}
+                  />
+                ) : null}
               </div>
-              {message ? <p className="settings-v2-muted" role="status">{message}</p> : null}
+              {message || mobileOnlyMessage ? (
+                <p className="settings-v2-muted" role="status">{message || mobileOnlyMessage}</p>
+              ) : null}
             </section>,
             appearanceMount
           )
@@ -201,15 +233,15 @@ export function MobileNativeSettingsBridge() {
               </div>
               <div className="settings-v2-toggle-list">
                 <Toggle
-                  label={platform === "ios" ? "Face ID / device biometrics" : "Device biometrics"}
+                  label={platform === "android" ? "Device biometrics" : "Face ID / device biometrics"}
                   description="Require this device's biometric or device-unlock check to protect your remembered Loombus session. Turning this off does not sign you out."
                   checked={biometricEnabled}
-                  disabled={!biometricAvailable && !biometricEnabled}
+                  disabled={!isNative || (!biometricAvailable && !biometricEnabled)}
                   onChange={(enabled) => void setBiometricAppLock(enabled)}
                 />
               </div>
-              {securityMessage ? (
-                <p className="settings-v2-muted" role="status">{securityMessage}</p>
+              {securityMessage || mobileOnlyMessage ? (
+                <p className="settings-v2-muted" role="status">{securityMessage || mobileOnlyMessage}</p>
               ) : null}
             </section>,
             securityMount
