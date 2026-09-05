@@ -12,20 +12,31 @@
   }
 
   .discussion-v2-topic-row {
-    padding-right: 3.5rem;
+    padding-right: 3.25rem;
   }
 
   .discussion-v2-opening-actions > button[aria-label="Open Discussion actions"] {
     position: absolute !important;
     z-index: 3;
-    top: 1.05rem;
+    top: 0.35rem;
     right: clamp(1.25rem, 3vw, 2.25rem);
-    min-width: 2.5rem;
-    min-height: 2.25rem;
-    padding: 0.4rem 0.5rem !important;
+    width: 2.35rem;
+    min-width: 2.35rem;
+    height: 2.35rem;
+    min-height: 2.35rem;
+    padding: 0 !important;
+    gap: 0 !important;
     border-radius: 999px !important;
     background: var(--loombus-surface-muted) !important;
     color: var(--loombus-text-muted) !important;
+    font-size: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .discussion-v2-opening-actions > button[aria-label="Open Discussion actions"] svg {
+    width: 1.05rem;
+    height: 1.05rem;
   }
 
   .discussion-v2-opening-actions > button[aria-label="Open Discussion actions"]:hover,
