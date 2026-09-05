@@ -5,8 +5,8 @@ import { isNativeApp } from "@/lib/native-app";
 import { isHapticFeedbackEnabled } from "@/lib/mobile-native-preferences";
 import { performLoombusHaptic } from "@/lib/native-live-updates";
 
-const PULL_THRESHOLD_PX = 140;
-const MAX_PULL_VISUAL_PX = 176;
+const PULL_THRESHOLD_PX = 220;
+const MAX_PULL_VISUAL_PX = 260;
 const HAPTIC_SELECTOR =
   'button, a[href], [role="button"], summary, input[type="checkbox"], input[type="radio"]';
 
@@ -131,7 +131,7 @@ export function NativeMobileInteractionRuntime() {
       className="pointer-events-none fixed inset-x-0 top-0 z-[10000] flex justify-center pt-[calc(env(safe-area-inset-top)+0.5rem)]"
     >
       <div className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-3 py-1.5 text-xs font-medium text-[color:var(--loombus-text)] shadow-lg">
-        {refreshing ? "Refreshing Loombus…" : armed ? "Release to refresh" : "Pull to refresh"}
+        {refreshing ? "Refreshing Loombus…" : armed ? "Release to refresh" : "Pull farther to refresh"}
       </div>
     </div>
   );
