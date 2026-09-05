@@ -34,16 +34,21 @@ function getSmsAuthenticationSection(title: string): PublicPolicySection | null 
         <>
           You may voluntarily provide a mobile phone number to use supported
           phone-based sign-in or to add and verify a mobile number on your Loombus
-          account. Loombus may use that number to send one-time passcodes and
-          closely related transactional authentication or account-verification
-          messages that you request. This SMS authentication program is not used
-          for marketing or promotional messages.
+          account. Before Loombus sends an authentication or verification code,
+          you must actively select the separate, unchecked SMS-consent control
+          presented with the mobile-number form. Loombus may then use that number
+          to send one-time passcodes and closely related transactional
+          authentication or account-verification messages that you request. This
+          SMS authentication program is not used for marketing or promotional
+          messages.
         </>,
         <>
-          Message frequency varies based on your user-initiated sign-in,
-          verification, or account-security requests. Message and data rates may
-          apply according to your mobile carrier and plan. SMS delivery can depend
-          on your carrier, network, device, and service-provider availability.
+          SMS consent is separate from accepting the Loombus Terms of Service and
+          Privacy Policy and is not selected by default. Message frequency varies
+          based on your user-initiated sign-in, verification, or account-security
+          requests. Message and data rates may apply according to your mobile
+          carrier and plan. SMS delivery can depend on your carrier, network,
+          device, and service-provider availability.
         </>,
         <>
           Your full mobile number is not displayed on your public Loombus profile.
@@ -75,18 +80,23 @@ function getSmsAuthenticationSection(title: string): PublicPolicySection | null 
       title: "Phone Sign-In and SMS Authentication",
       paragraphs: [
         <>
-          If you enter a mobile phone number and request a one-time code, you
-          consent to receive transactional SMS messages from Loombus for
-          phone-based sign-in, mobile-number verification, and closely related
-          account authentication. Loombus does not use this SMS authentication
-          program for marketing or promotional messages.
+          If you choose to use a supported mobile-number authentication or
+          verification feature, Loombus requires you to actively select a separate,
+          unchecked SMS-consent control before requesting a one-time code. By
+          selecting that control and requesting the code, you consent to receive
+          transactional SMS messages from Loombus for phone-based sign-in,
+          mobile-number verification, and closely related account authentication.
+          Loombus does not use this SMS authentication program for marketing or
+          promotional messages.
         </>,
         <>
-          Message frequency varies based on your user-initiated authentication or
-          verification requests. Message and data rates may apply. You represent
-          that you control the number you provide or are otherwise authorized to
-          use it for this purpose. Keep verification codes confidential and notify
-          Loombus if you believe a code or account has been compromised.
+          SMS consent is separate from your acceptance of these Terms and the
+          Privacy Policy and is not selected by default. Message frequency varies
+          based on your user-initiated authentication or verification requests.
+          Message and data rates may apply. You represent that you control the
+          number you provide or are otherwise authorized to use it for this
+          purpose. Keep verification codes confidential and notify Loombus if you
+          believe a code or account has been compromised.
         </>,
         <>
           SMS delivery is not guaranteed and may be delayed or unavailable because
@@ -125,7 +135,7 @@ export function PublicPolicyPage({
     ? [...providedSections, smsAuthenticationSection]
     : providedSections;
   const reviewedDate = smsAuthenticationSection
-    ? "September 3, 2026"
+    ? "September 4, 2026"
     : providedReviewedDate;
 
   const jumpSections = sections.reduce<

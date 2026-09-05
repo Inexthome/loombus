@@ -100,6 +100,7 @@ export function PhoneSecuritySettingsBridge() {
   const [newPhone, setNewPhone] = useState("");
   const [verificationPhone, setVerificationPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -133,10 +134,21 @@ export function PhoneSecuritySettingsBridge() {
     void load();
   }, []);
 
+  function handlePhoneChange(value: string) {
+    setNewPhone(formatUsPhone(value));
+    setSmsConsent(false);
+    setMessage("");
+  }
+
   async function sendPhoneVerification() {
     const normalized = normalizeUsPhone(newPhone);
     if (!normalized) {
       setMessage("Enter a valid 10-digit U.S. mobile number.");
+      return;
+    }
+
+    if (!smsConsent) {
+      setMessage("Check the SMS consent box before requesting a verification code.");
       return;
     }
 
@@ -179,6 +191,7 @@ export function PhoneSecuritySettingsBridge() {
     setOtp("");
     setNewPhone("");
     setVerificationPhone("");
+    setSmsConsent(false);
     setMessage("Mobile number verified.");
     setWorking(false);
     await load();
@@ -250,7 +263,7 @@ export function PhoneSecuritySettingsBridge() {
                 autoComplete="tel-national"
                 value={newPhone}
                 disabled={working || awaitingOtp}
-                onChange={(event) => setNewPhone(formatUsPhone(event.target.value))}
+                onChange={(event) => handlePhoneChange(event.target.value)}
                 placeholder="(904) 555-1234"
                 aria-label="U.S. mobile number"
                 className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[color:var(--loombus-text)] outline-none"
@@ -261,19 +274,32 @@ export function PhoneSecuritySettingsBridge() {
           <button
             type="button"
             className="settings-v2-secondary-action self-start"
-            disabled={working || awaitingOtp}
+            disabled={working || awaitingOtp || !smsConsent}
             onClick={() => void sendPhoneVerification()}
           >
             {phone.verified ? "Change number" : "Add & verify"}
           </button>
         </div>
 
-        <p className="mt-3 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
-          By requesting a verification code, you consent to receive a transactional SMS from Loombus for authentication. Message frequency varies based on your requests. Message and data rates may apply. No marketing messages are sent through this program. See the{" "}
-          <Link href="/terms#sms-authentication" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
-          and{" "}
-          <Link href="/privacy#mobile-sms-auth" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
-        </p>
+        <label className="mt-4 flex items-start gap-3 rounded-lg border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-3">
+          <input
+            type="checkbox"
+            checked={smsConsent}
+            disabled={working || awaitingOtp}
+            onChange={(event) => {
+              setSmsConsent(event.target.checked);
+              setMessage("");
+            }}
+            className="mt-1 h-4 w-4 shrink-0"
+          />
+          <span className="text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+            <strong className="block text-sm text-[color:var(--loombus-text)]">I agree to receive Loombus verification codes by SMS.</strong>
+            By checking this box, you agree to receive transactional authentication and verification text messages from Loombus at the mobile number you provide. Message frequency varies based on your requests. Message and data rates may apply. No marketing or promotional messages are sent through this program. This consent is separate from accepting the Loombus Terms and Privacy Policy. See the{" "}
+            <Link href="/terms" className="font-semibold underline underline-offset-2">Terms</Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
+          </span>
+        </label>
 
         {awaitingOtp ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
