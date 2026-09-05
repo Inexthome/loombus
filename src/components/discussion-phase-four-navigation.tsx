@@ -9,7 +9,7 @@ type WorkspaceMode = "state" | "intelligence" | "points" | "evidence" | "reply";
 
 const WORKSPACE_ITEMS: Array<{ mode: WorkspaceMode; label: string; controls: string }> = [
   { mode: "state", label: "State of Discussion", controls: "discussion-intelligence" },
-  { mode: "intelligence", label: "Conversation Intelligence", controls: "discussion-conversation-intelligence" },
+  { mode: "intelligence", label: "Intelligence", controls: "discussion-conversation-intelligence" },
   { mode: "points", label: "Points", controls: "discussion-major-points" },
   { mode: "evidence", label: "Evidence", controls: "discussion-evidence" },
   { mode: "reply", label: "Reply", controls: "discussion-reply-composer" },
