@@ -1,6 +1,6 @@
 import { DiscussionAudienceSettingsBridge } from "@/components/discussion-audience-settings-bridge";
 import { MemberPrivacySettingsMount } from "@/components/member-privacy-settings-mount";
-import { PhoneSecuritySettingsBridge } from "@/components/phone-security-settings-bridge";
+import { PhoneSecuritySettingsMount } from "@/components/phone-security-settings-mount";
 import { SettingsAccountEditorialRefinement } from "@/components/settings-account-editorial-refinement";
 import { SettingsEditorialExpansion } from "@/components/settings-editorial-expansion";
 import { SettingsMobileSectionSelect } from "@/components/settings-mobile-section-select";
@@ -32,7 +32,7 @@ export default function SettingsPage() {
       <SettingsMobileSectionSelect />
       <DiscussionAudienceSettingsBridge />
       <MemberPrivacySettingsMount />
-      <PhoneSecuritySettingsBridge />
+      <PhoneSecuritySettingsMount />
       <SubscriptionSettingsBridge />
       <SettingsEditorialExpansion />
       <SettingsTotpMobileSetup />
